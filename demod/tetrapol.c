@@ -12,6 +12,8 @@ int main(int argc, char* argv[]) {
 	int frameno=0;
 	bzero(buf, FRAME_LEN*3);
 	radio_init();
+	if (argc > 1)
+		fread(buf, atoi(argv[1]), 1, stdin);
 	while(c==0 || c==1) {
 		c=fgetc(stdin);
 		memmove(buf, buf+1, FRAME_LEN*3-1);
