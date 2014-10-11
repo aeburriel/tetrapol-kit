@@ -58,10 +58,10 @@ int check_data_crc(char *d) {
 
 	crc = make_crc(d, 69);
 	res = memcmp(d+69, crc, 5);
-	printf("crc=");
-	print_buf(d+69,5);
-	printf("crcc=");
-	print_buf(crc,5);
+//	printf("crc=");
+//	print_buf(d+69,5);
+//	printf("crcc=");
+//	print_buf(crc,5);
 	free(crc);
 	if(res)
 		return 0;
@@ -89,16 +89,16 @@ char *decode_data_frame(char *c) {
 		b1[j-1]=c[2*j] ^ c[2*j+1];
 	}
 
-	printf("b1=");
-	print_buf(b1,26);
+//	printf("b1=");
+//	print_buf(b1,26);
 	
 	b2[0] = c[53];
 	for(j=2; j<=48; j++) {
 		b2[j-1]=c[2*j+52] ^ c[2*j+53];
 	}
 
-	printf("b2=");
-	print_buf(b2,48);
+//	printf("b2=");
+//	print_buf(b2,48);
 	
 	for(j=0; j<=25; j++)
 		d[j]=b1[j];
@@ -138,25 +138,28 @@ char *deinterleave_frame(char *e, int framelen) {
 
 }
 
-inline int is_in_code(char j) {
-	char pre_cod[] = {7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52, 55, 58, 61, 64, 67, 70, 73, 76, 83, 86, 89, 92, 95, 98, 101, 104, 107, 110, 113, 116, 119, 122, 125, 128, 131, 134, 137, 140, 143, 146, 149};
-	int i;
-	for(i=0; i<sizeof(pre_cod); i++) {
-		if(pre_cod[i]==j)
-			return 1;
-	}
-	return 0;
-}
+// inline int is_in_code(char j) {
+//	char pre_cod[] = {7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52, 55, 58, 61, 64, 67, 70, 73, 76, 83, 86, 89, 92, 95, 98, 101, 104, 107, 110, 113, 116, 119, 122, 125, 128, 131, 134, 137, 140, 143, 146, 149};
+//	int i;
+//	for(i=0; i<sizeof(pre_cod); i++) {
+//		if(pre_cod[i]==j)
+//			return 1;
+//	}
+//	return 0;
+//}
+
+int pre_cod[] = {1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 		
 char *diffdec_frame(char *e, int framelen) {
 	char *ex=malloc(framelen);
 	int j;
 	ex[0]=e[0]; // in spec is e[0]+f[7], but since f[7] is always 0 fuck you
 	for(j=1; j<framelen; j++) {
-		if(is_in_code(j))
-			ex[j] = e[j] ^ e[j-2];
-		else
-			ex[j] = e[j] ^ e[j-1];
+		ex[j] = e[j] ^ e[j-pre_cod[j]];
+//		if(is_in_code(j))
+//			ex[j] = e[j] ^ e[j-2];
+//		else
+//			ex[j] = e[j] ^ e[j-1];
 	}
 	return ex;
 }
@@ -193,52 +196,51 @@ void radio_process_frame(char *f, int framelen, int modulo) {
 	int scr, i, j;
 	char *ex, *e, *c, *d=0;
 
-	printf("s=");
-	print_buf(scramb_table,127);
-	printf("f=");
-	print_buf(f,160);
+//	printf("s=");
+//	print_buf(scramb_table,127);
+//	printf("f=");
+//	print_buf(f,160);
 
-	printf("Attempting descramble\n");
+//	printf("Attempting descramble\n");
 	int scr_ok=0;
 	for(scr=0; scr<=127; scr++) {
-		printf("trying scrambling %i\n", scr);
+//		printf("trying scrambling %i\n", scr);
 		if(d)
 			free(d);
 
 		ex=descramble_frame(f+8, 152, scr);
-		printf("ex=");
-		print_buf(ex,152);
+//		printf("ex=");
+//		print_buf(ex,152);
 
 		e=diffdec_frame(ex, 152);
-		printf("e=");
-		print_buf(e,152);
+//		printf("e=");
+//		print_buf(e,152);
 
 		c=deinterleave_frame(e, 152);
-		printf("c=");
-		print_buf(c,152);
+//		printf("c=");
+//		print_buf(c,152);
 
 		d=decode_data_frame(c);
-		printf("d=");
-		print_buf(d,74);
+//		printf("d=");
+//		print_buf(d,74);
 
 		if(d[0]!=1) {
-			printf("not data frame!\n");
+//			printf("not data frame!\n");
 			goto cleanup;
 		}
 
 		if(!check_data_crc(d)) {
-			printf("crc mismatch!\n");
+//			printf("crc mismatch!\n");
 			goto cleanup;
 		}
-		printf("b=");
-		print_buf(d+1, 68);
+//		printf("b=");
+//		print_buf(d+1, 68);
 		
 		char asbx, asby, fn0, fn1;
 		asbx=d[67];			// maybe x=68, y=67
 		asby=d[68];
 		fn0=d[2];
 		fn1=d[1];
-		printf("asbx=%i, asby=%i\n", asbx, asby);
 		printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", modulo, fn0, fn1, asbx, asby, scr);
 		for (i=0; i<8; i++) {
 			for(j=0; j<8; j++)
@@ -258,13 +260,9 @@ void radio_process_frame(char *f, int framelen, int modulo) {
 		free(e);
 		free(ex);
 
-		printf("\n");
 	}
-	printf("\n");
-	if(scr_ok>1)
-		print_buf(d+1, 68);
-	else
-		printf("failed to descramble!\n");
+	if(scr_ok==0)
+		printf("ERR2 mod=%03i\n", modulo);
 	
 	free(d);
 
