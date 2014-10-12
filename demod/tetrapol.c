@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
 			if (sync_lost == sync_keep)
 				printf("Sync lost\n");
-			if (!found && (pos%160 == 0)) {
+			if (!found && (pos%160 == 0) && sync_lost < sync_keep) {
 				printf("ERR1 mod=%03i, lost=%i\n", pos/160%200, sync_lost);
 			}
 			if (found)
