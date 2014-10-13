@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include "multiblock.h"
 
 #define DEBUG
 
@@ -184,6 +185,17 @@ char *descramble_frame(char *f, int framelen, int scr) {
 	return ex;
 }
 
+char *bitorder_frame(char *d) {
+	int i,j;
+
+	char *d1=malloc(64);
+	for (i=0; i<8; i++)
+		for(j=0; j<8; j++)
+			d1[8*i + j] =  d[i*8+7-j];
+
+	return d1;
+}
+
 void radio_init() {
 	int i;
 	for(i=0; i<127; i++) {
@@ -193,8 +205,9 @@ void radio_init() {
 
 void radio_process_frame(char *f, int framelen, int modulo) {
 
-	int scr, i, j;
-	char *ex, *e, *c, *d=0;
+	int scr, scr2, i, j;
+	char asbx, asby, fn0, fn1;
+	char *ex, *e, *c, *d=0, *d1=0;
 
 //	printf("s=");
 //	print_buf(scramb_table,127);
@@ -205,8 +218,6 @@ void radio_process_frame(char *f, int framelen, int modulo) {
 	int scr_ok=0;
 	for(scr=0; scr<=127; scr++) {
 //		printf("trying scrambling %i\n", scr);
-		if(d)
-			free(d);
 
 		ex=descramble_frame(f+8, 152, scr);
 //		printf("ex=");
@@ -235,23 +246,13 @@ void radio_process_frame(char *f, int framelen, int modulo) {
 		}
 //		printf("b=");
 //		print_buf(d+1, 68);
-		
-		char asbx, asby, fn0, fn1;
+	
+		scr2=scr;	
 		asbx=d[67];			// maybe x=68, y=67
 		asby=d[68];
 		fn0=d[2];
 		fn1=d[1];
-		printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", modulo, fn0, fn1, asbx, asby, scr);
-		for (i=0; i<8; i++) {
-			for(j=0; j<8; j++)
-				printf("%i", d[i*8+7-j+3]);
-			printf(" ");
-		}
-		for (i=0; i<8; i++) {
-			for(j=0; j<8; j++)
-				printf("%i", d[i*8+7-j+3]);
-		}
-		printf("\n");
+		d1 = bitorder_frame(d+3);
 		
 		scr_ok++;
 
@@ -259,11 +260,24 @@ void radio_process_frame(char *f, int framelen, int modulo) {
 		free(c);
 		free(e);
 		free(ex);
+		free(d);
 
 	}
-	if(scr_ok==0)
+	if(scr_ok==1) {
+		printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", modulo, fn0, fn1, asbx, asby, scr2);
+		for (i=0; i<8; i++) {
+			for(j=0; j<8; j++)
+				printf("%i", d1[i*8+j]);
+			printf(" ");
+		}
+		print_buf(d1, 64);
+		multiblock_process(d1, 2*fn0 + fn1, modulo);
+	} else {
 		printf("ERR2 mod=%03i\n", modulo);
+		multiblock_reset();
+	}
 	
-	free(d);
+	if (d1)
+		free(d1);
 
 }

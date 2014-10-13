@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <string.h>
 #include "constants.h"
 #include "radio.h"
-#include <string.h>
+#include "multiblock.h"
 
 int main(int argc, char* argv[]) {
 	int c=0;
@@ -30,6 +31,7 @@ int main(int argc, char* argv[]) {
 				printf("Sync lost\n");
 			if (!found && (pos%160 == 0) && sync_lost < sync_keep) {
 				printf("ERR1 mod=%03i, lost=%i\n", pos/160%200, sync_lost);
+				multiblock_reset();
 			}
 			if (found)
 				sync_lost=0;
@@ -41,7 +43,7 @@ int main(int argc, char* argv[]) {
 						buf[i] = buf[i] ^ 1;
 //				print_buf(buf, FRAME_LEN);
 				frameno=pos/160;
-				printf("GOT SYNC (frame no: %i, pos: %i mod: %i)!\n", frameno, pos, frameno%200);
+//				printf("GOT SYNC (frame no: %i, pos: %i mod: %i)!\n", frameno, pos, frameno%200);
 				radio_process_frame(buf, FRAME_LEN, frameno%200);
 			}
 		}
