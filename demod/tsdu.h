@@ -1,4 +1,4 @@
-void tsdu_process(char* t, int num);
+void tsdu_process(char* t, int num, int mod);
 
 
 #define D_REJECT			0x08

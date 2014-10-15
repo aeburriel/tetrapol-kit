@@ -37,7 +37,7 @@ void multiblock_process(char * d1, int fn, int mod) {
 					memcpy(buf, d1, 64);
 					printf("MB1 mod=%03i ", startmod);
 					print_buf(buf, 64);
-					tsdu_process(buf, 1);
+					tsdu_process(buf, 1, startmod);
 					state=0;
 					break;
 				case 1:
@@ -71,11 +71,10 @@ void multiblock_process(char * d1, int fn, int mod) {
 					state=2;
 					break;
 				case 3:
-					memcpy(buf, d1, 64);
 					memcpy(buf+64*numblocks, d1, 64);
 					printf("MB2 mod=%03i ", startmod);
 					print_buf(buf, 128);
-					tsdu_process(buf, 2);
+					tsdu_process(buf, 2, startmod);
 					state=0;
 					break;
 			}
@@ -114,7 +113,7 @@ void multiblock_process(char * d1, int fn, int mod) {
 					if (multiblock_xor_verify(buf, numblocks)) {
 						printf("MB%i mod=%03i ", numblocks-1, startmod);
 						print_buf(buf, (numblocks-1) * 64);
-						tsdu_process(buf, numblocks-1);
+						tsdu_process(buf, numblocks-1, startmod);
 					} else {
 						printf("mb xor err %i mod=%03i ", numblocks, startmod);
 						print_buf(buf, (numblocks-1) * 64);

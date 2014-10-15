@@ -24,6 +24,29 @@ int detect_stuff(char *bits) {
 
 }
 
+void decode_addr(char *t) {
+	int x,y,z;
+
+	z=bits_to_int(t, 1);
+	y=bits_to_int(t+1, 3);
+	x=bits_to_int(t+4, 12);
+
+	if ((z==1) && (y==0))
+		printf("RTI:%03x\n", x);
+	if ((z==0) && (y==0))
+		printf("CGI:%03x\n", x);
+	if ((z==0) && (y!=0) && (y!=1)) {
+		printf("TTI:%1x%03x",y, x);
+		if ((y==7) && (x==0))
+			printf(" no ST");
+		if ((y==7) && (x==4095))
+			printf(" all STs");
+		printf("\n");
+	}
+	if (y==1)
+		printf("COI:%03x\n", x);
+}
+
 void d_system_info(char *t) {
 
 	int mode, bch, roam, exp;
@@ -37,6 +60,8 @@ void d_system_info(char *t) {
 	int u_ch_scrambling;
 	int system_time;
 	int superframe_cpt;
+	int tx_max, radio_link_timeout, pwr_tx_adjust, rxlev_access;
+	int min_reg_class, min_service_class;
 
 	mode=bits_to_int(t+8, 3);
 	bch=t[11];
@@ -76,15 +101,21 @@ void d_system_info(char *t) {
 	u_ch_scrambling=bits_to_int(t+81, 7);
 
 	// radio param
+	tx_max=bits_to_int(t+88, 3);
+	radio_link_timeout=bits_to_int(t+91, 5);
+	pwr_tx_adjust=radio_link_timeout = -76+4*bits_to_int(t+96, 4);
+	rxlev_access = -92 + 4*bits_to_int(t+100, 4);
 
 	system_time=bits_to_int(t+104, 8);
 
 	// cell access
+	min_reg_class=bits_to_int(t+112, 4);
+	min_service_class=bits_to_int(t+116, 4);
 
 	superframe_cpt=bits_to_int(t+124, 12);
-	
-	printf("\tCODOP=0x90 (SYSTEM_INFO)\n");
 
+	if (bch==0)
+		mod_set(3);
 	
 
 	printf("\t\tCELL_STATE\n");
@@ -128,7 +159,7 @@ void d_system_info(char *t) {
 	else	
 		printf("experimental cell\n");
 	
-	printf("\t\tCELL_CONFIG=\n");
+	printf("\t\tCELL_CONFIG\n");
 	printf("\t\t\tECCH=%i ", ecch);
 	if (ecch==0)
 		printf("No ECCH in service\n");
@@ -198,30 +229,91 @@ void d_system_info(char *t) {
 
 	printf("\t\tU_CH_SCRAMBLING=%i\n", u_ch_scrambling);
 
-	// radio params
+	printf("\t\tCELL_RADIO_PARAM\n");
+	printf("\t\t\tTX_MAX=%i\n", tx_max);
+	printf("\t\t\tRADIO_LINK_TIMEOUT=%i\n", radio_link_timeout);
+	printf("\t\t\tPWR_TX_ADJUST= %i dBm\n", pwr_tx_adjust);
+	printf("\t\t\tRXLEV_ACCESS= %i dBm\n", rxlev_access);
 
 	printf("\t\tSYSTEM_TIME=%i\n", system_time);
 
-	// cell access
+	printf("\t\tCELL_ACCESS\n");
+	printf("\t\t\tMIN_REG_CLASS=%i\n", min_reg_class);
+	printf("\t\t\tMIN_SERVICE_CLASS=%i\n", min_service_class);
+
 	printf("\t\tSUPERFRAME_CPT=%i\n", superframe_cpt);
 
 
-//	printf("\t\t\t=%i ", );
-//	if (==0)
-//		printf("\n");
-//	else	
-//		printf("\n");
-
-	
 }
 	
 void d_group_composition(char *t) {
 	printf("\tCODOP=0x93 (D_GROUP_COMPOSITION)\n");
 }
 
-void tsdu_process(char* t, int num) {
+void d_group_activation(char *t) {
+	printf("\tCODOP=0x55 (D_GROUP_ACTIVATION)\n");
+}
+
+void d_tti_assignment(char *t) {
+	printf("\tCODOP=0x?? (D_TTI_ASSIGNMENT)\n");
+}
+
+
+void decode_bch(char *t) {
 
 	int codop;
+
+	printf("\tBCH\n");
+
+	printf("\tRT_REF=");
+	print_buf(t+24, 4);
+	printf("\tBS_REF=");
+	print_buf(t+28, 4);
+	printf("\tCALL_PRIO=");
+	print_buf(t+36, 4);
+
+	codop=bits_to_int(t+40, 8);
+	switch (codop) {
+		case D_SYSTEM_INFO:
+			printf("\tCODOP=0x%02x (D_SYSTEM_INFO)\n", codop);
+			d_system_info(t+40);
+			break;
+		default:
+			printf("\tCODOP=0x%02x (Unknown) ", codop);
+			print_buf(t+40, 8);
+			break;
+	}
+
+}
+
+void decode_pch(char *t) {
+
+	printf("\tPCH\n");
+
+	// TODO: activation bitmap
+
+	printf("\t\t");
+	decode_addr(t+64);
+	printf("\t\t");
+	decode_addr(t+80);
+	printf("\t\t");
+	decode_addr(t+96);
+	printf("\t\t");
+	decode_addr(t+112);
+}
+
+void decode_rch(char *t) {
+	
+	printf("\tRCH\n");
+}
+
+void decode_sdch(char *t) {
+
+	int codop;
+
+	printf("\tSDCH\n");
+	printf("\tADDR=");
+	decode_addr(t);
 
 	if (detect_stuff(t+24)) {
 		printf("\tSTUFFED\n");
@@ -237,16 +329,42 @@ void tsdu_process(char* t, int num) {
 
 	codop=bits_to_int(t+40, 8);
 	switch (codop) {
-		case D_SYSTEM_INFO:
-			d_system_info(t+40);
-			break;
 		case D_GROUP_COMPOSITION:
 			d_group_composition(t+40);
+			break;
+		case D_GROUP_ACTIVATION:
+			d_group_activation(t+40);
+			break;
+		case 99999:
+			d_tti_assignment(t+40);
 			break;
 		default:
 			printf("\tCODOP=0x%02x (Unknown) ", codop);
 			print_buf(t+40, 8);
 			break;
 	}
+
+}
+
+void tsdu_process(char* t, int num, int mod) {
+
+	int codop;
+
+	if (((mod==-1) && (num==3)) || (mod==0) || (mod==100)) {
+		decode_bch(t);
+		return;
+	}
+
+	if ((mod==98) ||(mod==198)) {
+		decode_pch(t);
+		return;
+	}
+
+	if (mod%25 == 14) {
+		decode_rch(t);
+		return;
+	}
+
+	decode_sdch(t);
 
 }
