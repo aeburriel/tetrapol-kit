@@ -247,7 +247,29 @@ void d_system_info(char *t) {
 }
 	
 void d_group_composition(char *t) {
+
+	int og_nb;
+	int i;
+	int group_id[10];
+
+	og_nb=bits_to_int(t+20, 4);
+	group_id[0]=bits_to_int(t+8, 12);
+	for (i=1; i<=og_nb; i++)
+		group_id[i]=bits_to_int(t+i*12+12, 12);
+
+
 	printf("\tCODOP=0x93 (D_GROUP_COMPOSITION)\n");
+	printf("\t\tOG_NB=%i\n", og_nb);
+	for (i=0; i<=og_nb; i++) {
+		printf("\t\tGROUP_ID=%04i ", group_id[i]);
+		if (group_id[i] < 3500)
+			printf("simple OG");
+		if ((group_id[i] >= 3500) && (group_id[i] <=3755))
+			printf("multi OG");
+		if (group_id[i] == 4095)
+			printf("all OG");
+		printf("\n");
+	}
 }
 
 void d_group_activation(char *t) {
@@ -286,6 +308,26 @@ void decode_bch(char *t) {
 
 }
 
+void decode_rch_address(char *t) {
+
+	int a, y, x;
+
+	a = t[0];
+	y=bits_to_int(t+1, 3);
+	x=bits_to_int(t+4, 12);
+
+	if (a==0) {
+		printf("ACK ");
+		decode_addr(t);
+	} else {
+		printf("NACK ");
+		if (y==4)
+			printf("Noise\n");
+		if (y==5)
+			printf("Collision\n");
+	}
+}
+
 void decode_pch(char *t) {
 
 	printf("\tPCH\n");
@@ -303,8 +345,14 @@ void decode_pch(char *t) {
 }
 
 void decode_rch(char *t) {
-	
+
 	printf("\tRCH\n");
+	printf("\t\tTERMINAL ADDRES 1: ");
+	decode_rch_address(t);
+	printf("\t\tTERMINAL ADDRES 2: ");
+	decode_rch_address(t+16);
+	printf("\t\tTERMINAL ADDRES 3: ");
+	decode_rch_address(t+32);
 }
 
 void decode_sdch(char *t) {
@@ -354,6 +402,9 @@ void tsdu_process(char* t, int num, int mod) {
 		decode_bch(t);
 		return;
 	}
+
+	if (mod==-1)
+		return;
 
 	if ((mod==98) ||(mod==198)) {
 		decode_pch(t);
