@@ -273,7 +273,27 @@ void d_group_composition(char *t) {
 }
 
 void d_group_activation(char *t) {
+
+	int activation_mode, group_id, coverage_id, channel_id, u_ch_scrambling, d_ch_scrambling, key_reference, tti;
+
+	activation_mode=bits_to_int(t+8,4);
+	group_id=bits_to_int(t+12, 12);
+	coverage_id=bits_to_int(t+24, 8);
+	channel_id=bits_to_int(t+36,12);
+	u_ch_scrambling=bits_to_int(t+48,8);
+	u_ch_scrambling=bits_to_int(t+56,8);
+	key_reference=bits_to_int(t+64,8);
+
+	// TODO TTI
+
 	printf("\tCODOP=0x55 (D_GROUP_ACTIVATION)\n");
+	printf("\t\tACTIVATION_MODE=%i\n", activation_mode);
+	printf("\t\tGROUP_ID=%i\n", group_id);
+	printf("\t\tCOVERAGE_ID=%i\n", coverage_id);
+	printf("\t\tCHANNEL_ID=%i\n", channel_id);
+	printf("\t\tU_CH_SCRAMBLING=%i\n", u_ch_scrambling);
+	printf("\t\tD_CH_SCRAMBLING=%i\n", d_ch_scrambling);
+	printf("\t\tKEY_REFERENCE=%i\n", key_reference);
 }
 
 void d_tti_assignment(char *t) {
