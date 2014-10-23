@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#include "tsdu.h"
+#include "tpdu.h"
 
 
 int state, numblocks, startmod;
@@ -37,7 +37,7 @@ void multiblock_process(char * d1, int fn, int mod) {
 					memcpy(buf, d1, 64);
 					printf("MB1 mod=%03i ", startmod);
 					print_buf(buf, 64);
-					tsdu_process(buf, 1, startmod);
+					tpdu_process(buf, 8, startmod);
 					state=0;
 					break;
 				case 1:
@@ -48,10 +48,12 @@ void multiblock_process(char * d1, int fn, int mod) {
 				case 2:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 				case 3:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 			}
 			break;
@@ -60,10 +62,12 @@ void multiblock_process(char * d1, int fn, int mod) {
 				case 0:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 				case 1:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 				case 2:
 					memcpy(buf+64*numblocks, d1, 64);
@@ -74,7 +78,7 @@ void multiblock_process(char * d1, int fn, int mod) {
 					memcpy(buf+64*numblocks, d1, 64);
 					printf("MB2 mod=%03i ", startmod);
 					print_buf(buf, 128);
-					tsdu_process(buf, 2, startmod);
+					tpdu_process(buf, 16, startmod);
 					state=0;
 					break;
 			}
@@ -106,6 +110,7 @@ void multiblock_process(char * d1, int fn, int mod) {
 				case 0:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 				case 1:
 					memcpy(buf+64*numblocks, d1, 64);
@@ -113,7 +118,7 @@ void multiblock_process(char * d1, int fn, int mod) {
 					if (multiblock_xor_verify(buf, numblocks)) {
 						printf("MB%i mod=%03i ", numblocks-1, startmod);
 						print_buf(buf, (numblocks-1) * 64);
-						tsdu_process(buf, numblocks-1, startmod);
+						tpdu_process(buf, (numblocks-1)*8, startmod);
 					} else {
 						printf("mb xor err %i mod=%03i ", numblocks, startmod);
 						print_buf(buf, (numblocks-1) * 64);
@@ -124,10 +129,12 @@ void multiblock_process(char * d1, int fn, int mod) {
 				case 2:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 				case 3:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 			}
 			break;
@@ -136,10 +143,12 @@ void multiblock_process(char * d1, int fn, int mod) {
 				case 0:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 				case 1:
 					printf("mb err\n");
 					state=0;
+					segmentation_reset();
 					break;
 				case 2:
 					memcpy(buf+64*numblocks, d1, 64);

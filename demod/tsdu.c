@@ -2,51 +2,6 @@
 #include "tsdu.h"
 
 
-int bits_to_int(char *bits, int num) {
-
-	int i, ret=0;
-
-	for (i=0; i<num; i++)
-		ret = ret + (bits[i] << (num - i - 1));
-
-	return ret;
-}
-
-char stuff[] = {1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1};
-
-int detect_stuff(char *bits) {
-	int i;
-
-	for (i=0; i<40; i++)
-		if (memcmp(bits, stuff+i, 40) == 0)
-			return 1;
-	return 0;
-
-}
-
-void decode_addr(char *t) {
-	int x,y,z;
-
-	z=bits_to_int(t, 1);
-	y=bits_to_int(t+1, 3);
-	x=bits_to_int(t+4, 12);
-
-	if ((z==1) && (y==0))
-		printf("RTI:%03x\n", x);
-	if ((z==0) && (y==0))
-		printf("CGI:%03x\n", x);
-	if ((z==0) && (y!=0) && (y!=1)) {
-		printf("TTI:%1x%03x",y, x);
-		if ((y==7) && (x==0))
-			printf(" no ST");
-		if ((y==7) && (x==4095))
-			printf(" all STs");
-		printf("\n");
-	}
-	if (y==1)
-		printf("COI:%03x\n", x);
-}
-
 void d_system_info(char *t) {
 
 	int mode, bch, roam, exp;
@@ -296,6 +251,33 @@ void d_group_activation(char *t) {
 	printf("\t\tKEY_REFERENCE=%i\n", key_reference);
 }
 
+void d_group_list(char *t) {
+
+	printf("\tCODOP=0x92 (D_GROUP_ACTIVATION)\n");
+}
+
+void d_neighbouring_cell(char *t) {
+
+	int ccr_config, ccr_param;
+	int bn_nb, channel_id, adjacent_param;
+
+	ccr_config=bits_to_int(t+12,4);
+	ccr_param=bits_to_int(t+16,8);
+
+	bn_nb=bits_to_int(t+24,4);
+	channel_id=bits_to_int(t+28,12);
+	adjacent_param=bits_to_int(t+40,8);
+
+	printf("\tCODOP=0x93 (D_NEIGHBOURING_CELL)\n");
+	printf("\t\tCCR_CONFIG=%i\n", ccr_config);
+	printf("\t\tCCR_PARAM=%i\n", ccr_param);
+
+	printf("\t\tBN_NB=%i\n", bn_nb);
+	printf("\t\tCHANNEL_ID=%i\n", channel_id);
+	printf("\t\tADJACENT_PARAM=%i\n", adjacent_param);
+	
+}
+
 void d_tti_assignment(char *t) {
 	printf("\tCODOP=0x?? (D_TTI_ASSIGNMENT)\n");
 }
@@ -375,67 +357,33 @@ void decode_rch(char *t) {
 	decode_rch_address(t+32);
 }
 
-void decode_sdch(char *t) {
+void tsdu_process(char *t, int data_length, int mod) {
 
 	int codop;
 
 	printf("\tSDCH\n");
-	printf("\tADDR=");
-	decode_addr(t);
 
-	if (detect_stuff(t+24)) {
-		printf("\tSTUFFED\n");
-		return;
-	}
-
-	printf("\tRT_REF=");
-	print_buf(t+24, 4);
-	printf("\tBS_REF=");
-	print_buf(t+28, 4);
-	printf("\tCALL_PRIO=");
-	print_buf(t+36, 4);
-
-	codop=bits_to_int(t+40, 8);
+	codop=bits_to_int(t, 8);
 	switch (codop) {
 		case D_GROUP_COMPOSITION:
-			d_group_composition(t+40);
+			d_group_composition(t);
 			break;
 		case D_GROUP_ACTIVATION:
-			d_group_activation(t+40);
+			d_group_activation(t);
+			break;
+		case D_GROUP_LIST:
+			d_group_list(t);
+			break;
+		case D_NEIGHBOURING_CELL:
+			d_neighbouring_cell(t);
 			break;
 		case 99999:
-			d_tti_assignment(t+40);
+			d_tti_assignment(t);
 			break;
 		default:
 			printf("\tCODOP=0x%02x (Unknown) ", codop);
 			print_buf(t+40, 8);
 			break;
 	}
-
-}
-
-void tsdu_process(char* t, int num, int mod) {
-
-	int codop;
-
-	if (((mod==-1) && (num==3)) || (mod==0) || (mod==100)) {
-		decode_bch(t);
-		return;
-	}
-
-	if (mod==-1)
-		return;
-
-	if ((mod==98) ||(mod==198)) {
-		decode_pch(t);
-		return;
-	}
-
-	if (mod%25 == 14) {
-		decode_rch(t);
-		return;
-	}
-
-	decode_sdch(t);
 
 }

@@ -1,8 +1,8 @@
-CC=gcc
+C=gcc
 PROJECTS=tetrapol tetrapol2 forward
 CFLAGS=-g
 
-LIBS=radio.o multiblock.o tsdu.o
+LIBS=radio.o multiblock.o tsdu.o tpdu.o misc.o
 
 all: clean $(PROJECTS)
 

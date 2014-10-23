@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "multiblock.h"
+#include "tpdu.h"
 
 #define DEBUG
 
@@ -275,6 +276,7 @@ void radio_process_frame(char *f, int framelen, int modulo) {
 	} else {
 		printf("ERR2 mod=%03i\n", modulo);
 		multiblock_reset();
+		segmentation_reset();
 	}
 	
 	if (d1)

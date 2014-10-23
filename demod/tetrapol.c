@@ -3,6 +3,7 @@
 #include "constants.h"
 #include "radio.h"
 #include "multiblock.h"
+#include "tpdu.h"
 
 int mod;
 
@@ -40,6 +41,7 @@ int main(int argc, char* argv[]) {
 			if (!found && (pos%160 == 0) && sync_lost < sync_keep) {
 				printf("ERR1 mod=%03i, lost=%i\n", mod, sync_lost);
 				multiblock_reset();
+				segmentation_reset();
 			}
 		
 			if (found)
