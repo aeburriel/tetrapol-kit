@@ -1,4 +1,5 @@
 void tsdu_process(char* t, int data_length, int mod);
+void decode_rch_address(char *t);
 
 
 #define D_REJECT			0x08

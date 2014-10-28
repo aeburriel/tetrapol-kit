@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "tpdu.h"
+#include "tsdu.h"
 
 
 int state, numblocks, startmod;
@@ -27,6 +28,11 @@ int multiblock_xor_verify(char *frame, int num) {
 }
 
 void multiblock_process(char * d1, int fn, int mod) {
+
+       if (mod%25 == 14) {			// FIXME: RCH, PCH ??
+                decode_rch(d1);
+                return;
+        }
 
 	switch(state) {
 		case 0:
