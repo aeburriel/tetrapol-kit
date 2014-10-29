@@ -58,16 +58,14 @@ static void sigint_handler(int sig)
     do_exit = 1;
 }
 
-int tetrapol_main(tetrapol_t *t)
+static int tetrapol_recv(tetrapol_t *t)
 {
-    signal(SIGINT, sigint_handler);
-
     struct pollfd fds;
     fds.fd = t->fd;
     fds.events = POLLIN;
     fds.revents = 0;
 
-    while (poll(&fds, 1, -1) > 0 && !do_exit) {
+    if (poll(&fds, 1, -1) > 0 && !do_exit) {
         if (! (fds.revents & POLLIN)) {
             return -1;
         }
@@ -76,11 +74,48 @@ int tetrapol_main(tetrapol_t *t)
             return -1;
         }
         t->data_len += rsize;
+
+        return rsize;
     }
 
     return do_exit ? 0 : -1;
 }
 
+static int process_frame(tetrapol_t *t)
+{
+    return 0;
+}
+
+static int frame_sync(tetrapol_t *t)
+{
+    // TODO:
+    // ! complete frame?  return 0
+    // synchronize superframe
+    // process frame in superframe
+    return 0;
+}
+
+int tetrapol_main(tetrapol_t *t)
+{
+    signal(SIGINT, sigint_handler);
+
+    while (!do_exit) {
+        int recv = tetrapol_recv(t);
+        if (recv <= 0) {
+            return recv;
+        }
+
+        while (frame_sync(t)) {
+            while (process_frame(t))
+                ;;
+
+            recv = tetrapol_recv(t);
+            if (recv <= 0) {
+                return recv;
+            }
+        }
+    }
+}
 
 int main(int argc, char* argv[]) {
     tetrapol_t t;
