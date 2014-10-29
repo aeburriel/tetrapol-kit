@@ -1,5 +1,5 @@
-C=gcc
-PROJECTS=tetrapol tetrapol2 forward
+CC=gcc
+PROJECTS=tetrapol
 CFLAGS=-g
 
 LIBS=radio.o multiblock.o tsdu.o tpdu.o misc.o
@@ -9,11 +9,6 @@ all: clean $(PROJECTS)
 tetrapol: $(LIBS) tetrapol.o
 	$(CC) $(CFLAGS) tetrapol.o $(LIBS) -o tetrapol
 
-tetrapol2: $(LIBS) tetrapol2.o
-	$(CC) $(CFLAGS) tetrapol2.o $(LIBS) -o tetrapol2
-
-forward: $(LIBS) forward.o
-	$(CC) $(CFLAGS) forward.o $(LIBS) -o forward
 xor: xor.o
 	$(CC) $(CFLAGS) xor.o -o xor
 
