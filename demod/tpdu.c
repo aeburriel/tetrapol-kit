@@ -65,8 +65,8 @@ void tpdu_du_process(char* t, int length, int mod) {
 			data_length=bits_to_int(t+24, 8);
 			memcpy(segbuf+numoctets*8, t+32, data_length*8);
 			numoctets = numoctets + data_length;
-//			printf("multiseg ");
-//			print_buf(segbuf, numoctets*8);
+			printf("multiseg %i\n", numoctets);
+			print_buf(segbuf, numoctets*8);
 			tsdu_process(segbuf, numoctets, startmod);
 			numoctets=0;
 	
