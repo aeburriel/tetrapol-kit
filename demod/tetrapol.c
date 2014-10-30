@@ -18,7 +18,7 @@
 
 // set on SIGINT
 volatile static int do_exit = 0;
-int mod;
+int mod = -1;
 
 static const uint8_t frame_sync[] = { 0, 1, 1, 0, 0, 0, 1, 0 };
 #define FRAME_SYNC_LEN ((sizeof(frame_sync)))
@@ -87,6 +87,11 @@ static int tetrapol_recv(tetrapol_t *t)
 
 static int process_frame(frame_t *frame)
 {
+	if (mod != -1)
+		mod++;
+	if (mod==200)
+		mod=0;
+    radio_process_frame(frame->data, FRAME_LEN, mod);
     return 0;
 }
 
@@ -208,6 +213,7 @@ int tetrapol_main(tetrapol_t *t)
                 }
             }
         }
+        mod = -1;
     }
 }
 
@@ -226,6 +232,5 @@ int main(int argc, char* argv[]) {
 }
 
 void mod_set(int m) {
-	
 	mod=m;
 }
