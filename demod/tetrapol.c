@@ -15,12 +15,13 @@
 #define BUF_LEN ((10*FRAME_LEN))
 // max error rate for 2 frame synchronization sequences
 #define MAX_FRAME_SYNC_ERR 1
-#define FRAME_SYNC_LEN 8
 
 // set on SIGINT
 volatile static int do_exit = 0;
 int mod;
 
+static const uint8_t frame_sync[] = { 0, 1, 1, 0, 0, 0, 1, 0 };
+#define FRAME_SYNC_LEN ((sizeof(frame_sync)))
 
 int tetrapol_init(tetrapol_t *t, int fd)
 {
@@ -95,7 +96,6 @@ static int cmp_frame_sync(const uint8_t *buf, int invert)
     const uint8_t frame_dsync_pos[] = { 1, 0, 1, 0, 0, 1, 1, };
     const uint8_t frame_dsync_neg[] = { 0, 1, 0, 1, 1, 0, 0, };
     const uint8_t *frame_dsync = invert ? frame_dsync_neg : frame_dsync_pos;
-
     int sync_err = 0;
     for(int i = 0; i < sizeof(frame_dsync_pos); ++i) {
         if (frame_dsync[i] != buf[i + 1]) {
@@ -139,13 +139,44 @@ static int find_frame_sync(tetrapol_t *t)
     t->data_len -= offs;
     memmove(t->buf, t->buf + offs, t->data_len);
 
-    return sync_err <= MAX_FRAME_SYNC_ERR ? 1 : 0;
+    if (sync_err <= MAX_FRAME_SYNC_ERR) {
+        t->last_sync_err = 0;
+        t->total_sync_err = 0;
+        t->invert = invert;
+        return 1;
+    }
+
+    return 0;
 }
 
+/// return number of acquired frames (0 or 1) or -1 on error
 static int get_frame(frame_t *frame, tetrapol_t *t)
 {
-    // TODO
-    return -1;
+    if (t->data_len < FRAME_LEN) {
+        return 0;
+    }
+    const int sync_err = cmp_frame_sync(t->buf, t->invert);
+    if (sync_err + t->last_sync_err > MAX_FRAME_SYNC_ERR) {
+        t->total_sync_err = 1 + 2 * t->total_sync_err;
+        if (t->total_sync_err >= FRAME_LEN) {
+            return -1;
+        }
+    } else {
+        t->total_sync_err = 0;
+    }
+
+    t->last_sync_err = sync_err;
+    memcpy(frame->data, t->buf, FRAME_LEN);
+    // previous input bite for differential decoding is
+    // defined only by signal polarity, ignore data from sync bits
+    differential_dec(frame->data + FRAME_SYNC_LEN,
+            FRAME_LEN - FRAME_SYNC_LEN, t->invert);
+    // copy header, decoding it from frame leads only to errors
+    memcpy(frame->data, frame_sync, sizeof(frame_sync));
+    t->data_len -= FRAME_LEN;
+    memmove(t->buf, t->buf + FRAME_LEN, t->data_len);
+
+    return 1;
 }
 
 int tetrapol_main(tetrapol_t *t)
