@@ -1,4 +1,4 @@
-#include "constants.h"
+#include "frame.h"
 #include "radio.h"
 #include "multiblock.h"
 #include "tpdu.h"
@@ -13,6 +13,9 @@
 #include <unistd.h>
 
 #define BUF_LEN ((10*FRAME_LEN))
+// max error rate for 2 frame synchronization sequences
+#define MAX_FRAME_SYNC_ERR 1
+#define FRAME_SYNC_LEN 8
 
 // set on SIGINT
 volatile static int do_exit = 0;
@@ -81,18 +84,68 @@ static int tetrapol_recv(tetrapol_t *t)
     return do_exit ? 0 : -1;
 }
 
-static int process_frame(tetrapol_t *t)
+static int process_frame(frame_t *frame)
 {
     return 0;
 }
 
-static int frame_sync(tetrapol_t *t)
+// compare bite stream to differentialy encoded synchronization sequence
+static int cmp_frame_sync(const uint8_t *buf, int invert)
 {
-    // TODO:
-    // ! complete frame?  return 0
-    // synchronize superframe
-    // process frame in superframe
-    return 0;
+    const uint8_t frame_dsync_pos[] = { 1, 0, 1, 0, 0, 1, 1, };
+    const uint8_t frame_dsync_neg[] = { 0, 1, 0, 1, 1, 0, 0, };
+    const uint8_t *frame_dsync = invert ? frame_dsync_neg : frame_dsync_pos;
+
+    int sync_err = 0;
+    for(int i = 0; i < sizeof(frame_dsync_pos); ++i) {
+        if (frame_dsync[i] != buf[i + 1]) {
+            ++sync_err;
+        }
+    }
+    return sync_err;
+}
+
+/**
+  Find 2 consecutive frame synchronization sequences.
+
+  Using raw stream (before differential decoding) simplyfies search
+  because only signal polarity must be considered,
+  there is lot of troubles with error handlig after differential decoding.
+  */
+static int find_frame_sync(tetrapol_t *t)
+{
+    int offs = 0;
+    int sync_err = MAX_FRAME_SYNC_ERR + 1;
+    int invert = 0;
+    while (offs + FRAME_LEN + FRAME_SYNC_LEN < t->data_len) {
+        invert = 0;
+        const uint8_t *buf = t->buf + offs;
+        sync_err = cmp_frame_sync(buf, invert) +
+                cmp_frame_sync(buf + FRAME_LEN, invert);
+        if (sync_err <= MAX_FRAME_SYNC_ERR) {
+            break;
+        }
+
+        invert = 1;
+        sync_err = cmp_frame_sync(buf, invert) +
+                cmp_frame_sync(buf + FRAME_LEN, invert);
+        if (sync_err <= MAX_FRAME_SYNC_ERR) {
+            break;
+        }
+
+        ++offs;
+    }
+
+    t->data_len -= offs;
+    memmove(t->buf, t->buf + offs, t->data_len);
+
+    return sync_err <= MAX_FRAME_SYNC_ERR ? 1 : 0;
+}
+
+static int get_frame(frame_t *frame, tetrapol_t *t)
+{
+    // TODO
+    return -1;
 }
 
 int tetrapol_main(tetrapol_t *t)
@@ -105,13 +158,23 @@ int tetrapol_main(tetrapol_t *t)
             return recv;
         }
 
-        while (frame_sync(t)) {
-            while (process_frame(t))
-                ;;
+        if (find_frame_sync(t)) {
+            int r = 1;
 
-            recv = tetrapol_recv(t);
-            if (recv <= 0) {
-                return recv;
+            multiblock_reset();
+            segmentation_reset();
+
+            while (r >= 0 && !do_exit) {
+                frame_t frame;
+
+                while ((r = get_frame(&frame, t)) > 0) {
+                    process_frame(&frame);
+                }
+
+                recv = tetrapol_recv(t);
+                if (recv <= 0) {
+                    return recv;
+                }
             }
         }
     }

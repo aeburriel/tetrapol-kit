@@ -8,17 +8,6 @@
 
 #define DEBUG
 
-int find_frame(char *buf, int buflen) {
-	int i;
-	char sync_byte[8] = { 0, 1, 1, 0, 0, 0, 1, 0 };
-	char sync_byte2[8] = { 1, 0, 0, 1, 1, 1, 0, 1 };
-
-	if (memcmp(buf+320, sync_byte, 8) && memcmp(buf+320, sync_byte2, 8)) return 0;
-	if (memcmp(buf+160, sync_byte, 8) && memcmp(buf+160, sync_byte2, 8)) return 0;
-	if (memcmp(buf, sync_byte, 8) == 0) return 1;
-	if (memcmp(buf, sync_byte2, 8) == 0) return 2;
-	return 0;
-}
 
 void print_buf(char *frame, int framelen) {
 	int i;
