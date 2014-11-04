@@ -1,6 +1,6 @@
 CC=gcc
 PROJECTS=tetrapol
-CFLAGS=-g
+CFLAGS=-ggdb3 -std=gnu11
 
 LIBS=radio.o multiblock.o tsdu.o tpdu.o misc.o
 
