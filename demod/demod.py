@@ -13,10 +13,12 @@
 
 import sys
 import math
-from gnuradio import gr, gru, eng_notation, blocks, filter, digital
+from gnuradio import gr, gru, eng_notation, blocks, filter, digital, analog
 from gnuradio.eng_option import eng_option
 from optparse import OptionParser
 import osmosdr
+import time
+import threading
 
 # applies frequency translation, resampling and demodulation
 
@@ -62,7 +64,6 @@ class top_block(gr.top_block):
     taps = filter.firdes.low_pass(1.0, sample_rate, options.low_pass, options.low_pass * 0.2, filter.firdes.WIN_HANN)
     self.tuner = filter.freq_xlating_fir_filter_ccf(first_decim, taps, self.offset, sample_rate)
 
-    #self.demod = digital.gmsk_demod(samples_per_symbol=sps)
     self.demod = digital.gmsk_demod(samples_per_symbol=sps)
 
     self.output = blocks.file_sink(gr.sizeof_char, options.output_file)
@@ -70,6 +71,25 @@ class top_block(gr.top_block):
     self.connect((self.src, 0), (self.tuner, 0))
     self.connect((self.tuner, 0), (self.demod, 0))
     self.connect((self.demod, 0), (self.output, 0))
+
+    self.fm_demod = analog.fm_demod_cf(sample_rate/first_decim, 1, 5000, 3000, 4000)
+    self.integrate = blocks.integrate_ff(32000)
+    self.probe = blocks.probe_signal_f()
+
+    self.connect((self.tuner, 0), (self.fm_demod,0))
+    self.connect((self.fm_demod, 0), (self.integrate,0))
+    self.connect((self.integrate, 0), (self.probe, 0))
+
+    def _variable_function_probe_0_probe():
+        while True:
+            freq = self.tuner.center_freq()
+            freq2 = freq + 0.2*self.probe.level()
+            print "Autotune: fix=%f old=%i new=%i"%(self.probe.level(), freq, freq2)
+            self.tuner.set_center_freq(freq2)
+            time.sleep(5.0)
+    _variable_function_probe_0_thread = threading.Thread(target=_variable_function_probe_0_probe)
+    _variable_function_probe_0_thread.daemon = True
+    _variable_function_probe_0_thread.start()
 
 
 
