@@ -81,7 +81,7 @@ class tetrapol_multi_rx(gr.top_block):
         self.gmsk_demods = []
         self.file_sinks = []
         for ch in range(0, channels):
-            valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex*1, open=bool(0))
+            valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex*1, open=False)
             gmsk_demod = digital.gmsk_demod(
                     samples_per_symbol=2,
                     gain_mu=0.175,
@@ -170,21 +170,11 @@ class tetrapol_multi_rx(gr.top_block):
     def get_args(self):
         return self.args
 
-    def set_args(self, args):
-        self.args = args
-
     def get_channel_bw(self):
         return self.channel_bw
 
-    def set_channel_bw(self, channel_bw):
-        self.channel_bw = channel_bw
-        self.set_channels(self.sample_rate/self.channel_bw)
-
     def get_listen_port(self):
         return self.listen_port
-
-    def set_listen_port(self, listen_port):
-        self.listen_port = listen_port
 
     def get_ppm(self):
         return self.ppm
@@ -196,27 +186,19 @@ class tetrapol_multi_rx(gr.top_block):
     def get_output(self):
         return self.output
 
-    def set_output(self, output):
-        self.output = output
-
     def get_auto_tune(self):
         return self.auto_tune
 
     def set_auto_tune(self, auto_tune):
         self.auto_tune = auto_tune
-        self.afc_selector.set_input_index(auto_tune)
+        if auto_tune != -1:
+            self.afc_selector.set_input_index(auto_tune)
 
     def get_channels(self):
         return self.channels
 
-    def set_channels(self, channels):
-        self.channels = channels
-
     def get_channel_samp_rate(self):
         return self.channel_samp_rate
-
-    def set_channel_samp_rate(self, channel_samp_rate):
-        self.channel_samp_rate = channel_samp_rate
 
 if __name__ == '__main__':
     parser = OptionParser(option_class=eng_option, usage="%prog: [options]")
