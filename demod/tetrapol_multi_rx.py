@@ -21,7 +21,7 @@ import threading
 class tetrapol_multi_rx(gr.top_block):
 
     def __init__(self, freq=394e6, gain=0, sample_rate=2400000, args="",
-            channel_bw=12500, server_port=60100, ppm=0,
+            channel_bw=12500, listen_port=60100, ppm=0,
             output="channel%d.bits", auto_tune=-1):
         gr.top_block.__init__(self, "TETRAPOL multichannel reciever")
 
@@ -33,7 +33,7 @@ class tetrapol_multi_rx(gr.top_block):
         self.sample_rate = sample_rate
         self.args = args
         self.channel_bw = channel_bw
-        self.server_port = server_port
+        self.listen_port = listen_port
         self.ppm = ppm
         self.output = output
         self.auto_tune = auto_tune
@@ -41,73 +41,84 @@ class tetrapol_multi_rx(gr.top_block):
         ##################################################
         # Variables
         ##################################################
-        self.channels = channels = sample_rate/channel_bw
+        self.channels = channels = int(sample_rate/channel_bw)
         self.channel_symb_rate = channel_symb_rate = 16000
 
         ##################################################
-        # Blocks
+        # Blocks - server and reciever
         ##################################################
         self.xmlrpc_server_0 = SimpleXMLRPCServer.SimpleXMLRPCServer(
-                ("localhost", server_port), allow_none=True)
+                ("localhost", listen_port), allow_none=True)
         self.xmlrpc_server_0.register_instance(self)
         threading.Thread(target=self.xmlrpc_server_0.serve_forever).start()
-        self.valve_ch_0 = grc_blks2.valve(item_size=gr.sizeof_gr_complex*1, open=bool(0))
-        self.pfb_channelizer_ccf_0 = pfb.channelizer_ccf(
-              1,
-              (),
+
+        self.src = osmosdr.source( args="numchan=" + str(1) + " " + "" )
+        self.src.set_sample_rate(sample_rate)
+        self.src.set_center_freq(freq, 0)
+        self.src.set_freq_corr(ppm, 0)
+# TODO: automatic gain control
+        self.src.set_gain_mode(False, 0)
+        self.src.set_gain(gain, 0)
+
+        self.channelizer = pfb.channelizer_ccf(
+              channels,
+              (firdes.root_raised_cosine(1, sample_rate, channel_symb_rate, 0.5, 1024)),
               float(channel_symb_rate)/(sample_rate/channels),
               100)
-        self.pfb_channelizer_ccf_0.set_channel_map(([]))
-        self.pfb_channelizer_ccf_0.declare_sample_delay(0)
 
-        self.osmosdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + "" )
-        self.osmosdr_source_0.set_sample_rate(sample_rate)
-        self.osmosdr_source_0.set_center_freq(freq, 0)
-        self.osmosdr_source_0.set_freq_corr(ppm, 0)
-        self.osmosdr_source_0.set_dc_offset_mode(0, 0)
-        self.osmosdr_source_0.set_iq_balance_mode(0, 0)
-        self.osmosdr_source_0.set_gain_mode(False, 0)
-        self.osmosdr_source_0.set_gain(gain, 0)
-        self.osmosdr_source_0.set_if_gain(20, 0)
-        self.osmosdr_source_0.set_bb_gain(20, 0)
-        self.osmosdr_source_0.set_antenna("", 0)
-        self.osmosdr_source_0.set_bandwidth(0, 0)
+        self.connect((self.src, 0), (self.channelizer, 0))
 
-        self.digital_gmsk_demod_0 = digital.gmsk_demod(
-            samples_per_symbol=2,
-            gain_mu=0.175,
-            mu=0.5,
-            omega_relative_limit=0.005,
-            freq_error=0.0,
-            verbose=False,
-            log=False,
-        )
-        self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_char*1, "channel_0.bits", False)
-        self.blocks_file_sink_0.set_unbuffered(True)
+        self.valves = []
+        self.gmsk_demods = []
+        self.file_sinks = []
+        for ch in range(0, channels):
+            valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex*1, open=bool(0))
+            gmsk_demod = digital.gmsk_demod(
+                    samples_per_symbol=2,
+                    gain_mu=0.175,
+                    mu=0.5,
+                    omega_relative_limit=0.005,
+                    freq_error=0.0,
+                    verbose=False,
+                    log=False,
+                    )
+            file_sinks = blocks.file_sink(gr.sizeof_char, output % ch, False)
+            file_sinks.set_unbuffered(True)
+
+            self.connect(
+                    (self.channelizer, ch),
+                    (valve, 0),
+                    (gmsk_demod, 0),
+                    (file_sinks, 0))
 
         ##################################################
-        # Connections
+        # Blocks - automatic fine tune
         ##################################################
-        self.connect((self.osmosdr_source_0, 0), (self.pfb_channelizer_ccf_0, 0))
-        self.connect((self.valve_ch_0, 0), (self.digital_gmsk_demod_0, 0))
-        self.connect((self.digital_gmsk_demod_0, 0), (self.blocks_file_sink_0, 0))
-        self.connect((self.pfb_channelizer_ccf_0, 0), (self.valve_ch_0, 0))
-
-
+# TODO
+        if auto_tune >= 0:
+            self.afc_selector = grc_blks2.selector(
+                item_size=gr.sizeof_gr_complex*1,
+                num_inputs=channels,
+                num_outputs=1,
+                input_index=auto_tune,
+                output_index=0,
+            )
+            for ch in channels:
+                self.connect((self.channelizer, ch), (self.afc_selector))
 
     def get_freq(self):
         return self.freq
 
     def set_freq(self, freq):
         self.freq = freq
-        self.osmosdr_source_0.set_center_freq(self.freq, 0)
+        self.src.set_center_freq(self.freq, 0)
 
     def get_gain(self):
         return self.gain
 
     def set_gain(self, gain):
         self.gain = gain
-        self.osmosdr_source_0.set_gain(self.gain, 0)
+        self.src.set_gain(self.gain, 0)
 
     def get_sample_rate(self):
         return self.sample_rate
@@ -115,7 +126,7 @@ class tetrapol_multi_rx(gr.top_block):
     def set_sample_rate(self, sample_rate):
         self.sample_rate = sample_rate
         self.set_channels(self.sample_rate/self.channel_bw)
-        self.osmosdr_source_0.set_sample_rate(self.sample_rate)
+        self.src.set_sample_rate(self.sample_rate)
 
     def get_args(self):
         return self.args
@@ -130,18 +141,18 @@ class tetrapol_multi_rx(gr.top_block):
         self.channel_bw = channel_bw
         self.set_channels(self.sample_rate/self.channel_bw)
 
-    def get_server_port(self):
-        return self.server_port
+    def get_listen_port(self):
+        return self.listen_port
 
-    def set_server_port(self, server_port):
-        self.server_port = server_port
+    def set_listen_port(self, listen_port):
+        self.listen_port = listen_port
 
     def get_ppm(self):
         return self.ppm
 
     def set_ppm(self, ppm):
         self.ppm = ppm
-        self.osmosdr_source_0.set_freq_corr(self.ppm, 0)
+        self.src.set_freq_corr(self.ppm, 0)
 
     def get_output(self):
         return self.output
@@ -181,15 +192,15 @@ if __name__ == '__main__':
             help="Set osmo-sdr arguments [default=%default]")
     parser.add_option("-b", "--channel-bw", dest="channel_bw", type="intx",
             default=12500, help="Set Channel band width [default=%default]")
-    parser.add_option("-s", "--server-port", dest="server_port", type="intx",
+    parser.add_option("-l", "--listen-port", dest="listen_port", type="intx",
             default=60100, help="Set Server port [default=%default]")
     parser.add_option("-p", "--ppm", dest="ppm", type="eng_float",
             default=eng_notation.num_to_str(0),
-            help="Set Frequency correction [default=%default]"
+            help="Set Frequency correction [default=%default]")
     parser.add_option("-o", "--output", dest="output", type="string",
-        default="channel%d.bits", help="Set Output [default=%default]")
+            default="channel%d.bits", help="Set Output [default=%default]")
     parser.add_option("-t", "--auto-tune", dest="auto_tune", type="intx",
-        default=-1, help="Set Allow automatic fine tunning [default=%default]")
+            default=-1, help="Set Allow automatic fine tunning [default=%default]")
     (options, args) = parser.parse_args()
     tb = tetrapol_multi_rx(
         freq=options.freq,
@@ -197,7 +208,7 @@ if __name__ == '__main__':
         sample_rate=options.sample_rate,
         args=options.args,
         channel_bw=options.channel_bw,
-        server_port=options.server_port,
+        listen_port=options.listen_port,
         ppm=options.ppm,
         output=options.output,
         auto_tune=options.auto_tune)
