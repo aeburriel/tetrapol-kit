@@ -81,7 +81,7 @@ class tetrapol_multi_rx(gr.top_block):
         self.gmsk_demods = []
         self.file_sinks = []
         for ch in range(0, channels):
-            valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex*1, open=False)
+            valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex*1, open=True)
             gmsk_demod = digital.gmsk_demod(
                     samples_per_symbol=2,
                     gain_mu=0.175,
@@ -91,14 +91,18 @@ class tetrapol_multi_rx(gr.top_block):
                     verbose=False,
                     log=False,
                     )
-            file_sinks = blocks.file_sink(gr.sizeof_char, output % ch, False)
-            file_sinks.set_unbuffered(True)
+            file_sink = blocks.file_sink(gr.sizeof_char, output % ch, False)
+            file_sink.set_unbuffered(True)
 
             self.connect(
                     (self.channelizer, ch),
                     (valve, 0),
                     (gmsk_demod, 0),
-                    (file_sinks, 0))
+                    (file_sink, 0))
+
+            self.valves.append(valve)
+            self.gmsk_demods.append(gmsk_demod)
+            self.file_sinks.append(file_sink)
 
         ##################################################
         # Blocks - automatic fine tune
@@ -169,6 +173,9 @@ class tetrapol_multi_rx(gr.top_block):
 
     def get_args(self):
         return self.args
+
+    def set_output_state(self, channel, open):
+        self.valves[channel].set_open(not open)
 
     def get_channel_bw(self):
         return self.channel_bw
