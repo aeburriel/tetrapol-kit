@@ -5,6 +5,7 @@
 # Generated: Wed Nov  5 08:57:55 2014
 ##################################################
 
+from gnuradio import analog
 from gnuradio import blocks
 from gnuradio import digital
 from gnuradio import eng_notation
@@ -15,8 +16,10 @@ from gnuradio.filter import pfb
 from grc_gnuradio import blks2 as grc_blks2
 from optparse import OptionParser
 import SimpleXMLRPCServer
+import math
 import osmosdr
 import threading
+import time
 
 class tetrapol_multi_rx(gr.top_block):
 
@@ -38,11 +41,17 @@ class tetrapol_multi_rx(gr.top_block):
         self.output = output
         self.auto_tune = auto_tune
 
+# TODO: parametrize
+        self.debug = True
+
         ##################################################
         # Variables
         ##################################################
         self.channels = channels = int(sample_rate/channel_bw)
-        self.channel_symb_rate = channel_symb_rate = 16000
+        self.channel_samp_rate = channel_samp_rate = 16000
+        afc_period = 6
+        afc_gain = 1.5
+        self.afc_ppm_step = freq / 1e6
 
         ##################################################
         # Blocks - server and reciever
@@ -62,8 +71,8 @@ class tetrapol_multi_rx(gr.top_block):
 
         self.channelizer = pfb.channelizer_ccf(
               channels,
-              (firdes.root_raised_cosine(1, sample_rate, channel_symb_rate, 0.5, 1024)),
-              float(channel_symb_rate)/(sample_rate/channels),
+              (firdes.root_raised_cosine(1, sample_rate, channel_samp_rate, 0.5, 1024)),
+              float(channel_samp_rate)/(sample_rate/channels),
               100)
 
         self.connect((self.src, 0), (self.channelizer, 0))
@@ -94,17 +103,47 @@ class tetrapol_multi_rx(gr.top_block):
         ##################################################
         # Blocks - automatic fine tune
         ##################################################
-# TODO
-        if auto_tune >= 0:
-            self.afc_selector = grc_blks2.selector(
-                item_size=gr.sizeof_gr_complex*1,
-                num_inputs=channels,
-                num_outputs=1,
-                input_index=auto_tune,
-                output_index=0,
-            )
-            for ch in channels:
-                self.connect((self.channelizer, ch), (self.afc_selector))
+        self.afc_selector = grc_blks2.selector(
+            item_size=gr.sizeof_gr_complex*1,
+            num_inputs=channels,
+            num_outputs=1,
+            input_index=0,
+            output_index=0,
+        )
+        if auto_tune != -1:
+            self.afc_selector.set_input_index(auto_tune)
+
+        self.afc_demod = analog.quadrature_demod_cf(channel_samp_rate/(2*math.pi))
+        afc_samp = channel_samp_rate * afc_period / 2
+        self.afc_avg = blocks.moving_average_ff(afc_samp, 1./afc_samp*afc_gain)
+        self.afc_probe = blocks.probe_signal_f()
+        def _afc_probe():
+            while True:
+                time.sleep(afc_period)
+                if self.auto_tune == -1:
+                    continue
+                err = self.afc_probe.level()
+                if err > self.afc_ppm_step:
+                    d = -1
+                elif err < -self.afc_ppm_step:
+                    d = 1
+                else:
+                    continue
+                ppm = self.src.get_freq_corr() + d
+                if self.debug:
+                    print "PPM: % 4d, err: %f" % (ppm, err, )
+                self.src.set_freq_corr(ppm)
+
+        self._afc_err_thread = threading.Thread(target=_afc_probe)
+        self._afc_err_thread.daemon = True
+        self._afc_err_thread.start()
+
+        for ch in range(0, channels):
+            self.connect((self.channelizer, ch), (self.afc_selector, ch))
+        self.connect((self.afc_selector, 0),
+                (self.afc_demod, 0),
+                (self.afc_avg, 0),
+                (self.afc_probe, 0))
 
     def get_freq(self):
         return self.freq
@@ -165,6 +204,7 @@ class tetrapol_multi_rx(gr.top_block):
 
     def set_auto_tune(self, auto_tune):
         self.auto_tune = auto_tune
+        self.afc_selector.set_input_index(auto_tune)
 
     def get_channels(self):
         return self.channels
@@ -172,11 +212,11 @@ class tetrapol_multi_rx(gr.top_block):
     def set_channels(self, channels):
         self.channels = channels
 
-    def get_channel_symb_rate(self):
-        return self.channel_symb_rate
+    def get_channel_samp_rate(self):
+        return self.channel_samp_rate
 
-    def set_channel_symb_rate(self, channel_symb_rate):
-        self.channel_symb_rate = channel_symb_rate
+    def set_channel_samp_rate(self, channel_samp_rate):
+        self.channel_samp_rate = channel_samp_rate
 
 if __name__ == '__main__':
     parser = OptionParser(option_class=eng_option, usage="%prog: [options]")
