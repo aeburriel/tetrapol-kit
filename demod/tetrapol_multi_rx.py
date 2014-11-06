@@ -149,6 +149,15 @@ class tetrapol_multi_rx(gr.top_block):
                 (self.afc_avg, 0),
                 (self.afc_probe, 0))
 
+        ##################################################
+        # Blocks - for signal strenght identification
+        ##################################################
+        self.pwr_probes = []
+        for ch in range(self.channels):
+            pwr_probe = analog.probe_avg_mag_sqrd_c(0, 1./channel_samp_rate)
+            self.connect((self.channelizer, ch), (pwr_probe, 0))
+            self.pwr_probes.append(pwr_probe)
+
     def get_freq(self):
         return self.freq
 
@@ -173,6 +182,11 @@ class tetrapol_multi_rx(gr.top_block):
 
     def get_args(self):
         return self.args
+
+    def get_channels_pwr(self, channels=None):
+        if channels is None:
+            channels = range(0, self.channels)
+        return [10*math.log10(self.pwr_probes[c].level()) for c in channels]
 
     def set_output_state(self, channel, open):
         self.valves[channel].set_open(not open)
