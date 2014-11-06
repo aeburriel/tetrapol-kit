@@ -5,6 +5,7 @@
 #include "tetrapol.h"
 
 #include <fcntl.h>
+#include <getopt.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
@@ -197,6 +198,7 @@ int tetrapol_main(tetrapol_t *t)
         if (find_frame_sync(t)) {
             int r = 1;
 
+            fprintf(stderr, "Frame sync found\n");
             multiblock_reset();
             segmentation_reset();
 
@@ -212,19 +214,48 @@ int tetrapol_main(tetrapol_t *t)
                     return recv;
                 }
             }
+            fprintf(stderr, "Frame sync lost\n");
         }
         mod = -1;
     }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+    const char *in = NULL;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "i:")) != -1) {
+        switch (opt) {
+            case 'i':
+                in = optarg;
+                break;
+            default:
+                fprintf(stderr, "Usage: %s [-i IN_FILE_PATH]\n", argv[0]);
+                exit(EXIT_FAILURE);
+                break;
+        }
+    }
+
+    int infd = STDIN_FILENO;
+    if (in && strcmp(in, "-")) {
+        infd = open(in, O_RDONLY);
+        if (infd == -1) {
+            perror("Failed to open input file");
+            return -1;
+        }
+    }
+
     tetrapol_t t;
-    if (tetrapol_init(&t, STDIN_FILENO) == -1) {
+    if (tetrapol_init(&t, infd) == -1) {
         return -1;
     }
 
     const int ret = tetrapol_main(&t);
     tetrapol_destroy(&t);
+    if (infd != STDIN_FILENO) {
+        close(infd);
+    }
 
     fprintf(stderr, "Exiting.\n");
 
