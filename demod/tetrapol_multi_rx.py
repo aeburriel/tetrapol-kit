@@ -50,7 +50,7 @@ class tetrapol_multi_rx(gr.top_block):
         self.channels = channels = int(sample_rate/channel_bw)
         self.channel_samp_rate = channel_samp_rate = 16000
         afc_period = 6
-        afc_gain = 1.5
+        afc_gain = 1
         self.afc_ppm_step = freq / 1e6
 
         ##################################################
@@ -69,9 +69,10 @@ class tetrapol_multi_rx(gr.top_block):
         self.src.set_gain_mode(True, 0)
         #self.src.set_gain(gain, 0)
 
+        bw = (8000 + self.afc_ppm_step)/2
         self.channelizer = pfb.channelizer_ccf(
               channels,
-              (firdes.root_raised_cosine(1, sample_rate, channel_samp_rate, 0.5, 1024)),
+              firdes.low_pass(1, sample_rate, bw, bw*0.15, firdes.WIN_HANN),
               float(channel_samp_rate)/(sample_rate/channels),
               100)
 
@@ -224,7 +225,7 @@ class tetrapol_multi_rx(gr.top_block):
 if __name__ == '__main__':
     parser = OptionParser(option_class=eng_option, usage="%prog: [options]")
     parser.add_option("-f", "--freq", dest="freq", type="eng_float",
-            default=eng_notation.num_to_str(394e6),
+            default=eng_notation.num_to_str(392e6),
             help="Set Frequency [default=%default]")
     parser.add_option("-g", "--gain", dest="gain", type="eng_float",
             default=eng_notation.num_to_str(0),
