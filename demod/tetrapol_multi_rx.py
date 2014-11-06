@@ -65,9 +65,9 @@ class tetrapol_multi_rx(gr.top_block):
         self.src.set_sample_rate(sample_rate)
         self.src.set_center_freq(freq, 0)
         self.src.set_freq_corr(ppm, 0)
-# TODO: automatic gain control
-        self.src.set_gain_mode(False, 0)
-        self.src.set_gain(gain, 0)
+# TODO: manual gain control
+        self.src.set_gain_mode(True, 0)
+        #self.src.set_gain(gain, 0)
 
         self.channelizer = pfb.channelizer_ccf(
               channels,
