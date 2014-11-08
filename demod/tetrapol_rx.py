@@ -186,8 +186,16 @@ class tetrapol_multi_rx(gr.top_block):
 
     def get_channels_pwr(self, channels=None):
         if channels is None:
-            channels = range(0, self.channels)
-        return [10*math.log10(self.pwr_probes[c].level()) for c in channels]
+            channels = range(self.channels)
+        pwr = []
+        for ch in channels:
+            p = self.pwr_probes[ch].level()
+            if p > 0.:
+                p = 10 * math.log10(p)
+            else:
+                p = None
+            pwr.append((p, ch, ))
+        return pwr
 
     def set_output_state(self, channel, open):
         self.valves[channel].set_open(not open)
