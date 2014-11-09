@@ -9,9 +9,9 @@ import sys
 
 channel = int(sys.argv[1])
 c = client.Server("http://localhost:60100")
-if sys.argv in ("1", "true", "enable", "open", "on"):
+if sys.argv[2] in ("1", "true", "enable", "open", "on"):
     enabled = True
-elif sys.argv in ("0", "false", "disable", "close", "off"):
+elif sys.argv[2] in ("0", "false", "disable", "close", "off"):
     enabled = False
 else:
     raise ValueError("Invalid parameter")
