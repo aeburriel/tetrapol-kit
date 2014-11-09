@@ -176,11 +176,6 @@ class tetrapol_multi_rx(gr.top_block):
     def get_sample_rate(self):
         return self.sample_rate
 
-    def set_sample_rate(self, sample_rate):
-        self.sample_rate = sample_rate
-        self.set_channels(self.sample_rate/self.channel_bw)
-        self.src.set_sample_rate(self.sample_rate)
-
     def get_args(self):
         return self.args
 
