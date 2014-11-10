@@ -48,7 +48,10 @@ class tetrapol_multi_rx(gr.top_block):
         # Variables
         ##################################################
         self.channels = channels = int(sample_rate/channel_bw)
-        self.channel_samp_rate = channel_samp_rate = 16000
+        channel_symb_rate = 8000
+        samples_per_symbol = 2
+        self.channel_samp_rate = channel_samp_rate = \
+                channel_symb_rate * samples_per_symbol
         afc_period = 6
         afc_gain = 1
         self.afc_ppm_step = freq / 1e6
@@ -84,7 +87,7 @@ class tetrapol_multi_rx(gr.top_block):
         for ch in range(0, channels):
             valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex*1, open=True)
             gmsk_demod = digital.gmsk_demod(
-                    samples_per_symbol=2,
+                    samples_per_symbol=samples_per_symbol,
                     gain_mu=0.175,
                     mu=0.5,
                     omega_relative_limit=0.005,
