@@ -379,6 +379,71 @@ void d_tti_assignment(char *t) {
 }
 
 
+void d_call_waiting(char *t) {
+
+	int appli_sap_id, call_priority, call_id;
+
+	appli_sap_id=bits_to_int(t+8,4);
+	call_priority=bits_to_int(t+12,4);
+	call_id=bits_to_int(t+16,8);
+
+// TODO: CALLING_ADDR
+
+	printf("\tCODOP=0x12 (D_CALL_WAITING)\n");
+	printf("\t\tAPPLI_SAP_ID=%i ",appli_sap_id);
+	switch(appli_sap_id) {
+
+		case 0:
+			printf("(BROADCAST)\n");
+			break;
+		case 1:
+			printf("(TRANSPORT PROTOCOL MANAGEMENT)\n");
+			break;
+		case 2:
+			printf("(REGISTRATION)\n");
+			break;
+		case 3:
+			printf("(RESERVED)\n");
+			break;
+		case 4:
+			printf("(PRIVATE CALL)\n");
+			break;
+		case 5:
+			printf("(GROUP COMMUNICATIONS)\n");
+			break;
+		case 6:
+			printf("(EMERGENCY OPEN CHANNEL)\n");
+			break;
+		case 7:
+			printf("(DATA MESSAGE)\n");
+			break;
+		case 8:
+			printf("(RT MANAGEMENT)\n");
+			break;
+		case 9:
+			printf("(RESERVED)\n");
+			break;
+		case 10:
+			printf("(KEY DELIVERY)\n");
+			break;
+		case 11:
+			printf("(DATA FLOW)\n");
+			break;
+		case 12:
+			printf("(INFO_DELIVERY)\n");
+			break;
+		default:
+			printf("(reserved)\n");
+	}
+
+	printf("\t\tCALL_PRIORITY=%i\n", call_priority);
+	printf("\t\tCALL_ID=%i\n", call_id);
+}
+
+void d_call_alert(char *t) {
+	printf("\tCODOP=0x31 (D_CALL_ALERT)\n");
+}
+
 void decode_bch(char *t) {
 
 	int codop;
@@ -473,12 +538,18 @@ void tsdu_process(char *t, int data_length, int mod) {
 		case D_NEIGHBOURING_CELL:
 			d_neighbouring_cell(t);
 			break;
+		case D_CALL_WAITING:
+			d_call_waiting(t);
+			break;
+		case D_CALL_ALERT:
+			d_call_alert(t);
+			break;
 		case 99999:
 			d_tti_assignment(t);
 			break;
 		default:
 			printf("\tCODOP=0x%02x (Unknown) ", codop);
-			print_buf(t+40, 8);
+			print_buf(t, 8);
 			break;
 	}
 

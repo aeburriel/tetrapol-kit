@@ -104,8 +104,8 @@ void tpdu_process(char* t, int length, int mod) {
 		return;
 	}
 
-	if (mod==-1)
-		return;
+//	if (mod==-1)
+//		return;
 
 	if ((mod==98) ||(mod==198)) {
 		decode_pch(t);
