@@ -195,8 +195,9 @@ class tetrapol_multi_rx(gr.top_block):
             pwr.append((p, ch, ))
         return pwr
 
-    def set_output_enabled(self, channel, open):
-        self.valves[channel].set_open(not open)
+    def set_output_enabled(self, channels, open):
+        for ch in channels:
+            self.valves[ch].set_open(not open)
 
     def get_channel_bw(self):
         return self.channel_bw
