@@ -61,7 +61,7 @@ class tetrapol_multi_rx(gr.top_block):
         self.xmlrpc_server_0.register_instance(self)
         threading.Thread(target=self.xmlrpc_server_0.serve_forever).start()
 
-        self.src = osmosdr.source( args="numchan=" + str(1) + " " + "" )
+        self.src = osmosdr.source( args="numchan=" + str(1) + " " + "" + self.args )
         self.src.set_sample_rate(sample_rate)
         self.src.set_center_freq(freq, 0)
         self.src.set_freq_corr(ppm, 0)
