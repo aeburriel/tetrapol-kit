@@ -73,7 +73,7 @@ class tetrapol_multi_rx(gr.top_block):
         self.src.set_gain_mode(True, 0)
         #self.src.set_gain(gain, 0)
 
-        bw = (8000 + self.afc_ppm_threshold)/2
+        bw = (9200 + self.afc_ppm_threshold)/2
         self.freq_xlating = freq_xlating_fft_filter_ccc(1, (1, ), 0, sample_rate)
 
         self.channelizer = pfb.channelizer_ccf(
