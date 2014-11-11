@@ -12,6 +12,7 @@ from gnuradio import eng_notation
 from gnuradio import gr
 from gnuradio.eng_option import eng_option
 from gnuradio.filter import firdes
+from gnuradio.filter import freq_xlating_fft_filter_ccc
 from gnuradio.filter import pfb
 from grc_gnuradio import blks2 as grc_blks2
 from optparse import OptionParser
@@ -53,8 +54,8 @@ class tetrapol_multi_rx(gr.top_block):
         self.channel_samp_rate = channel_samp_rate = \
                 channel_symb_rate * samples_per_symbol
         afc_period = 6
-        afc_gain = 1
-        self.afc_ppm_step = freq / 1e6
+        self.afc_gain = 1
+        self.afc_ppm_threshold = 100
 
         ##################################################
         # Blocks - server and reciever
@@ -72,14 +73,19 @@ class tetrapol_multi_rx(gr.top_block):
         self.src.set_gain_mode(True, 0)
         #self.src.set_gain(gain, 0)
 
-        bw = (8000 + self.afc_ppm_step)/2
+        bw = (8000 + self.afc_ppm_threshold)/2
+        self.freq_xlating = freq_xlating_fft_filter_ccc(1, (1, ), 0, sample_rate)
+
         self.channelizer = pfb.channelizer_ccf(
               channels,
               firdes.low_pass(1, sample_rate, bw, bw*0.15, firdes.WIN_HANN),
               float(channel_samp_rate)/(sample_rate/channels),
               100)
 
-        self.connect((self.src, 0), (self.channelizer, 0))
+        self.connect(
+                (self.src, 0),
+                (self.freq_xlating, 0),
+                (self.channelizer, 0))
 
         self.valves = []
         self.gmsk_demods = []
@@ -123,7 +129,7 @@ class tetrapol_multi_rx(gr.top_block):
 
         self.afc_demod = analog.quadrature_demod_cf(channel_samp_rate/(2*math.pi))
         afc_samp = channel_samp_rate * afc_period / 2
-        self.afc_avg = blocks.moving_average_ff(afc_samp, 1./afc_samp*afc_gain)
+        self.afc_avg = blocks.moving_average_ff(afc_samp, 1./afc_samp*self.afc_gain)
         self.afc_probe = blocks.probe_signal_f()
         def _afc_probe():
             while True:
@@ -131,16 +137,12 @@ class tetrapol_multi_rx(gr.top_block):
                 if self.auto_tune == -1:
                     continue
                 err = self.afc_probe.level()
-                if err > self.afc_ppm_step:
-                    d = -1
-                elif err < -self.afc_ppm_step:
-                    d = 1
-                else:
+                if abs(err) < self.afc_ppm_threshold:
                     continue
-                ppm = self.src.get_freq_corr() + d
+                freq = self.freq_xlating.center_freq + err * self.afc_gain
                 if self.debug:
-                    print "PPM: % 4d, err: %f" % (ppm, err, )
-                self.src.set_freq_corr(ppm)
+                    print "freq err: % .0f\tfreq: %f" % (err, freq)
+                self.freq_xlating.set_center_freq(freq)
 
         self._afc_err_thread = threading.Thread(target=_afc_probe)
         self._afc_err_thread.daemon = True
