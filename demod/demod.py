@@ -84,7 +84,7 @@ class top_block(gr.top_block):
         while True:
             freq = self.tuner.center_freq()
             freq2 = freq + 0.2*self.probe.level()
-            print "Autotune: fix=%f old=%i new=%i"%(self.probe.level(), freq, freq2)
+            print "Autotune: fix=%f old=%i new=%i"%(self.probe.level(), self.ifreq+freq, self.ifreq+freq2)
             self.tuner.set_center_freq(freq2)
             time.sleep(5.0)
     _variable_function_probe_0_thread = threading.Thread(target=_variable_function_probe_0_probe)
