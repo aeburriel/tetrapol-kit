@@ -102,3 +102,16 @@ void decode_rch_address(char *t);
 #define D_ECCH_DESCRIPTION		0x95
 #define D_ADDITIONAL_PARTICIPANTS	0x96
 #define D_INFORMATION_DELIVERY		0xc5
+
+
+#define IEI_GROUP_ID			0x01
+#define IEI_CELL_ID_LIST		0x02
+#define IEI_KEY_OF_CALL			0x03
+#define IEI_ADJACENT_BN_LIST		0x04
+#define IEI_TTI				0x05
+#define IEI_ADR				0x06
+#define IEI_USER_PRIORITY		0x81
+#define IEI_COVERAGE_ID			0x82
+#define IEI_KEY_REFERENCE		0x83
+#define IEI_ADD_SETUP_PARAM		0x84
+#define IEI_PROFILE_ID			0x85

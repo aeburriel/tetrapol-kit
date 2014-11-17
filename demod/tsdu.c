@@ -444,6 +444,149 @@ void d_call_alert(char *t) {
 	printf("\tCODOP=0x31 (D_CALL_ALERT)\n");
 }
 
+void d_connect_cch(char *t) {
+	printf("\tCODOP=0x62 (D_CONNECT_CCH)\n");
+}
+
+void d_data_end(char *t) {
+	printf("\tCODOP=0x48 (D_DATA_END)\n");
+}
+
+void d_data_msg_down(char *t) {
+	printf("\tCODOP=0x45 (D_DATA_MSG_DOWN)\n");
+}
+
+void d_registration_ack(char *t) {
+
+	int complete_reg;
+	int rt_min_activity;
+	int rt_status, fix, pro, chg, ren, tra;
+	int li, cna;
+	int r1, r2, r3, f, s1, s2, i1, i2, i3;
+	int rt_min_registration;
+	int tlr_value;
+	int rt_data_info;
+	int group_id;
+	int iei;
+	int coverage_id;
+
+	complete_reg=bits_to_int(t+8,8);
+	rt_min_activity=bits_to_int(t+16,8);
+	rt_status=bits_to_int(t+24,8);
+	fix=bits_to_int(t+26,1);
+	pro=bits_to_int(t+28,1);
+	chg=bits_to_int(t+29,1);
+	ren=bits_to_int(t+30,1);
+	tra=bits_to_int(t+31,1);
+
+	li=bits_to_int(t+32,1);
+	cna=bits_to_int(t+33,3);
+	if (cna==1) {
+		r1=bits_to_int(t+36,4);
+		r2=bits_to_int(t+40,4);
+		r3=bits_to_int(t+44,4);
+		f=bits_to_int(t+48,4);
+		s1=bits_to_int(t+52,4);
+		s2=bits_to_int(t+56,4);
+		i1=bits_to_int(t+60,4);
+		i2=bits_to_int(t+64,4);
+		i3=bits_to_int(t+68,4);
+	}
+
+	rt_min_registration=bits_to_int(t+72,8);
+	tlr_value=bits_to_int(t+80,8);
+	rt_data_info=bits_to_int(t+88,8);
+	group_id=bits_to_int(t+96,12);
+	iei=bits_to_int(t+112,8);
+	if (iei == IEI_COVERAGE_ID)
+		coverage_id=bits_to_int(t+120,8);
+
+	printf("\tCODOP=0x22 (D_REGISTRATION_ACK)\n");
+	printf("\t\tCOMPLETE_REG=%i\n", complete_reg);
+	printf("\t\tRT_MIN_ACTIVITY=%i\n", rt_min_activity);
+	printf("\t\tRT_STATUS=%i FIX=%i PRO=%i CHG=%i REN=%i TRA=%i\n", rt_status, fix, pro, chg, ren, tra);
+	printf("\t\tHOST_ADR LI=%i CNA=%i ", li, cna);
+	if (cna==1) {
+		printf("RFSI=%x%x%x-%x-%x%x-%x%x%x\n", r1, r2, r3, f, s1, s2, i1, i2, i3);
+	} else
+		print_buf(t+32,40);
+	printf("\t\tRT_MIN_REGISTRATION=%i\n", rt_min_registration);
+	printf("\t\tTLR_VALUE=%i\n", tlr_value);
+	printf("\t\tRT_DATA_INFO=%i\n", rt_data_info);
+	printf("\t\tGROUP_ID=%i\n", group_id);
+	if (iei == IEI_COVERAGE_ID)
+		printf("\t\tCOVERAGE_ID=%i\n", coverage_id);
+	
+}
+
+void d_call_connect(t) {
+	printf("\tCODOP=0x34 (D_CALL_CONNECT)\n");
+}
+
+void d_functional_short_data(r) {
+	printf("\tCODOP=0x42 (D_FUNCTIONAL_SHORT_DATA)\n");
+}
+
+void d_call_start(r) {
+	printf("\tCODOP=0x3e (D_CALL_START)\n");
+}
+
+void d_registration_nak(t) {
+	printf("\tCODOP=0x21 (D_REGISTRATION_NAK)\n");
+}
+
+void d_call_setup(t) {
+	printf("\tCODOP=0x32 (D_CALL_SETUP)\n");
+}
+
+void d_reject(t) {
+	printf("\tCODOP=0x08 (D_REJECT)\n");
+}
+
+void d_return(t) {
+	printf("\tCODOP=0x10 (D_RETURN)\n");
+}
+
+void d_authentication(t) {
+	printf("\tCODOP=0x13 (D_AUTHENTICATION)\n");
+}
+
+void d_authorisation(t) {
+	printf("\tCODOP=0x16 (D_AUTHORISATION)\n");
+}
+
+void d_channel_init(t) {
+	printf("\tCODOP=0x18 (D_CHANNEL_INIT)\n");
+}
+
+void d_forced_registration(t) {
+	printf("\tCODOP=0x23 (D_FORCED_REGISTRATION)\n");
+}
+
+void d_location_activity_ack(t) {
+	printf("\tCODOP=0x25 (D_LOCATION_ACTIVITY_ACK)\n");
+}
+
+void d_call_switch(t) {
+	printf("\tCODOP=0x35 (D_CALL_SWITCH)\n");
+}
+
+void d_call_end(t) {
+	printf("\tCODOP=0xe2 (D_CALL_END)\n");
+}
+
+void d_explicit_short_data(t) {
+	printf("\tCODOP=0x46 (D_EXPLICIT_SHORT_DATA)\n");
+}
+
+void d_connect_dch(t) {
+	printf("\tCODOP=0x60 (D_CONNECT_DCH)\n");
+}
+
+void d_data_authentication(t) {
+	printf("\tCODOP=0x63 (D_DATA_AUTHENTICATION)\n");
+}
+
 void decode_bch(char *t) {
 
 	int codop;
@@ -543,6 +686,69 @@ void tsdu_process(char *t, int data_length, int mod) {
 			break;
 		case D_CALL_ALERT:
 			d_call_alert(t);
+			break;
+		case D_CONNECT_CCH:
+			d_connect_cch(t);
+			break;
+		case D_DATA_END:
+			d_data_end(t);
+			break;
+		case D_DATA_MSG_DOWN:
+			d_data_msg_down(t);
+			break;
+		case D_REGISTRATION_ACK:
+			d_registration_ack(t);
+			break;
+		case D_CALL_CONNECT:
+			d_call_connect(t);
+			break;
+		case D_FUNCTIONAL_SHORT_DATA:
+			d_functional_short_data(t);
+			break;
+		case D_CALL_START:
+			d_call_start(t);
+			break;
+		case D_REGISTRATION_NAK:
+			d_registration_nak(t);
+			break;
+		case D_CALL_SETUP:
+			d_call_setup(t);
+			break;
+		case D_DATA_AUTHENTICATION:
+			d_data_authentication(t);
+			break;
+		case D_CONNECT_DCH:
+			d_connect_dch(t);
+			break;
+		case D_REJECT:
+			d_reject(t);
+			break;
+		case D_RETURN:
+			d_return(t);
+			break;
+		case D_AUTHENTICATION:
+			d_authentication(t);
+			break;
+		case D_AUTHORISATION:
+			d_authorisation(t);
+			break;
+		case D_CHANNEL_INIT:
+			d_channel_init(t);
+			break;
+		case D_FORCED_REGISTRATION:
+			d_forced_registration(t);
+			break;
+		case D_LOCATION_ACTIVITY_ACK:
+			d_location_activity_ack(t);
+			break;
+		case D_CALL_SWITCH:
+			d_call_switch(t);
+			break;
+		case D_CALL_END:
+			d_call_end(t);
+			break;
+		case D_EXPLICIT_SHORT_DATA:
+			d_explicit_short_data(t);
 			break;
 		case 99999:
 			d_tti_assignment(t);
