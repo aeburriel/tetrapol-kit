@@ -8,6 +8,8 @@ char stuff[] = {1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0
 int detect_stuff(char *bits) {
 	int i;
 
+//	print_buf(bits,40);
+//	print_buf(stuff,80);
 	for (i=0; i<40; i++)
 		if (memcmp(bits, stuff+i, 40) == 0)
 			return 1;
@@ -78,14 +80,106 @@ void tpdu_du_process(char* t, int length, int mod) {
 
 }
 
+void tpdu_i_process(char* t, int length, int mod) {
+
+	int ext, seg, d, tpdu_code;
+	int par_field, dest_ref;
+	int data_length;
+
+	ext=bits_to_int(t, 1);
+	seg=bits_to_int(t+1, 1);
+	d=bits_to_int(t+2, 1);
+	tpdu_code=bits_to_int(t+3, 5);
+
+	par_field=bits_to_int(t+8, 4);
+	dest_ref=bits_to_int(t+12, 4);
+
+	if ((tpdu_code & 0x18) == 0) {
+		printf("\tI CR EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	} else if ((tpdu_code & 0x18)  == 8) {
+		printf("\tI CC EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	} else if ((tpdu_code & 0x18) == 16) {
+		printf("\tI FCR EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	} else if (tpdu_code == 24) {
+		printf("\tI DR EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	} else if (tpdu_code == 25) {
+		printf("\tI FDR EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	} else if (tpdu_code == 26) {
+		printf("\tI DC EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	} else if (tpdu_code == 27) {
+		printf("\tI DT EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	} else if (tpdu_code == 28) {
+		printf("\tI DTE EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	} else {
+		printf("\tI xxx EXT=%i SEG=%i D=%i TPDU_CODE=%i PAR_FIELD=%i DEST_REF=%i\n", ext, seg, d, tpdu_code, par_field, dest_ref);
+	}
+
+	if ((d==1) && (seg==0)) {
+		data_length=bits_to_int(t+16, 8);
+		tsdu_process(t+24, data_length, mod);
+	}
+
+//TODO: segmentation
+		
+}
+
 void hdlc_process(char *t, int length, int mod) {
 
-	int hdlc;
+	int hdlc, r, s, pe, m;
 
 	hdlc = bits_to_int(t, 8);
 
-	if (hdlc == 3) {
-		printf("\tHDLC UI\n");
+	if ((hdlc & 0x01) == 0) {
+		r = (hdlc & 0xe0) >> 5;
+		s = (hdlc & 0x0e) >> 1;
+		pe = (hdlc & 0x10) >> 4;
+		printf("\tHDLC I(%i,%i)\n", r, s);
+		tpdu_i_process(t+8, length-1, mod);
+	} else if ((hdlc & 0x0f) == 13) {
+		r = (hdlc & 0xe0) >> 5;
+		printf("\tHDLC A(%i) ACK_DACH\n", r);
+	} else if ((hdlc & 0x03) == 1) {
+		r = (hdlc & 0xe0) >> 5;
+		s = (hdlc & 0x0c) >> 2;
+		printf("\tHDLC S(%i) ", r);
+		switch(s) {
+			case 0:
+				printf("RR\n");
+				break;
+			case 1:
+				printf("RNR\n");
+				break;
+			case 2:
+				printf("REJ\n");
+				break;
+		}
+	} else if ((hdlc & 0x03) == 3) {
+		m = ((hdlc & 0xe0) >> 3) + ((hdlc & 0x0c) >> 2);
+		printf("\tHDLC UI ");
+		switch(m) {
+			case 0:
+				printf("UI\n");
+				break;
+			case 8:
+				printf("DISC\n");
+				break;
+			case 12:
+				printf("UA\n");
+				break;
+			case 16:
+				printf("SNRM\n");
+				break;
+			case 20:
+				printf("UI_CD\n");
+				break;
+			case 24:
+				printf("UI_VCH\n");
+				break;
+			default: 
+				printf("unknown\n");
+				break;
+			
+		}
 		tpdu_du_process(t+8, length-1, mod);
 	} else {
 	
