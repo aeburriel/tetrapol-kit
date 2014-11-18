@@ -19,6 +19,17 @@ void decode_cell_id(int cell_id) {
 
 }
 
+void decode_key_reference(int key_reference) {
+	int key_type, key_index;
+
+	key_type=(key_reference & 0xf0) >>4;
+	key_index=(key_reference & 0x0f);
+
+	printf("KEY_REFERENCE=%i KEY_TYPE=%i KEY_INDEX=%i", key_reference, key_type, key_index);
+	if (key_index==0)
+		printf("CLEAR CALL!!! ");
+// TODO: Decode key_type
+}
 
 void d_system_info(char *t) {
 
@@ -251,7 +262,9 @@ void d_group_activation(char *t) {
 	printf("\t\tCHANNEL_ID=%i\n", channel_id);
 	printf("\t\tU_CH_SCRAMBLING=%i\n", u_ch_scrambling);
 	printf("\t\tD_CH_SCRAMBLING=%i\n", d_ch_scrambling);
-	printf("\t\tKEY_REFERENCE=%i\n", key_reference);
+	printf("\t\t");
+	decode_key_reference(key_reference);
+	printf("\n");
 }
 
 void d_group_list(char *t) {
@@ -520,7 +533,29 @@ void d_registration_ack(char *t) {
 }
 
 void d_call_connect(t) {
+	int call_type;
+	int channel_id;
+	int u_ch_scrambling;
+	int d_ch_scrambling;
+	int key_reference;
+
+	call_type=bits_to_int(t+8,8);
+	channel_id=bits_to_int(t+20,12);
+	u_ch_scrambling=bits_to_int(t+32,8);
+	d_ch_scrambling=bits_to_int(t+40,8);
+	key_reference=bits_to_int(t+48,8);
+
 	printf("\tCODOP=0x34 (D_CALL_CONNECT)\n");
+	printf("\t\tCALL_TYPE=%i\n", call_type);
+	printf("\t\tCHANNEL_ID=%i\n", channel_id);
+	printf("\t\tU_CH_SCRAMBLING=%i\n", u_ch_scrambling);
+	printf("\t\tD_CH_SCRAMBLING=%i\n", d_ch_scrambling);
+	printf("\t\t");
+	decode_key_reference(key_reference);
+	printf("\n");
+	printf("\t\tVALID_RT=\n");
+	print_buf(t+56,64);
+// TODO: KEY_OF_CALL
 }
 
 void d_functional_short_data(r) {
@@ -580,7 +615,22 @@ void d_explicit_short_data(t) {
 }
 
 void d_connect_dch(t) {
+
+	int dch_low_layer;
+	int channel_id;
+	int u_ch_scrambling;
+	int d_ch_scrambling;
+
+	dch_low_layer=bits_to_int(t+8, 8);
+	channel_id=bits_to_int(t+16, 12);
+	u_ch_scrambling=bits_to_int(t+32, 8);
+	u_ch_scrambling=bits_to_int(t+40, 8);
+
 	printf("\tCODOP=0x60 (D_CONNECT_DCH)\n");
+	printf("\t\tDCH_LOW_LAYER=%i\n", dch_low_layer);
+	printf("\t\tCHANNEL_ID=%i\n", channel_id);
+	printf("\t\tU_CH_SCRAMBLING=%i\n", u_ch_scrambling);
+	printf("\t\tD_CH_SCRAMBLING=%i\n", d_ch_scrambling);
 }
 
 void d_data_authentication(t) {
