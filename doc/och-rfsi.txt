@@ -1,0 +1,97 @@
+http://www.hasici-vzdelavani.cz/download/hutter/organizace_radioveho_spojeni.pdf
+Trvale otevreny OCH :
+	OCH HZS: RRR160 az RRR178
+	OCH IZS: RRR 112 (RRR180 az RRR198)
+Alternativni OCH:
+	OCH HZS: RRR 179   HZS kraj
+	OCH IZS CR:RRR180 az RRR198 (RRR112)
+Docasne otevreny OCH:
+	OCH 245-servis
+Nouzovy OCH:
+	EMOCH 199: HZS a IZS celostatne
+
+http://www.cbradio.cz/forum/read.php?27,94618,95323,quote=1
+DIR IZS - 25
+
+OCH 247 - Skolni
+OCH 244 - OUPO - Odborne uciliste pozarni ochrany
+
+
+https://dspace.k.utb.cz/bitstream/handle/10563/9963/hnilica_2009_dp.pdf?sequence=1
+DIR kanaly pridelene HZS CR
+1 - DIR 14   K   zasahovy
+2 - DIR 15   N   zasahovy
+3 - DIR 16   I - zasahovy
+4 - DIR 17   STAB   zasahovy (predurcen pro spojeni ve Stabu VZ)
+5 - DIR 25   IZS - spolecny kanal pro soucinnost slozek IZS
+
+6 - IDR 29   IDR HZS   samostatne pro HZS
+7 - IDR 32 - IDR IZS - soucinnostni pro slozky IZS
+
+
+http://www.zachrannasluzba.cz/zavprace/2007_kotek_matra.pdf
+Tabulka RFSI na konci!
+DIR 23 - ZZS
+OCH 200-219 ZZS
+
+MOCH 210 ZZS Ceske budejovice - vrtulnik
+MOCH 200 ZZS Plzenmesto, Plzen- sever, Plzen-jih, Rokycany, a Tachov
+MOCH 201 ZZS Domazlice a Klatovy 
+MOCH 205 ZZS celostatni
+MOCH 210 ZZS Usti nad Labem, Teplice, Litomericich
+MOCH 211 ZZS Decin
+MOCH 212 ZZS Chomutov, Louny a Most
+MOCH200,205,206,207 - ZZS okresy Pardubicky kraj
+MOCH 208 ZZS Pardubicky kraj
+MOCH 200 ZZS Kraj Vysocina
+MOCH 200 ZZS Zlinskeho kraje
+MOCH 200 ZZS Moravskoslezsky kraj
+
+
+http://theses.cz/id/0enw58/Diplomov_prce.pdf
+MOCH 63 - PCR Vysocina Sever
+MOCH 64 - PCR Vysocina Jih
+DIR 5 - PCR Vysocina Sever
+DIR 6 - PCR Vysocina Jih
+MOCH 100 - PCR Vysocina Otevreny soucinnostni
+MOCH 10 - PCR Vysocina Otevreny soucinnostni
+MOCH 12 - PCR Vysocina Dopravni
+MOCH 20 -  PCR Vysocina Cizinecka
+
+MOCH 82 - PCR JC Jih
+DIR 4 - PCR JC
+DIR 5 - PCR JC
+IDR 26 - PCR JC
+MOCH 80 - PCR JC Ceske Budejovice
+MOCH 86 - PCR JC Tachov
+MOCH 262 - PCR JC Pelhrimov
+
+
+Fleet number
+1 Utvary MV a PCR s celostatni pusobnosti
+2 Utvary PCR s uzemni pusobnosti  S PCR
+3 Subjekty statni spravy, Celni sprava (rezerva)
+4 Mestske a Obecni policie, nestatni subjekty
+5 HZS CR
+6 Rezerva pro HZS CR
+7 Zdravotnicka zachranna sluzba
+8 MO CR
+9 BIS
+0 Servis systemu,skoly MV
+
+
+RRR	RN 	Region
+101	0	Praha
+125	1 	Stredocesky
+222	2	Jihocesky
+322	3	Plzensky
+362	4	Karlovarsky 
+422	5	Ustecky
+462	6	Liberecky
+522	7	Kralovehradecky
+562 	8 	ardubicky
+262	9	Vysocina
+622	10	Jihomoravsky
+662	11	Zlinsky
+762	12	Olomoucky 
+722	13	Moravskoslezsky
