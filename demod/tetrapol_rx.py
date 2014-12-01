@@ -26,11 +26,11 @@ class tetrapol_multi_rx(gr.top_block):
 
     def __init__(self, freq=394e6, gain=0, sample_rate=2400000, args="",
             channel_bw=12500, listen_port=60100, ppm=0,
-            output="channel%d.bits", auto_tune=-1):
+            output="channel%d.bits", output_offset=None, auto_tune=-1):
         gr.top_block.__init__(self, "TETRAPOL multichannel reciever")
 
         ##################################################
-        # Parameters
+        # Parameters and variables
         ##################################################
         self.freq = freq
         self.gain = gain
@@ -41,13 +41,8 @@ class tetrapol_multi_rx(gr.top_block):
         self.ppm = ppm
         self.output = output
         self.auto_tune = auto_tune
-
 # TODO: parametrize
         self.debug = True
-
-        ##################################################
-        # Variables
-        ##################################################
         self.channels = channels = int(sample_rate/channel_bw)
         channel_symb_rate = 8000
         samples_per_symbol = 2
@@ -56,6 +51,10 @@ class tetrapol_multi_rx(gr.top_block):
         afc_period = 6
         self.afc_gain = 1
         self.afc_ppm_threshold = 100
+        if output_offset is None:
+            self.output_offset = 0
+        else:
+            self.output_offset = output_offset - ((channels - 1) // 2)
 
         ##################################################
         # Blocks - RPC server
@@ -111,7 +110,8 @@ class tetrapol_multi_rx(gr.top_block):
                     verbose=False,
                     log=False,
                     )
-            file_sink = blocks.file_sink(gr.sizeof_char, output % ch_in, False)
+            o = output % (ch_in + self.output_offset)
+            file_sink = blocks.file_sink(gr.sizeof_char, o, False)
             file_sink.set_unbuffered(True)
 
             self.connect(
@@ -206,11 +206,12 @@ class tetrapol_multi_rx(gr.top_block):
                 p = 10 * math.log10(p)
             else:
                 p = None
-            pwr.append((p, ch, ))
+            pwr.append((p, ch + self.output_offset, ))
         return pwr
 
     def set_output_enabled(self, channels, open):
         for ch in channels:
+            ch -= self.output_offset
             self.valves[ch].set_open(not open)
 
     def get_channel_bw(self):
@@ -235,6 +236,7 @@ class tetrapol_multi_rx(gr.top_block):
     def set_auto_tune(self, auto_tune):
         self.auto_tune = auto_tune
         if auto_tune != -1:
+            auto_tune -= self.output_offset
             self.afc_selector.set_input_index(auto_tune)
 
     def get_channels(self):
@@ -264,6 +266,8 @@ if __name__ == '__main__':
             help="Set Frequency correction [default=%default]")
     parser.add_option("-o", "--output", dest="output", type="string",
             default="channel%d.bits", help="Set Output [default=%default]")
+    parser.add_option("--output-offset", type=int,
+            default=None, help="channel number for channel on center frequency")
     parser.add_option("-t", "--auto-tune", dest="auto_tune", type="intx",
             default=-1, help="Set Allow automatic fine tunning [default=%default]")
     (options, args) = parser.parse_args()
@@ -276,6 +280,7 @@ if __name__ == '__main__':
         listen_port=options.listen_port,
         ppm=options.ppm,
         output=options.output,
+        output_offset=options.output_offset,
         auto_tune=options.auto_tune)
     tb.start()
     tb.wait()
