@@ -58,13 +58,16 @@ class tetrapol_multi_rx(gr.top_block):
         self.afc_ppm_threshold = 100
 
         ##################################################
-        # Blocks - server and reciever
+        # Blocks - RPC server
         ##################################################
         self.xmlrpc_server_0 = SimpleXMLRPCServer.SimpleXMLRPCServer(
                 ("localhost", listen_port), allow_none=True)
         self.xmlrpc_server_0.register_instance(self)
         threading.Thread(target=self.xmlrpc_server_0.serve_forever).start()
 
+        ##################################################
+        # Blocks - RX, demod, sink
+        ##################################################
         self.src = osmosdr.source( args="numchan=" + str(1) + " " + "" + self.args )
         self.src.set_sample_rate(sample_rate)
         self.src.set_center_freq(freq, 0)
@@ -73,15 +76,13 @@ class tetrapol_multi_rx(gr.top_block):
         self.src.set_gain_mode(True, 0)
         #self.src.set_gain(gain, 0)
 
-        bw = (9200 + self.afc_ppm_threshold)/2
         self.freq_xlating = freq_xlating_fft_filter_ccc(1, (1, ), 0, sample_rate)
-
+        bw = (9200 + self.afc_ppm_threshold)/2
         self.channelizer = pfb.channelizer_ccf(
               channels,
               firdes.low_pass(1, sample_rate, bw, bw*0.15, firdes.WIN_HANN),
               float(channel_samp_rate)/(sample_rate/channels),
               100)
-
         self.connect(
                 (self.src, 0),
                 (self.freq_xlating, 0),
@@ -90,8 +91,17 @@ class tetrapol_multi_rx(gr.top_block):
         self.valves = []
         self.gmsk_demods = []
         self.file_sinks = []
-        for ch in range(0, channels):
-            valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex*1, open=True)
+        even_no_of_chs = not (channels % 2)
+        center_ch = channels // 2
+        for ch_in in range(0, channels):
+            ch_out = (ch_in + center_ch + 1) % channels
+            if ch_out == center_ch and even_no_of_chs:
+                null_sink = blocks.null_sink(gr.sizeof_gr_complex)
+                self.connect(
+                        (self.channelizer, ch_out),
+                        (null_sink, 0))
+                continue
+            valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex, open=True)
             gmsk_demod = digital.gmsk_demod(
                     samples_per_symbol=samples_per_symbol,
                     gain_mu=0.175,
@@ -101,11 +111,11 @@ class tetrapol_multi_rx(gr.top_block):
                     verbose=False,
                     log=False,
                     )
-            file_sink = blocks.file_sink(gr.sizeof_char, output % ch, False)
+            file_sink = blocks.file_sink(gr.sizeof_char, output % ch_in, False)
             file_sink.set_unbuffered(True)
 
             self.connect(
-                    (self.channelizer, ch),
+                    (self.channelizer, ch_out),
                     (valve, 0),
                     (gmsk_demod, 0),
                     (file_sink, 0))
@@ -119,7 +129,7 @@ class tetrapol_multi_rx(gr.top_block):
         ##################################################
         self.afc_selector = grc_blks2.selector(
             item_size=gr.sizeof_gr_complex*1,
-            num_inputs=channels,
+            num_inputs=channels - even_no_of_chs,
             num_outputs=1,
             input_index=0,
             output_index=0,
@@ -148,18 +158,20 @@ class tetrapol_multi_rx(gr.top_block):
         self._afc_err_thread.daemon = True
         self._afc_err_thread.start()
 
-        for ch in range(0, channels):
-            self.connect((self.channelizer, ch), (self.afc_selector, ch))
+        for ch_in in range(0, channels - even_no_of_chs):
+            ch_out = (ch_in + center_ch + 1) % channels
+            self.connect((self.channelizer, ch_out), (self.afc_selector, ch_in))
         self.connect((self.afc_selector, 0),
                 (self.afc_demod, 0),
                 (self.afc_avg, 0),
                 (self.afc_probe, 0))
 
         ##################################################
-        # Blocks - for signal strenght identification
+        # Blocks - signal strenght indication
         ##################################################
         self.pwr_probes = []
-        for ch in range(self.channels):
+        for ch in range(self.channels - even_no_of_chs):
+            ch = (ch + center_ch + 1) % channels
             pwr_probe = analog.probe_avg_mag_sqrd_c(0, 1./channel_samp_rate)
             self.connect((self.channelizer, ch), (pwr_probe, 0))
             self.pwr_probes.append(pwr_probe)
@@ -186,7 +198,7 @@ class tetrapol_multi_rx(gr.top_block):
 
     def get_channels_pwr(self, channels=None):
         if channels is None:
-            channels = range(self.channels)
+            channels = range(len(self.pwr_probes))
         pwr = []
         for ch in channels:
             p = self.pwr_probes[ch].level()
