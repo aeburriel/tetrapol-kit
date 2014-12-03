@@ -4,6 +4,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     uint8_t *buf;
     int data_len;
@@ -16,5 +20,9 @@ typedef struct {
 int tetrapol_init(tetrapol_t *t, int fd);
 void tetrapol_destroy(tetrapol_t *t);
 int tetrapol_main(tetrapol_t *t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
