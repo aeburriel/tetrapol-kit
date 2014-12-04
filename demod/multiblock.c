@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "tpdu.h"
 #include "tsdu.h"
+#include "radio.h"
 
 
 int state, numblocks, startmod;

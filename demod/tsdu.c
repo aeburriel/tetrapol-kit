@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "tsdu.h"
+#include "radio.h"
 
 void decode_cell_id(int cell_id) {
 
@@ -532,7 +533,7 @@ void d_registration_ack(char *t) {
 	
 }
 
-void d_call_connect(t) {
+void d_call_connect(char *t) {
 	int call_type;
 	int channel_id;
 	int u_ch_scrambling;
