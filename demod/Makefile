@@ -1,6 +1,6 @@
 CC=gcc
 PROJECT=tetrapol
-CFLAGS=-ggdb3 -std=gnu11 -Og
+CFLAGS=-ggdb3 -std=gnu11 -Og -Wall
 
 SRC=misc.c multiblock.c radio.c tetrapol.c tpdu.c tsdu.c
 OBJS=$(SRC:%.c=%.o)
