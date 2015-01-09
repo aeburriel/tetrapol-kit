@@ -233,7 +233,7 @@ int tetrapol_main(tetrapol_t *t)
     }
 }
 
-char *make_crc(char *input, int framelen)				// http://ghsi.de/CRC/index.php?Polynom=10010
+char *mk_crc5(char *input, int framelen)				// http://ghsi.de/CRC/index.php?Polynom=10010
    {
    char *Res = malloc(5);                                 // CRC Result
    char CRC[5];
@@ -264,7 +264,7 @@ int check_data_crc(char *d) {
 	char *crc;
 	char res;
 
-	crc = make_crc(d, 69);
+	crc = mk_crc5(d, 69);
 	res = memcmp(d+69, crc, 5);
 //	printf("crc=");
 //	print_buf(d+69,5);
