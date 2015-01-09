@@ -1,0 +1,14 @@
+TETRAPOL reciever
+
+TODO: licensing!!!
+
+set of tool which shloud allow its user
+  - find TETRAPOL control channels and identify base stations
+  - recieve TETRAPOL downlink transmissions
+  - TODO: deltect and decode uplink transmission
+  - TODO: decode recieved audio
+
+features wich are not planned are:
+  - Tx of signals
+  - killing cats
+
