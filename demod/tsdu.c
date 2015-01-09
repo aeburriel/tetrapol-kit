@@ -1,7 +1,10 @@
-#include <stdio.h>
+#include "misc.h"
 #include "tsdu.h"
 #include "radio.h"
 #include "misc.h"
+
+#include <stdio.h>
+#include <stdint.h>
 
 void decode_cell_id(int cell_id) {
 
@@ -560,59 +563,59 @@ void d_call_connect(char *t) {
 // TODO: KEY_OF_CALL
 }
 
-void d_functional_short_data(r) {
+void d_functional_short_data(uint8_t *t) {
 	printf("\tCODOP=0x42 (D_FUNCTIONAL_SHORT_DATA)\n");
 }
 
-void d_call_start(r) {
+void d_call_start(uint8_t *r) {
 	printf("\tCODOP=0x3e (D_CALL_START)\n");
 }
 
-void d_registration_nak(t) {
+void d_registration_nak(uint8_t *t) {
 	printf("\tCODOP=0x21 (D_REGISTRATION_NAK)\n");
 }
 
-void d_call_setup(t) {
+void d_call_setup(uint8_t *t) {
 	printf("\tCODOP=0x32 (D_CALL_SETUP)\n");
 }
 
-void d_reject(t) {
+void d_reject(uint8_t *t) {
 	printf("\tCODOP=0x08 (D_REJECT)\n");
 }
 
-void d_return(t) {
+void d_return(uint8_t *t) {
 	printf("\tCODOP=0x10 (D_RETURN)\n");
 }
 
-void d_authentication(t) {
+void d_authentication(uint8_t *t) {
 	printf("\tCODOP=0x13 (D_AUTHENTICATION)\n");
 }
 
-void d_authorisation(t) {
+void d_authorisation(uint8_t *t) {
 	printf("\tCODOP=0x16 (D_AUTHORISATION)\n");
 }
 
-void d_channel_init(t) {
+void d_channel_init(uint8_t *t) {
 	printf("\tCODOP=0x18 (D_CHANNEL_INIT)\n");
 }
 
-void d_forced_registration(t) {
+void d_forced_registration(uint8_t *t) {
 	printf("\tCODOP=0x23 (D_FORCED_REGISTRATION)\n");
 }
 
-void d_location_activity_ack(t) {
+void d_location_activity_ack(uint8_t *t) {
 	printf("\tCODOP=0x25 (D_LOCATION_ACTIVITY_ACK)\n");
 }
 
-void d_call_switch(t) {
+void d_call_switch(uint8_t *t) {
 	printf("\tCODOP=0x35 (D_CALL_SWITCH)\n");
 }
 
-void d_call_end(t) {
+void d_call_end(uint8_t *t) {
 	printf("\tCODOP=0xe2 (D_CALL_END)\n");
 }
 
-void d_explicit_short_data(t) {
+void d_explicit_short_data(uint8_t *t) {
 	printf("\tCODOP=0x46 (D_EXPLICIT_SHORT_DATA)\n");
 }
 
@@ -635,7 +638,7 @@ void d_connect_dch(char *t) {
 	printf("\t\tD_CH_SCRAMBLING=%i\n", d_ch_scrambling);
 }
 
-void d_data_authentication(t) {
+void d_data_authentication(uint8_t *t) {
 	printf("\tCODOP=0x63 (D_DATA_AUTHENTICATION)\n");
 }
 

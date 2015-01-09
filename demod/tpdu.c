@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "misc.h"
 #include "tsdu.h"
 #include "radio.h"
 #include "misc.h"

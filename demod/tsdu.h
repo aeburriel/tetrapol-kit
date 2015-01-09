@@ -1,4 +1,8 @@
 void tsdu_process(char* t, int data_length, int mod);
+
+void decode_bch(char *t);
+void decode_pch(char *t);
+void decode_rch(char *t);
 void decode_rch_address(char *t);
 
 
