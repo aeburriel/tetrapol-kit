@@ -257,7 +257,7 @@ void mk_crc5(char *res, const char *input, int input_len) {
 int check_data_crc(char *d) {
 
 	uint8_t crc[5];
-	char res;
+	int res;
 
 	mk_crc5(crc, d, 69);
 	res = memcmp(d+69, crc, 5);
@@ -265,10 +265,7 @@ int check_data_crc(char *d) {
 //	print_buf(d+69,5);
 //	printf("crcc=");
 //	print_buf(crc,5);
-	if(res)
-		return 0;
-	else
-		return 1;
+	return res ? 0 : 1;
 }
 
 char *decode_data_frame(char *c) {
