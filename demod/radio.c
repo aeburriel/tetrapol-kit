@@ -233,44 +233,37 @@ int tetrapol_main(tetrapol_t *t)
     }
 }
 
-char *mk_crc5(char *input, int framelen)				// http://ghsi.de/CRC/index.php?Polynom=10010
-   {
-   char *Res = malloc(5);                                 // CRC Result
-   char CRC[5];
-   int  i;
-   char DoInvert;
-   
-   for (i=0; i<5; ++i)  CRC[i] = 0;                    // Init before calculation
-   
-   for (i=0; i<framelen; ++i)
-      {
-      DoInvert = input[i] ^ CRC[4];         // XOR required?
+// http://ghsi.de/CRC/index.php?Polynom=10010
+void mk_crc5(char *res, const char *input, int input_len) {
+    char crc[5] = { 0, 0, 0, 0, 0 };
+    char do_invert;
 
-      CRC[4] = CRC[3];
-      CRC[3] = CRC[2];
-      CRC[2] = CRC[1] ^ DoInvert;
-      CRC[1] = CRC[0];
-      CRC[0] = DoInvert;
-      }
+    for (int i=0; i<input_len; ++i)
+    {
+        do_invert = input[i] ^ crc[4];         // XOR required?
 
-   for (i=0; i<5; ++i)
-	Res[4-i] = CRC[i]; 
+        crc[4] = crc[3];
+        crc[3] = crc[2];
+        crc[2] = crc[1] ^ do_invert;
+        crc[1] = crc[0];
+        crc[0] = do_invert;
+    }
 
-   return(Res);
+    for (int i=0; i<5; ++i)
+        res[4-i] = crc[i];
 }
 
 int check_data_crc(char *d) {
 
-	char *crc;
+	uint8_t crc[5];
 	char res;
 
-	crc = mk_crc5(d, 69);
+	mk_crc5(crc, d, 69);
 	res = memcmp(d+69, crc, 5);
 //	printf("crc=");
 //	print_buf(d+69,5);
 //	printf("crcc=");
 //	print_buf(crc,5);
-	free(crc);
 	if(res)
 		return 0;
 	else

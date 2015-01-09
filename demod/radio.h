@@ -8,6 +8,7 @@ void segmentation_reset(void);
 void mod_set(int m);
 
 void print_buf(char *frame, int framelen);
-char *mk_crc5(char *input, int framelen);
+void mk_crc5(char *res, const char *input, int input_len);
+
 
 #endif
