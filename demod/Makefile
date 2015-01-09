@@ -1,19 +1,14 @@
 CC=gcc
-PROJECTS=tetrapol
-CFLAGS=-ggdb3 -std=gnu11
+PROJECT=tetrapol
+CFLAGS=-ggdb3 -std=gnu11 -Og
 
-LIBS=radio.o multiblock.o tsdu.o tpdu.o misc.o
+SRC=misc.c multiblock.c radio.c tetrapol.c tpdu.c tsdu.c
+OBJS=$(SRC:%.c=%.o)
 
-all: clean $(PROJECTS)
+all: clean $(PROJECT)
 
-tetrapol: $(LIBS) tetrapol.o
-	$(CC) $(CFLAGS) tetrapol.o $(LIBS) -o tetrapol
-
-xor: xor.o
-	$(CC) $(CFLAGS) xor.o -o xor
-
-sync: sync.o
-	$(CC) $(CFLAGS) sync.o -o sync
+tetrapol: $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
