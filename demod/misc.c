@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "misc.h"
+
 
 int bits_to_int(char *bits, int num) {
 

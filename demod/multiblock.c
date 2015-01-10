@@ -3,6 +3,7 @@
 #include "tpdu.h"
 #include "tsdu.h"
 #include "radio.h"
+#include "misc.h"
 
 
 int state, numblocks, startmod;
@@ -132,7 +133,7 @@ void multiblock_process(char * d1, int fn, int mod) {
 					}
 					state=0;
 					break;
-	
+
 				case 2:
 					printf("mb err\n");
 					state=0;

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "tsdu.h"
 #include "radio.h"
+#include "misc.h"
 
 void decode_cell_id(int cell_id) {
 

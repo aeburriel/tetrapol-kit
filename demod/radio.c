@@ -3,6 +3,7 @@
 #include "multiblock.h"
 #include "tpdu.h"
 #include "radio.h"
+#include "misc.h"
 
 #include <fcntl.h>
 #include <poll.h>
@@ -61,10 +62,10 @@ void tetrapol_destroy(tetrapol_t *t)
 }
 
 void print_buf(char *frame, int framelen) {
-	int i;
-	for(i=0; i<framelen; i++)
-		printf("%x", frame[i]);
-	printf("\n");
+    int i;
+    for(i=0; i<framelen; i++)
+        printf("%x", frame[i]);
+    printf("\n");
 }
 
 static uint8_t differential_dec(uint8_t *buf, int size, uint8_t last_bit)
