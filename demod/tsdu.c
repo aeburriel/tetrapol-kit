@@ -616,7 +616,7 @@ void d_explicit_short_data(t) {
 	printf("\tCODOP=0x46 (D_EXPLICIT_SHORT_DATA)\n");
 }
 
-void d_connect_dch(t) {
+void d_connect_dch(char *t) {
 
 	int dch_low_layer;
 	int channel_id;
