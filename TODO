@@ -1,0 +1,12 @@
+ * remove TETRAPOL documentation
+ * remove channel logs
+ * add LICENSE and licensign information
+ * code reorganization - separate implementaion layers
+ * replace bits_to_int with records
+ * dyamic allocation for multiframe
+ * support multiple signal sources (multiple SDRs devices)
+ * speed improvements
+ * Xtal runtime calibration
+ * receive uplink channel(s)
+ * implement audio codec
+ 
