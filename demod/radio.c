@@ -232,6 +232,8 @@ int tetrapol_main(tetrapol_t *t)
         }
         mod = -1;
     }
+
+    return 0;
 }
 
 // http://ghsi.de/CRC/index.php?Polynom=10010
@@ -304,15 +306,15 @@ char *decode_data_frame(char *c) {
     for(j=0; j<=47; j++)
         d[j+26]=b2[j];
 
-    if ((c[150] != c[151]) || (c[148] ^ c[149] != c[150]) || (c[52] != c[53]))
+    if ((c[150] != c[151]) || ((c[148] ^ c[149]) != c[150]) || (c[52] != c[53]))
         check=0;
 
     for (j=3; j < 23; j++) {
-        if (c[2*j] != b1[j]^b1[j-1]^b1[j-2])
+        if (c[2*j] != (b1[j]^b1[j-1]^b1[j-2]))
             check=0;
     }
     for (j=3; j < 45; j++) {
-        if (c[2*j+52] != b2[j]^b2[j-1]^b2[j-2])
+        if (c[2*j+52] != (b2[j]^b2[j-1]^b2[j-2]))
             check=0;
     }
     if (!check)
