@@ -22,7 +22,7 @@
 int mod = -1;
 
 void mod_set(int m) {
-	mod=m;
+    mod=m;
 }
 
 // set on SIGINT
@@ -102,10 +102,10 @@ static int tetrapol_recv(tetrapol_t *t)
 
 static int process_frame(frame_t *frame)
 {
-	if (mod != -1)
-		mod++;
-	if (mod==200)
-		mod=0;
+    if (mod != -1)
+        mod++;
+    if (mod==200)
+        mod=0;
     radio_process_frame(frame->data, FRAME_LEN, mod);
     return 0;
 }
@@ -141,14 +141,14 @@ static int find_frame_sync(tetrapol_t *t)
         invert = 0;
         const uint8_t *buf = t->buf + offs;
         sync_err = cmp_frame_sync(buf, invert) +
-                cmp_frame_sync(buf + FRAME_LEN, invert);
+            cmp_frame_sync(buf + FRAME_LEN, invert);
         if (sync_err <= MAX_FRAME_SYNC_ERR) {
             break;
         }
 
         invert = 1;
         sync_err = cmp_frame_sync(buf, invert) +
-                cmp_frame_sync(buf + FRAME_LEN, invert);
+            cmp_frame_sync(buf + FRAME_LEN, invert);
         if (sync_err <= MAX_FRAME_SYNC_ERR) {
             break;
         }
@@ -256,71 +256,71 @@ void mk_crc5(char *res, const char *input, int input_len) {
 
 int check_data_crc(char *d) {
 
-	uint8_t crc[5];
-	int res;
+    uint8_t crc[5];
+    int res;
 
-	mk_crc5(crc, d, 69);
-	res = memcmp(d+69, crc, 5);
-//	printf("crc=");
-//	print_buf(d+69,5);
-//	printf("crcc=");
-//	print_buf(crc,5);
-	return res ? 0 : 1;
+    mk_crc5(crc, d, 69);
+    res = memcmp(d+69, crc, 5);
+    //	printf("crc=");
+    //	print_buf(d+69,5);
+    //	printf("crcc=");
+    //	print_buf(crc,5);
+    return res ? 0 : 1;
 }
 
 char *decode_data_frame(char *c) {
-	char *b1=malloc(26);
-	char *b2=malloc(50);
-	char *d=malloc(74);
+    char *b1=malloc(26);
+    char *b2=malloc(50);
+    char *d=malloc(74);
 
-	int j, check=1;
+    int j, check=1;
 
-	for (j=0; j<=25; j++) b1[j] = 2;
-	for (j=0; j<=49; j++) b2[j] = 2;
-	for (j=0; j<=73; j++) d[j] = 2;
-	
-	// b'(25)=b'(-1)
-	// b'(j-1)=C(2j)-C(2j+1)
+    for (j=0; j<=25; j++) b1[j] = 2;
+    for (j=0; j<=49; j++) b2[j] = 2;
+    for (j=0; j<=73; j++) d[j] = 2;
 
-	// j=0 
-	b1[25]=c[0] ^ c[1];
-	for(j=1; j<=25; j++) {
-		b1[j-1]=c[2*j] ^ c[2*j+1];
-	}
+    // b'(25)=b'(-1)
+    // b'(j-1)=C(2j)-C(2j+1)
 
-//	printf("b1=");
-//	print_buf(b1,26);
-	
-	b2[0] = c[53];
-	for(j=2; j<=48; j++) {
-		b2[j-1]=c[2*j+52] ^ c[2*j+53];
-	}
+    // j=0 
+    b1[25]=c[0] ^ c[1];
+    for(j=1; j<=25; j++) {
+        b1[j-1]=c[2*j] ^ c[2*j+1];
+    }
 
-//	printf("b2=");
-//	print_buf(b2,48);
-	
-	for(j=0; j<=25; j++)
-		d[j]=b1[j];
-	for(j=0; j<=47; j++)
-		d[j+26]=b2[j];
+    //	printf("b1=");
+    //	print_buf(b1,26);
 
-	if ((c[150] != c[151]) || (c[148] ^ c[149] != c[150]) || (c[52] != c[53]))
-		check=0;
+    b2[0] = c[53];
+    for(j=2; j<=48; j++) {
+        b2[j-1]=c[2*j+52] ^ c[2*j+53];
+    }
 
-	for (j=3; j < 23; j++) {
-		if (c[2*j] != b1[j]^b1[j-1]^b1[j-2])
-			check=0;
-	}
-	for (j=3; j < 45; j++) {
-		if (c[2*j+52] != b2[j]^b2[j-1]^b2[j-2])
-			check=0;
-	}
-	if (!check)
-		d[0]=2;
+    //	printf("b2=");
+    //	print_buf(b2,48);
 
-	free(b1);
-	free(b2);
-	return d;
+    for(j=0; j<=25; j++)
+        d[j]=b1[j];
+    for(j=0; j<=47; j++)
+        d[j+26]=b2[j];
+
+    if ((c[150] != c[151]) || (c[148] ^ c[149] != c[150]) || (c[52] != c[53]))
+        check=0;
+
+    for (j=3; j < 23; j++) {
+        if (c[2*j] != b1[j]^b1[j-1]^b1[j-2])
+            check=0;
+    }
+    for (j=3; j < 45; j++) {
+        if (c[2*j+52] != b2[j]^b2[j-1]^b2[j-2])
+            check=0;
+    }
+    if (!check)
+        d[0]=2;
+
+    free(b1);
+    free(b2);
+    return d;
 }
 
 
@@ -328,12 +328,12 @@ int K[] = {1, 77, 38, 114, 20, 96, 59, 135, 3, 79, 41, 117, 23, 99, 62, 138, 5, 
 
 
 char *deinterleave_frame(char *e, int framelen) {
-	char *c=malloc(framelen);
-	int j;
-	for(j=0; j<framelen; j++) {
-		c[j]=e[K[j]];
-	}
-	return c;
+    char *c=malloc(framelen);
+    int j;
+    for(j=0; j<framelen; j++) {
+        c[j]=e[K[j]];
+    }
+    return c;
 
 }
 
@@ -348,135 +348,135 @@ char *deinterleave_frame(char *e, int framelen) {
 //}
 
 int pre_cod[] = {1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-		
+
 char *diffdec_frame(char *e, int framelen) {
-	char *ex=malloc(framelen);
-	int j;
-	ex[0]=e[0]; // in spec is e[0]+f[7], but since f[7] is always 0 fuck you
-	for(j=1; j<framelen; j++) {
-		ex[j] = e[j] ^ e[j-pre_cod[j]];
-//		if(is_in_code(j))
-//			ex[j] = e[j] ^ e[j-2];
-//		else
-//			ex[j] = e[j] ^ e[j-1];
-	}
-	return ex;
+    char *ex=malloc(framelen);
+    int j;
+    ex[0]=e[0]; // in spec is e[0]+f[7], but since f[7] is always 0 fuck you
+    for(j=1; j<framelen; j++) {
+        ex[j] = e[j] ^ e[j-pre_cod[j]];
+        //		if(is_in_code(j))
+        //			ex[j] = e[j] ^ e[j-2];
+        //		else
+        //			ex[j] = e[j] ^ e[j-1];
+    }
+    return ex;
 }
 
 char scramb_table[127];
 
 int scramb(int k) {
-	k%=127;
-	if(k<7)
-		return 1;
-	return (scramb_table[k-1] ^ scramb_table[k-7]);
+    k%=127;
+    if(k<7)
+        return 1;
+    return (scramb_table[k-1] ^ scramb_table[k-7]);
 }
 
 char *descramble_frame(char *f, int framelen, int scr) {
-	char *ex=malloc(framelen);
-	int k;
-	if (scr == 0)
-		memcpy(ex, f, framelen);
-	else
-		for(k=0; k<framelen; k++)
-			ex[k]=f[k] ^ scramb_table[(k+scr)%127];
-	return ex;
+    char *ex=malloc(framelen);
+    int k;
+    if (scr == 0)
+        memcpy(ex, f, framelen);
+    else
+        for(k=0; k<framelen; k++)
+            ex[k]=f[k] ^ scramb_table[(k+scr)%127];
+    return ex;
 }
 
 char *bitorder_frame(char *d) {
-	int i,j;
+    int i,j;
 
-	char *d1=malloc(64);
-	for (i=0; i<8; i++)
-		for(j=0; j<8; j++)
-			d1[8*i + j] =  d[i*8+7-j];
+    char *d1=malloc(64);
+    for (i=0; i<8; i++)
+        for(j=0; j<8; j++)
+            d1[8*i + j] =  d[i*8+7-j];
 
-	return d1;
+    return d1;
 }
 
 void radio_init() {
-	int i;
-	for(i=0; i<127; i++) {
-		scramb_table[i]=scramb(i);
-	}
+    int i;
+    for(i=0; i<127; i++) {
+        scramb_table[i]=scramb(i);
+    }
 }
 
 void radio_process_frame(char *f, int framelen, int modulo) {
 
-	int scr, scr2, i, j;
-	char asbx, asby, fn0, fn1;
-	char *ex, *e, *c, *d=0, *d1=0;
+    int scr, scr2, i, j;
+    char asbx, asby, fn0, fn1;
+    char *ex, *e, *c, *d=0, *d1=0;
 
-//	printf("s=");
-//	print_buf(scramb_table,127);
-//	printf("f=");
-//	print_buf(f,160);
+    //	printf("s=");
+    //	print_buf(scramb_table,127);
+    //	printf("f=");
+    //	print_buf(f,160);
 
-//	printf("Attempting descramble\n");
-	int scr_ok=0;
-	for(scr=0; scr<=127; scr++) {
-//		printf("trying scrambling %i\n", scr);
+    //	printf("Attempting descramble\n");
+    int scr_ok=0;
+    for(scr=0; scr<=127; scr++) {
+        //		printf("trying scrambling %i\n", scr);
 
-		ex=descramble_frame(f+8, 152, scr);
-//		printf("ex=");
-//		print_buf(ex,152);
+        ex=descramble_frame(f+8, 152, scr);
+        //		printf("ex=");
+        //		print_buf(ex,152);
 
-		e=diffdec_frame(ex, 152);
-//		printf("e=");
-//		print_buf(e,152);
+        e=diffdec_frame(ex, 152);
+        //		printf("e=");
+        //		print_buf(e,152);
 
-		c=deinterleave_frame(e, 152);
-//		printf("c=");
-//		print_buf(c,152);
+        c=deinterleave_frame(e, 152);
+        //		printf("c=");
+        //		print_buf(c,152);
 
-		d=decode_data_frame(c);
-//		printf("d=");
-//		print_buf(d,74);
+        d=decode_data_frame(c);
+        //		printf("d=");
+        //		print_buf(d,74);
 
-		if(d[0]!=1) {
-//			printf("not data frame!\n");
-			goto cleanup;
-		}
+        if(d[0]!=1) {
+            //			printf("not data frame!\n");
+            goto cleanup;
+        }
 
-		if(!check_data_crc(d)) {
-//			printf("crc mismatch!\n");
-			goto cleanup;
-		}
-//		printf("b=");
-//		print_buf(d+1, 68);
-	
-		scr2=scr;	
-		asbx=d[67];			// maybe x=68, y=67
-		asby=d[68];
-		fn0=d[2];
-		fn1=d[1];
-		d1 = bitorder_frame(d+3);
-		
-		scr_ok++;
+        if(!check_data_crc(d)) {
+            //			printf("crc mismatch!\n");
+            goto cleanup;
+        }
+        //		printf("b=");
+        //		print_buf(d+1, 68);
 
-	cleanup:
-		free(c);
-		free(e);
-		free(ex);
-		free(d);
+        scr2=scr;	
+        asbx=d[67];			// maybe x=68, y=67
+        asby=d[68];
+        fn0=d[2];
+        fn1=d[1];
+        d1 = bitorder_frame(d+3);
 
-	}
-	if(scr_ok==1) {
-		printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", modulo, fn0, fn1, asbx, asby, scr2);
-		for (i=0; i<8; i++) {
-			for(j=0; j<8; j++)
-				printf("%i", d1[i*8+j]);
-			printf(" ");
-		}
-		print_buf(d1, 64);
-		multiblock_process(d1, 2*fn0 + fn1, modulo);
-	} else {
-		printf("ERR2 mod=%03i\n", modulo);
-		multiblock_reset();
-		segmentation_reset();
-	}
-	
-	if (d1)
-		free(d1);
+        scr_ok++;
+
+cleanup:
+        free(c);
+        free(e);
+        free(ex);
+        free(d);
+
+    }
+    if(scr_ok==1) {
+        printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", modulo, fn0, fn1, asbx, asby, scr2);
+        for (i=0; i<8; i++) {
+            for(j=0; j<8; j++)
+                printf("%i", d1[i*8+j]);
+            printf(" ");
+        }
+        print_buf(d1, 64);
+        multiblock_process(d1, 2*fn0 + fn1, modulo);
+    } else {
+        printf("ERR2 mod=%03i\n", modulo);
+        multiblock_reset();
+        segmentation_reset();
+    }
+
+    if (d1)
+        free(d1);
 
 }

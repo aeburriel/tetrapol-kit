@@ -1,6 +1,4 @@
 #pragma once
-#ifndef FRAME_H
-#define FRAME_H
 
 #include <stdint.h>
 
@@ -12,4 +10,3 @@ typedef struct {
     uint8_t data[FRAME_LEN];
 } frame_t;
 
-#endif

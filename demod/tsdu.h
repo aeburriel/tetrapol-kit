@@ -1,3 +1,5 @@
+#pragma once
+
 void tsdu_process(char* t, int data_length, int mod);
 
 void decode_bch(char *t);
