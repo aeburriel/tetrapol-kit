@@ -248,7 +248,8 @@ void d_group_composition(char *t) {
 
 void d_group_activation(char *t) {
 
-    int activation_mode, group_id, coverage_id, channel_id, u_ch_scrambling, d_ch_scrambling, key_reference, tti;
+    int activation_mode, group_id, coverage_id, channel_id, u_ch_scrambling;
+    int d_ch_scrambling, key_reference, tti;
 
     activation_mode=bits_to_int(t+8,4);
     group_id=bits_to_int(t+12, 12);
@@ -257,6 +258,8 @@ void d_group_activation(char *t) {
     u_ch_scrambling=bits_to_int(t+48,8);
     u_ch_scrambling=bits_to_int(t+56,8);
     key_reference=bits_to_int(t+64,8);
+    // TODO
+    d_ch_scrambling = 0;
 
     // TODO TTI
 
@@ -630,6 +633,8 @@ void d_connect_dch(char *t) {
     channel_id=bits_to_int(t+16, 12);
     u_ch_scrambling=bits_to_int(t+32, 8);
     u_ch_scrambling=bits_to_int(t+40, 8);
+    // TODO
+    d_ch_scrambling = 0;
 
     printf("\tCODOP=0x60 (D_CONNECT_DCH)\n");
     printf("\t\tDCH_LOW_LAYER=%i\n", dch_low_layer);
