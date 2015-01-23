@@ -20,6 +20,8 @@
 #define MAX_FRAME_SYNC_ERR 1
 
 int mod = -1;
+static uint8_t scramb_table[127];
+
 
 void mod_set(int m) {
     mod=m;
@@ -363,15 +365,6 @@ uint8_t *diffdec_frame(uint8_t *e, int framelen) {
     return ex;
 }
 
-static uint8_t scramb_table[127];
-
-int scramb(int k) {
-    k%=127;
-    if(k<7)
-        return 1;
-    return (scramb_table[k-1] ^ scramb_table[k-7]);
-}
-
 static void descramble(const uint8_t *in, uint8_t *out, int len, int scr)
 {
     if (scr == 0) {
@@ -394,9 +387,8 @@ uint8_t *bitorder_frame(uint8_t *d) {
 }
 
 void radio_init() {
-    int i;
-    for(i=0; i<127; i++) {
-        scramb_table[i]=scramb(i);
+    for(int i = 0; i < 127; i++) {
+        scramb_table[i] = (i < 7) ? 1 : (scramb_table[i-1] ^ scramb_table[i-7]);
     }
 }
 
