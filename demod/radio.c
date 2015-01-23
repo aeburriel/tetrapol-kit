@@ -363,7 +363,7 @@ uint8_t *diffdec_frame(uint8_t *e, int framelen) {
     return ex;
 }
 
-uint8_t scramb_table[127];
+static uint8_t scramb_table[127];
 
 int scramb(int k) {
     k%=127;
@@ -372,15 +372,14 @@ int scramb(int k) {
     return (scramb_table[k-1] ^ scramb_table[k-7]);
 }
 
-uint8_t *descramble_frame(const uint8_t *f, int framelen, int scr) {
-    uint8_t *ex=malloc(framelen);
-    int k;
-    if (scr == 0)
-        memcpy(ex, f, framelen);
-    else
-        for(k=0; k<framelen; k++)
-            ex[k]=f[k] ^ scramb_table[(k+scr)%127];
-    return ex;
+static void descramble(const uint8_t *in, uint8_t *out, int len, int scr)
+{
+    if (scr == 0) {
+        memcpy(out, in, len);
+    } else {
+        for(int k=0; k < len; k++)
+            out[k] = in[k] ^ scramb_table[(k+scr)%127];
+    }
 }
 
 uint8_t *bitorder_frame(uint8_t *d) {
@@ -405,7 +404,7 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
 
     int scr, scr2, i, j;
     uint8_t asbx, asby, fn0, fn1;
-    uint8_t *ex, *e, *c, *d=0, *d1=0;
+    uint8_t *e, *c, *d=0, *d1=0;
 
     //	printf("s=");
     //	print_buf(scramb_table,127);
@@ -417,11 +416,12 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
     for(scr=0; scr<=127; scr++) {
         //		printf("trying scrambling %i\n", scr);
 
-        ex=descramble_frame(f+8, 152, scr);
-        //		printf("ex=");
-        //		print_buf(ex,152);
+        uint8_t descr[BUF_LEN];
+        descramble(f+8, descr, 152, scr);
+        //		printf("descr=");
+        //		print_buf(descr, 152);
 
-        e=diffdec_frame(ex, 152);
+        e=diffdec_frame(descr, 152);
         //		printf("e=");
         //		print_buf(e,152);
 
@@ -457,7 +457,6 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
 cleanup:
         free(c);
         free(e);
-        free(ex);
         free(d);
 
     }
