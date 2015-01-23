@@ -7,7 +7,7 @@
 
 
 int state, numblocks, startmod;
-char buf[8*8*9];
+uint8_t buf[8*8*9];
 
 void multiblock_reset() {
 
@@ -15,7 +15,7 @@ void multiblock_reset() {
     numblocks=0;
 }
 
-int multiblock_xor_verify(char *frame, int num) {
+int multiblock_xor_verify(uint8_t *frame, int num) {
 
     int i, j, acc;
 
@@ -29,7 +29,7 @@ int multiblock_xor_verify(char *frame, int num) {
     return 1;
 }
 
-void multiblock_process(char * d1, int fn, int mod) {
+void multiblock_process(uint8_t * d1, int fn, int mod) {
 
     if (mod%25 == 14) {			// FIXME: RCH, PCH ??
         decode_rch(d1);

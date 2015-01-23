@@ -1,11 +1,11 @@
 #pragma once
 
-void tsdu_process(char* t, int data_length, int mod);
+void tsdu_process(uint8_t* t, int data_length, int mod);
 
-void decode_bch(char *t);
-void decode_pch(char *t);
-void decode_rch(char *t);
-void decode_rch_address(char *t);
+void decode_bch(uint8_t *t);
+void decode_pch(uint8_t *t);
+void decode_rch(uint8_t *t);
+void decode_rch_address(uint8_t *t);
 
 
 #define D_REJECT			0x08

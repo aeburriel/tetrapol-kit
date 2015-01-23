@@ -61,7 +61,7 @@ void tetrapol_destroy(tetrapol_t *t)
     t->buf = NULL;
 }
 
-void print_buf(char *frame, int framelen) {
+void print_buf(uint8_t *frame, int framelen) {
     int i;
     for(i=0; i<framelen; i++)
         printf("%x", frame[i]);
@@ -237,9 +237,9 @@ int tetrapol_main(tetrapol_t *t)
 }
 
 // http://ghsi.de/CRC/index.php?Polynom=10010
-void mk_crc5(char *res, const char *input, int input_len) {
-    char crc[5] = { 0, 0, 0, 0, 0 };
-    char do_invert;
+void mk_crc5(uint8_t *res, const uint8_t *input, int input_len) {
+    uint8_t crc[5] = { 0, 0, 0, 0, 0 };
+    uint8_t do_invert;
 
     for (int i=0; i<input_len; ++i)
     {
@@ -256,7 +256,7 @@ void mk_crc5(char *res, const char *input, int input_len) {
         res[4-i] = crc[i];
 }
 
-int check_data_crc(char *d) {
+int check_data_crc(uint8_t *d) {
 
     uint8_t crc[5];
     int res;
@@ -270,10 +270,10 @@ int check_data_crc(char *d) {
     return res ? 0 : 1;
 }
 
-char *decode_data_frame(char *c) {
-    char *b1=malloc(26);
-    char *b2=malloc(50);
-    char *d=malloc(74);
+uint8_t *decode_data_frame(uint8_t *c) {
+    uint8_t *b1=malloc(26);
+    uint8_t *b2=malloc(50);
+    uint8_t *d=malloc(74);
 
     int j, check=1;
 
@@ -329,8 +329,8 @@ char *decode_data_frame(char *c) {
 int K[] = {1, 77, 38, 114, 20, 96, 59, 135, 3, 79, 41, 117, 23, 99, 62, 138, 5, 81, 44, 120, 26, 102, 65, 141, 8, 84, 47, 123, 29, 105, 68, 144, 11, 87, 50, 126, 32, 108, 71, 147, 14, 90, 53, 129, 35, 111, 74, 150, 17, 93, 56, 132, 37, 112, 76, 148, 2, 88, 40, 115, 19, 97, 58, 133, 4, 75, 43, 118, 22, 100, 61, 136, 7, 85, 46, 121, 25, 103, 64, 139, 10, 82, 49, 124, 28, 106, 67, 142, 13, 91, 52, 127, 31, 109, 73, 145, 16, 94, 55, 130, 34, 113, 70, 151, 0, 80, 39, 116, 21, 95, 57, 134, 6, 78, 42, 119, 24, 98, 60, 137, 9, 83, 45, 122, 27, 101, 63, 140, 12, 86, 48, 125, 30, 104, 66, 143, 15, 89, 51, 128, 33, 107, 69, 146, 18, 92, 54, 131, 36, 110, 72, 149 };
 
 
-char *deinterleave_frame(char *e, int framelen) {
-    char *c=malloc(framelen);
+uint8_t *deinterleave_frame(uint8_t *e, int framelen) {
+    uint8_t *c=malloc(framelen);
     int j;
     for(j=0; j<framelen; j++) {
         c[j]=e[K[j]];
@@ -339,8 +339,8 @@ char *deinterleave_frame(char *e, int framelen) {
 
 }
 
-// inline int is_in_code(char j) {
-//	char pre_cod[] = {7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52, 55, 58, 61, 64, 67, 70, 73, 76, 83, 86, 89, 92, 95, 98, 101, 104, 107, 110, 113, 116, 119, 122, 125, 128, 131, 134, 137, 140, 143, 146, 149};
+// inline int is_in_code(uint8_t j) {
+//	uint8_t pre_cod[] = {7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52, 55, 58, 61, 64, 67, 70, 73, 76, 83, 86, 89, 92, 95, 98, 101, 104, 107, 110, 113, 116, 119, 122, 125, 128, 131, 134, 137, 140, 143, 146, 149};
 //	int i;
 //	for(i=0; i<sizeof(pre_cod); i++) {
 //		if(pre_cod[i]==j)
@@ -351,8 +351,8 @@ char *deinterleave_frame(char *e, int framelen) {
 
 int pre_cod[] = {1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-char *diffdec_frame(char *e, int framelen) {
-    char *ex=malloc(framelen);
+uint8_t *diffdec_frame(uint8_t *e, int framelen) {
+    uint8_t *ex=malloc(framelen);
     int j;
     ex[0]=e[0]; // in spec is e[0]+f[7], but since f[7] is always 0 fuck you
     for(j=1; j<framelen; j++) {
@@ -365,7 +365,7 @@ char *diffdec_frame(char *e, int framelen) {
     return ex;
 }
 
-char scramb_table[127];
+uint8_t scramb_table[127];
 
 int scramb(int k) {
     k%=127;
@@ -374,8 +374,8 @@ int scramb(int k) {
     return (scramb_table[k-1] ^ scramb_table[k-7]);
 }
 
-char *descramble_frame(char *f, int framelen, int scr) {
-    char *ex=malloc(framelen);
+uint8_t *descramble_frame(uint8_t *f, int framelen, int scr) {
+    uint8_t *ex=malloc(framelen);
     int k;
     if (scr == 0)
         memcpy(ex, f, framelen);
@@ -385,10 +385,10 @@ char *descramble_frame(char *f, int framelen, int scr) {
     return ex;
 }
 
-char *bitorder_frame(char *d) {
+uint8_t *bitorder_frame(uint8_t *d) {
     int i,j;
 
-    char *d1=malloc(64);
+    uint8_t *d1=malloc(64);
     for (i=0; i<8; i++)
         for(j=0; j<8; j++)
             d1[8*i + j] =  d[i*8+7-j];
@@ -403,11 +403,11 @@ void radio_init() {
     }
 }
 
-void radio_process_frame(char *f, int framelen, int modulo) {
+void radio_process_frame(uint8_t *f, int framelen, int modulo) {
 
     int scr, scr2, i, j;
-    char asbx, asby, fn0, fn1;
-    char *ex, *e, *c, *d=0, *d1=0;
+    uint8_t asbx, asby, fn0, fn1;
+    uint8_t *ex, *e, *c, *d=0, *d1=0;
 
     //	printf("s=");
     //	print_buf(scramb_table,127);

@@ -6,9 +6,9 @@
 #include "misc.h"
 
 
-char stuff[] = {1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1};
+uint8_t stuff[] = {1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1};
 
-int detect_stuff(char *bits) {
+int detect_stuff(uint8_t *bits) {
     int i;
 
     //	print_buf(bits,40);
@@ -22,14 +22,14 @@ int detect_stuff(char *bits) {
 
 
 
-char segbuf[10000];
+uint8_t segbuf[10000];
 int numoctets, startmod;
 
 void segmentation_reset() {
     numoctets=0;
 }
 
-void tpdu_du_process(char* t, int length, int mod) {
+void tpdu_du_process(uint8_t* t, int length, int mod) {
 
     int ext, seg, prio, id_tsap;
     int data_length=0;
@@ -83,7 +83,7 @@ void tpdu_du_process(char* t, int length, int mod) {
 
 }
 
-void tpdu_i_process(char* t, int length, int mod) {
+void tpdu_i_process(uint8_t* t, int length, int mod) {
 
     int ext, seg, d, tpdu_code;
     int par_field, dest_ref;
@@ -126,7 +126,7 @@ void tpdu_i_process(char* t, int length, int mod) {
 
 }
 
-void hdlc_process(char *t, int length, int mod) {
+void hdlc_process(uint8_t *t, int length, int mod) {
 
     int hdlc, r, s, pe, m;
 
@@ -190,7 +190,7 @@ void hdlc_process(char *t, int length, int mod) {
     }
 }
 
-void tpdu_process(char* t, int length, int mod) {
+void tpdu_process(uint8_t* t, int length, int mod) {
 
     printf("\tADDR=");
     decode_addr(t);
