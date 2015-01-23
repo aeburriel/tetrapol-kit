@@ -3,22 +3,24 @@
 #include "misc.h"
 
 
-int bits_to_int(const uint8_t *bits, int num) {
+int bits_to_int(const uint8_t *bits, int num)
+{
+    int ret = 0;
 
-    int i, ret=0;
-
-    for (i=0; i<num; i++)
-        ret = ret + (bits[i] << (num - i - 1));
+    for (int i = 0; i < num; i++) {
+        ret |= (bits[i] << (num - i - 1));
+    }
 
     return ret;
 }
 
-void decode_addr(const uint8_t *t) {
+void decode_addr(const uint8_t *t)
+{
     int x,y,z;
 
-    z=bits_to_int(t, 1);
-    y=bits_to_int(t+1, 3);
-    x=bits_to_int(t+4, 12);
+    z = bits_to_int(t, 1);
+    y = bits_to_int(t+1, 3);
+    x = bits_to_int(t+4, 12);
 
     if ((z==1) && (y==0))
         printf("RTI:%03x\n", x);
