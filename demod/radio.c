@@ -272,10 +272,12 @@ int check_data_crc(uint8_t *d) {
     return res ? 0 : 1;
 }
 
-uint8_t *decode_data_frame(uint8_t *c) {
+#define FRAME_DATA_LEN 74
+
+static void decode_data_frame(const uint8_t *c, uint8_t *d)
+{
     uint8_t b1[26];
     uint8_t b2[50];
-    uint8_t *d=malloc(74);
 
     int j, check=1;
 
@@ -321,8 +323,6 @@ uint8_t *decode_data_frame(uint8_t *c) {
     }
     if (!check)
         d[0]=2;
-
-    return d;
 }
 
 
@@ -395,7 +395,7 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
 
     int scr, scr2, i, j;
     uint8_t asbx, asby, fn0, fn1;
-    uint8_t *d=0, *d1=0;
+    uint8_t *d1=0;
 
     //	printf("s=");
     //	print_buf(scramb_table,127);
@@ -422,18 +422,19 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
         //		printf("c=");
         //		print_buf(c,152);
 
-        d=decode_data_frame(c);
+        uint8_t d[FRAME_DATA_LEN];
+        decode_data_frame(c, d);
         //		printf("d=");
         //		print_buf(d,74);
 
         if(d[0]!=1) {
             //			printf("not data frame!\n");
-            goto cleanup;
+            continue;
         }
 
         if(!check_data_crc(d)) {
             //			printf("crc mismatch!\n");
-            goto cleanup;
+            continue;
         }
         //		printf("b=");
         //		print_buf(d+1, 68);
@@ -446,10 +447,6 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
         d1 = bitorder_frame(d+3);
 
         scr_ok++;
-
-cleanup:
-        free(d);
-
     }
     if(scr_ok==1) {
         printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", modulo, fn0, fn1, asbx, asby, scr2);
