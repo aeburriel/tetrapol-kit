@@ -1,14 +1,5 @@
 #pragma once
 
-void tsdu_process(const uint8_t* t, int data_length, int mod);
-
-void decode_bch(const uint8_t *t);
-void decode_pch(const uint8_t *t);
-void decode_rch(const uint8_t *t);
-// TODO
-void decode_rch_addressconst (uint8_t *t);
-
-
 #define D_REJECT			0x08
 #define D_REFUSAL			0x09
 #define U_END				0x0a
@@ -122,3 +113,12 @@ void decode_rch_addressconst (uint8_t *t);
 #define IEI_KEY_REFERENCE		0x83
 #define IEI_ADD_SETUP_PARAM		0x84
 #define IEI_PROFILE_ID			0x85
+
+void tsdu_process(const uint8_t* t, int data_length, int mod);
+
+void decode_bch(const uint8_t *t);
+void decode_pch(const uint8_t *t);
+void decode_rch(const uint8_t *t);
+// TODO
+void decode_rch_addressconst (uint8_t *t);
+
