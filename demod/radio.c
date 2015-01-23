@@ -64,14 +64,6 @@ void tetrapol_destroy(tetrapol_t *t)
     t->buf = NULL;
 }
 
-void print_buf(const uint8_t *frame, int framelen)
-{
-    int i;
-    for(i=0; i<framelen; i++)
-        printf("%x", frame[i]);
-    printf("\n");
-}
-
 static uint8_t differential_dec(uint8_t *buf, int size, uint8_t last_bit)
 {
     while (size--) {

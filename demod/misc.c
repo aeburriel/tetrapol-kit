@@ -35,3 +35,12 @@ void decode_addr(const uint8_t *t) {
     if (y==1)
         printf("COI:%03x\n", x);
 }
+
+void print_buf(const uint8_t *data, int len)
+{
+    for(int i = 0; i < len; i++) {
+        printf("%x", data[i]);
+    }
+    printf("\n");
+}
+
