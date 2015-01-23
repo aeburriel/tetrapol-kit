@@ -369,16 +369,15 @@ static void descramble(const uint8_t *in, uint8_t *out, int len, int scr)
     }
 }
 
-static uint8_t *bitorder_frame(uint8_t *d)
+#define FRAME_BITORDER_LEN 64
+
+static void bitorder_frame(const uint8_t *d, uint8_t *out)
 {
-    int i,j;
-
-    uint8_t *d1=malloc(64);
-    for (i=0; i<8; i++)
-        for(j=0; j<8; j++)
-            d1[8*i + j] =  d[i*8+7-j];
-
-    return d1;
+    for (int i = 0; i < 8; i++) {
+        for(int j = 0; j < 8; j++) {
+            out[8*i + j] =  d[i*8 + 7-j];
+        }
+    }
 }
 
 void radio_init()
@@ -392,7 +391,7 @@ static void radio_process_frame(const uint8_t *f, int framelen, int modulo)
 {
     int scr, scr2, i, j;
     uint8_t asbx, asby, fn0, fn1;
-    uint8_t *d1=0;
+    uint8_t frame_bord[FRAME_BITORDER_LEN];
 
     //	printf("s=");
     //	print_buf(scramb_table,127);
@@ -441,7 +440,7 @@ static void radio_process_frame(const uint8_t *f, int framelen, int modulo)
         asby=d[68];
         fn0=d[2];
         fn1=d[1];
-        d1 = bitorder_frame(d+3);
+        bitorder_frame(d+3, frame_bord);
 
         scr_ok++;
     }
@@ -449,18 +448,14 @@ static void radio_process_frame(const uint8_t *f, int framelen, int modulo)
         printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", modulo, fn0, fn1, asbx, asby, scr2);
         for (i=0; i<8; i++) {
             for(j=0; j<8; j++)
-                printf("%i", d1[i*8+j]);
+                printf("%i", frame_bord[i*8+j]);
             printf(" ");
         }
-        print_buf(d1, 64);
-        multiblock_process(d1, 2*fn0 + fn1, modulo);
+        print_buf(frame_bord, 64);
+        multiblock_process(frame_bord, 2*fn0 + fn1, modulo);
     } else {
         printf("ERR2 mod=%03i\n", modulo);
         multiblock_reset();
         segmentation_reset();
     }
-
-    if (d1)
-        free(d1);
-
 }
