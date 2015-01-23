@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void decode_cell_id(int cell_id) {
+static void decode_cell_id(int cell_id) {
 
     int cell_id_format, cell_id_bs_id, cell_id_rsw_id;
 
@@ -24,7 +24,7 @@ void decode_cell_id(int cell_id) {
 
 }
 
-void decode_key_reference(int key_reference) {
+static void decode_key_reference(int key_reference) {
     int key_type, key_index;
 
     key_type=(key_reference & 0xf0) >>4;
@@ -36,7 +36,7 @@ void decode_key_reference(int key_reference) {
     // TODO: Decode key_type
 }
 
-void d_system_info(const uint8_t *t) {
+static void d_system_info(const uint8_t *t) {
 
     int mode, bch, roam, exp;
     int ecch, atta, mux_type, sim, dc;
@@ -220,7 +220,7 @@ void d_system_info(const uint8_t *t) {
 
 }
 
-void d_group_composition(const uint8_t *t) {
+static void d_group_composition(const uint8_t *t) {
 
     int og_nb;
     int i;
@@ -246,7 +246,7 @@ void d_group_composition(const uint8_t *t) {
     }
 }
 
-void d_group_activation(const uint8_t *t) {
+static void d_group_activation(const uint8_t *t) {
 
     int activation_mode, group_id, coverage_id, channel_id, u_ch_scrambling;
     int d_ch_scrambling, key_reference, tti;
@@ -275,7 +275,7 @@ void d_group_activation(const uint8_t *t) {
     printf("\n");
 }
 
-void d_group_list(const uint8_t *t) {
+static void d_group_list(const uint8_t *t) {
 
     int i;
     int reference_list, revision, csg, cso, dc;
@@ -326,7 +326,7 @@ void d_group_list(const uint8_t *t) {
 
 }
 
-void d_neighbouring_cell(const uint8_t *t) {
+static void d_neighbouring_cell(const uint8_t *t) {
 
     int i,j;
     int ccr_config, ccr_param;
@@ -395,12 +395,12 @@ void d_neighbouring_cell(const uint8_t *t) {
 
 }
 
-void d_tti_assignment(const uint8_t *t) {
+static void d_tti_assignment(const uint8_t *t) {
     printf("\tCODOP=0x?? (D_TTI_ASSIGNMENT)\n");
 }
 
 
-void d_call_waiting(const uint8_t *t) {
+static void d_call_waiting(const uint8_t *t) {
 
     int appli_sap_id, call_priority, call_id;
 
@@ -461,23 +461,23 @@ void d_call_waiting(const uint8_t *t) {
     printf("\t\tCALL_ID=%i\n", call_id);
 }
 
-void d_call_alert(const uint8_t *t) {
+static void d_call_alert(const uint8_t *t) {
     printf("\tCODOP=0x31 (D_CALL_ALERT)\n");
 }
 
-void d_connect_cch(const uint8_t *t) {
+static void d_connect_cch(const uint8_t *t) {
     printf("\tCODOP=0x62 (D_CONNECT_CCH)\n");
 }
 
-void d_data_end(const uint8_t *t) {
+static void d_data_end(const uint8_t *t) {
     printf("\tCODOP=0x48 (D_DATA_END)\n");
 }
 
-void d_data_msg_down(const uint8_t *t) {
+static void d_data_msg_down(const uint8_t *t) {
     printf("\tCODOP=0x45 (D_DATA_MSG_DOWN)\n");
 }
 
-void d_registration_ack(const uint8_t *t) {
+static void d_registration_ack(const uint8_t *t) {
 
     int complete_reg;
     int rt_min_activity;
@@ -540,7 +540,7 @@ void d_registration_ack(const uint8_t *t) {
 
 }
 
-void d_call_connect(const uint8_t *t) {
+static void d_call_connect(const uint8_t *t) {
     int call_type;
     int channel_id;
     int u_ch_scrambling;
@@ -566,63 +566,63 @@ void d_call_connect(const uint8_t *t) {
     // TODO: KEY_OF_CALL
 }
 
-void d_functional_short_data(const uint8_t *t) {
+static void d_functional_short_data(const uint8_t *t) {
     printf("\tCODOP=0x42 (D_FUNCTIONAL_SHORT_DATA)\n");
 }
 
-void d_call_start(const uint8_t *r) {
+static void d_call_start(const uint8_t *r) {
     printf("\tCODOP=0x3e (D_CALL_START)\n");
 }
 
-void d_registration_nak(const uint8_t *t) {
+static void d_registration_nak(const uint8_t *t) {
     printf("\tCODOP=0x21 (D_REGISTRATION_NAK)\n");
 }
 
-void d_call_setup(const uint8_t *t) {
+static void d_call_setup(const uint8_t *t) {
     printf("\tCODOP=0x32 (D_CALL_SETUP)\n");
 }
 
-void d_reject(const uint8_t *t) {
+static void d_reject(const uint8_t *t) {
     printf("\tCODOP=0x08 (D_REJECT)\n");
 }
 
-void d_return(const uint8_t *t) {
+static void d_return(const uint8_t *t) {
     printf("\tCODOP=0x10 (D_RETURN)\n");
 }
 
-void d_authentication(const uint8_t *t) {
+static void d_authentication(const uint8_t *t) {
     printf("\tCODOP=0x13 (D_AUTHENTICATION)\n");
 }
 
-void d_authorisation(const uint8_t *t) {
+static void d_authorisation(const uint8_t *t) {
     printf("\tCODOP=0x16 (D_AUTHORISATION)\n");
 }
 
-void d_channel_init(const uint8_t *t) {
+static void d_channel_init(const uint8_t *t) {
     printf("\tCODOP=0x18 (D_CHANNEL_INIT)\n");
 }
 
-void d_forced_registration(const uint8_t *t) {
+static void d_forced_registration(const uint8_t *t) {
     printf("\tCODOP=0x23 (D_FORCED_REGISTRATION)\n");
 }
 
-void d_location_activity_ack(const uint8_t *t) {
+static void d_location_activity_ack(const uint8_t *t) {
     printf("\tCODOP=0x25 (D_LOCATION_ACTIVITY_ACK)\n");
 }
 
-void d_call_switch(const uint8_t *t) {
+static void d_call_switch(const uint8_t *t) {
     printf("\tCODOP=0x35 (D_CALL_SWITCH)\n");
 }
 
-void d_call_end(const uint8_t *t) {
+static void d_call_end(const uint8_t *t) {
     printf("\tCODOP=0xe2 (D_CALL_END)\n");
 }
 
-void d_explicit_short_data(const uint8_t *t) {
+static void d_explicit_short_data(const uint8_t *t) {
     printf("\tCODOP=0x46 (D_EXPLICIT_SHORT_DATA)\n");
 }
 
-void d_connect_dch(const uint8_t *t) {
+static void d_connect_dch(const uint8_t *t) {
 
     int dch_low_layer;
     int channel_id;
@@ -643,7 +643,7 @@ void d_connect_dch(const uint8_t *t) {
     printf("\t\tD_CH_SCRAMBLING=%i\n", d_ch_scrambling);
 }
 
-void d_data_authentication(const uint8_t *t) {
+static void d_data_authentication(const uint8_t *t) {
     printf("\tCODOP=0x63 (D_DATA_AUTHENTICATION)\n");
 }
 
@@ -674,7 +674,7 @@ void decode_bch(const uint8_t *t) {
 
 }
 
-void decode_rch_address(const uint8_t *t) {
+static void decode_rch_address(const uint8_t *t) {
 
     int a, y, x;
 
