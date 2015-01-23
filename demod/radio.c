@@ -271,8 +271,8 @@ int check_data_crc(uint8_t *d) {
 }
 
 uint8_t *decode_data_frame(uint8_t *c) {
-    uint8_t *b1=malloc(26);
-    uint8_t *b2=malloc(50);
+    uint8_t b1[26];
+    uint8_t b2[50];
     uint8_t *d=malloc(74);
 
     int j, check=1;
@@ -320,8 +320,6 @@ uint8_t *decode_data_frame(uint8_t *c) {
     if (!check)
         d[0]=2;
 
-    free(b1);
-    free(b2);
     return d;
 }
 
