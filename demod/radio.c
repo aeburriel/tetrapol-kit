@@ -22,6 +22,7 @@
 int mod = -1;
 static uint8_t scramb_table[127];
 
+static void radio_process_frame(const uint8_t *f, int framelen, int modulo);
 
 void mod_set(int m) {
     mod=m;
@@ -63,7 +64,8 @@ void tetrapol_destroy(tetrapol_t *t)
     t->buf = NULL;
 }
 
-void print_buf(const uint8_t *frame, int framelen) {
+void print_buf(const uint8_t *frame, int framelen)
+{
     int i;
     for(i=0; i<framelen; i++)
         printf("%x", frame[i]);
@@ -172,7 +174,7 @@ static int find_frame_sync(tetrapol_t *t)
 }
 
 /// return number of acquired frames (0 or 1) or -1 on error
-static int get_frame(frame_t *frame, tetrapol_t *t)
+static int get_frame(tetrapol_t *t, frame_t *frame)
 {
     if (t->data_len < FRAME_LEN) {
         return 0;
@@ -221,7 +223,7 @@ int tetrapol_main(tetrapol_t *t)
             while (r >= 0 && !do_exit) {
                 frame_t frame;
 
-                while ((r = get_frame(&frame, t)) > 0) {
+                while ((r = get_frame(t, &frame)) > 0) {
                     process_frame(&frame);
                 }
 
@@ -239,7 +241,8 @@ int tetrapol_main(tetrapol_t *t)
 }
 
 // http://ghsi.de/CRC/index.php?Polynom=10010
-void mk_crc5(uint8_t *res, const uint8_t *input, int input_len) {
+static void mk_crc5(uint8_t *res, const uint8_t *input, int input_len)
+{
     uint8_t crc[5] = { 0, 0, 0, 0, 0 };
     uint8_t do_invert;
 
@@ -258,8 +261,8 @@ void mk_crc5(uint8_t *res, const uint8_t *input, int input_len) {
         res[4-i] = crc[i];
 }
 
-int check_data_crc(uint8_t *d) {
-
+static int check_data_crc(const uint8_t *d)
+{
     uint8_t crc[5];
     int res;
 
@@ -374,7 +377,8 @@ static void descramble(const uint8_t *in, uint8_t *out, int len, int scr)
     }
 }
 
-uint8_t *bitorder_frame(uint8_t *d) {
+static uint8_t *bitorder_frame(uint8_t *d)
+{
     int i,j;
 
     uint8_t *d1=malloc(64);
@@ -385,14 +389,15 @@ uint8_t *bitorder_frame(uint8_t *d) {
     return d1;
 }
 
-void radio_init() {
+void radio_init()
+{
     for(int i = 0; i < 127; i++) {
         scramb_table[i] = (i < 7) ? 1 : (scramb_table[i-1] ^ scramb_table[i-7]);
     }
 }
 
-void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
-
+static void radio_process_frame(const uint8_t *f, int framelen, int modulo)
+{
     int scr, scr2, i, j;
     uint8_t asbx, asby, fn0, fn1;
     uint8_t *d1=0;
@@ -439,7 +444,7 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
         //		printf("b=");
         //		print_buf(d+1, 68);
 
-        scr2=scr;	
+        scr2=scr;
         asbx=d[67];			// maybe x=68, y=67
         asby=d[68];
         fn0=d[2];
