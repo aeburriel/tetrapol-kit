@@ -4,6 +4,7 @@
 #include "tsdu.h"
 #include "radio.h"
 #include "misc.h"
+#include "multiblock.h"
 
 
 int state, numblocks, startmod;
@@ -29,7 +30,7 @@ int multiblock_xor_verify(uint8_t *frame, int num) {
     return 1;
 }
 
-void multiblock_process(uint8_t * d1, int fn, int mod) {
+void multiblock_process(const uint8_t * d1, int fn, int mod) {
 
     if (mod%25 == 14) {			// FIXME: RCH, PCH ??
         decode_rch(d1);
