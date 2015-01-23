@@ -349,20 +349,21 @@ uint8_t *deinterleave_frame(uint8_t *e, int framelen) {
 //	return 0;
 //}
 
-int pre_cod[] = {1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static const int pre_cod[] = {
+    1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+};
 
-uint8_t *diffdec_frame(uint8_t *e, int framelen) {
-    uint8_t *ex=malloc(framelen);
-    int j;
-    ex[0]=e[0]; // in spec is e[0]+f[7], but since f[7] is always 0 fuck you
-    for(j=1; j<framelen; j++) {
+static void diffdec_frame(const uint8_t *e, uint8_t *ex, int len)
+{
+    // in spec is e[0]+f[7], but since f[7] is always 0 fuck you
+    ex[0] = e[0];
+    for(int j = 1; j < len; j++) {
         ex[j] = e[j] ^ e[j-pre_cod[j]];
         //		if(is_in_code(j))
         //			ex[j] = e[j] ^ e[j-2];
         //		else
         //			ex[j] = e[j] ^ e[j-1];
     }
-    return ex;
 }
 
 static void descramble(const uint8_t *in, uint8_t *out, int len, int scr)
@@ -396,7 +397,7 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
 
     int scr, scr2, i, j;
     uint8_t asbx, asby, fn0, fn1;
-    uint8_t *e, *c, *d=0, *d1=0;
+    uint8_t *c, *d=0, *d1=0;
 
     //	printf("s=");
     //	print_buf(scramb_table,127);
@@ -413,7 +414,8 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
         //		printf("descr=");
         //		print_buf(descr, 152);
 
-        e=diffdec_frame(descr, 152);
+        uint8_t e[BUF_LEN];
+        diffdec_frame(descr, e, 152);
         //		printf("e=");
         //		print_buf(e,152);
 
@@ -448,7 +450,6 @@ void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
 
 cleanup:
         free(c);
-        free(e);
         free(d);
 
     }
