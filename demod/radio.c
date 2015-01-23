@@ -61,7 +61,7 @@ void tetrapol_destroy(tetrapol_t *t)
     t->buf = NULL;
 }
 
-void print_buf(uint8_t *frame, int framelen) {
+void print_buf(const uint8_t *frame, int framelen) {
     int i;
     for(i=0; i<framelen; i++)
         printf("%x", frame[i]);
@@ -374,7 +374,7 @@ int scramb(int k) {
     return (scramb_table[k-1] ^ scramb_table[k-7]);
 }
 
-uint8_t *descramble_frame(uint8_t *f, int framelen, int scr) {
+uint8_t *descramble_frame(const uint8_t *f, int framelen, int scr) {
     uint8_t *ex=malloc(framelen);
     int k;
     if (scr == 0)
@@ -403,7 +403,7 @@ void radio_init() {
     }
 }
 
-void radio_process_frame(uint8_t *f, int framelen, int modulo) {
+void radio_process_frame(const uint8_t *f, int framelen, int modulo) {
 
     int scr, scr2, i, j;
     uint8_t asbx, asby, fn0, fn1;

@@ -8,7 +8,7 @@
 
 uint8_t stuff[] = {1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1};
 
-int detect_stuff(uint8_t *bits) {
+int detect_stuff(const uint8_t *bits) {
     int i;
 
     //	print_buf(bits,40);
@@ -29,7 +29,7 @@ void segmentation_reset() {
     numoctets=0;
 }
 
-void tpdu_du_process(uint8_t* t, int length, int mod) {
+void tpdu_du_process(const uint8_t* t, int length, int mod) {
 
     int ext, seg, prio, id_tsap;
     int data_length=0;
@@ -83,7 +83,7 @@ void tpdu_du_process(uint8_t* t, int length, int mod) {
 
 }
 
-void tpdu_i_process(uint8_t* t, int length, int mod) {
+void tpdu_i_process(const uint8_t* t, int length, int mod) {
 
     int ext, seg, d, tpdu_code;
     int par_field, dest_ref;
@@ -126,7 +126,7 @@ void tpdu_i_process(uint8_t* t, int length, int mod) {
 
 }
 
-void hdlc_process(uint8_t *t, int length, int mod) {
+void hdlc_process(const uint8_t *t, int length, int mod) {
 
     int hdlc, r, s, pe, m;
 

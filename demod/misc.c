@@ -3,7 +3,7 @@
 #include "misc.h"
 
 
-int bits_to_int(uint8_t *bits, int num) {
+int bits_to_int(const uint8_t *bits, int num) {
 
     int i, ret=0;
 
@@ -13,7 +13,7 @@ int bits_to_int(uint8_t *bits, int num) {
     return ret;
 }
 
-void decode_addr(uint8_t *t) {
+void decode_addr(const uint8_t *t) {
     int x,y,z;
 
     z=bits_to_int(t, 1);
