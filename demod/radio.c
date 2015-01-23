@@ -19,6 +19,15 @@
 // max error rate for 2 frame synchronization sequences
 #define MAX_FRAME_SYNC_ERR 1
 
+struct _tetrapol_t {
+    uint8_t *buf;
+    int data_len;
+    int fd;
+    int last_sync_err;  ///< errors in last frame synchronization sequence
+    int total_sync_err; ///< cumulative error in framing
+    int invert;         ///< polarity of differentialy encoded bits stream
+};
+
 int mod = -1;
 static uint8_t scramb_table[127];
 
@@ -39,29 +48,40 @@ static void sigint_handler(int sig)
 static const uint8_t frame_sync[] = { 0, 1, 1, 0, 0, 0, 1, 0 };
 #define FRAME_SYNC_LEN ((sizeof(frame_sync)))
 
-int tetrapol_init(tetrapol_t *t, int fd)
+tetrapol_t *tetrapol_create(int fd)
 {
+    tetrapol_t *t = malloc(sizeof(tetrapol_t));
+    if (t == NULL) {
+        return NULL;
+    }
     memset(t, 0, sizeof(tetrapol_t));
 
     if (fcntl(fd, F_SETFL, O_NONBLOCK | fcntl(t->fd, F_GETFL))) {
-        return -1;
+        goto err_fd;
     }
     t->fd = fd;
 
     t->buf = malloc(BUF_LEN);
     if (t->buf == NULL) {
-        return -1;
+        goto err_fd;
     }
 
     radio_init();
 
-    return 0;
+    return t;
+
+//err_buf:
+//    free(t->buf);
+err_fd:
+    free(t);
+
+    return NULL;
 }
 
 void tetrapol_destroy(tetrapol_t *t)
 {
     free(t->buf);
-    t->buf = NULL;
+    free(t);
 }
 
 static uint8_t differential_dec(uint8_t *buf, int size, uint8_t last_bit)
