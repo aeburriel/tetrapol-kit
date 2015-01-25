@@ -26,7 +26,7 @@ static int detect_stuff(const uint8_t *bits) {
 uint8_t segbuf[10000];
 int numoctets, startmod;
 
-void segmentation_reset() {
+void segmentation_reset(void) {
     numoctets=0;
 }
 

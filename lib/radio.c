@@ -397,7 +397,7 @@ static void bitorder_frame(const uint8_t *d, uint8_t *out)
     }
 }
 
-void radio_init()
+void radio_init(void)
 {
     for(int i = 0; i < 127; i++) {
         scramb_table[i] = (i < 7) ? 1 : (scramb_table[i-1] ^ scramb_table[i-7]);

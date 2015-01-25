@@ -10,7 +10,7 @@
 int state, numblocks, startmod;
 uint8_t buf[8*8*9];
 
-void multiblock_reset() {
+void multiblock_reset(void) {
 
     state=0;
     numblocks=0;
