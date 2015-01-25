@@ -255,22 +255,19 @@ int tetrapol_main(tetrapol_t *t)
 // http://ghsi.de/CRC/index.php?Polynom=10010
 static void mk_crc5(uint8_t *res, const uint8_t *input, int input_len)
 {
-    uint8_t crc[5] = { 0, 0, 0, 0, 0 };
     uint8_t do_invert;
+    memset(res, 0, 5);
 
     for (int i=0; i<input_len; ++i)
     {
-        do_invert = input[i] ^ crc[4];         // XOR required?
+        do_invert = input[i] ^ res[0];         // XOR required?
 
-        crc[4] = crc[3];
-        crc[3] = crc[2];
-        crc[2] = crc[1] ^ do_invert;
-        crc[1] = crc[0];
-        crc[0] = do_invert;
+        res[0] = res[1];
+        res[1] = res[2];
+        res[2] = res[3] ^ do_invert;
+        res[3] = res[4];
+        res[4] = do_invert;
     }
-
-    for (int i=0; i<5; ++i)
-        res[4-i] = crc[i];
 }
 
 static int check_data_crc(const uint8_t *d)
