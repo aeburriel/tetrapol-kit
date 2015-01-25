@@ -249,7 +249,7 @@ static void d_group_composition(const uint8_t *t) {
 static void d_group_activation(const uint8_t *t) {
 
     int activation_mode, group_id, coverage_id, channel_id, u_ch_scrambling;
-    int d_ch_scrambling, key_reference, tti;
+    int d_ch_scrambling, key_reference;
 
     activation_mode=bits_to_int(t+8,4);
     group_id=bits_to_int(t+12, 12);
@@ -328,7 +328,7 @@ static void d_group_list(const uint8_t *t) {
 
 static void d_neighbouring_cell(const uint8_t *t) {
 
-    int i,j;
+    int i;
     int ccr_config, ccr_param;
     int bn_nb[16], channel_id[16], adjacent_param[16];
     int bn[16], loc[16], exp[16], rxlev_access[16];
@@ -676,11 +676,10 @@ void decode_bch(const uint8_t *t) {
 
 static void decode_rch_address(const uint8_t *t) {
 
-    int a, y, x;
+    int a, y;
 
     a = t[0];
     y=bits_to_int(t+1, 3);
-    x=bits_to_int(t+4, 12);
 
     if (a==0) {
         printf("ACK ");
