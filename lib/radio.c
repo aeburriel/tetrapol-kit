@@ -366,14 +366,17 @@ static void diffdec_frame(const uint8_t *e, uint8_t *ex, int len)
     }
 }
 
-static void descramble(const uint8_t *in, uint8_t *out, int len, int scr)
+static void frame_descramble(frame_t *f, int *scr)
 {
-    if (scr == 0) {
-        memcpy(out, in, len);
-    } else {
-        for(int k=0; k < len; k++)
-            out[k] = in[k] ^ scramb_table[(k+scr)%127];
+    if (*scr == 0) {
+        return;
     }
+
+    int k = 0;
+    for( ; k < FRAME_LEN - 8; k++) {
+        f->data[k + 8] ^= scramb_table[(k + *scr) % 127];
+    }
+    *scr = (*scr + k) % 127;
 }
 
 #define FRAME_BITORDER_LEN 64
@@ -415,13 +418,11 @@ static int process_frame(frame_t *f)
     for(scr=0; scr<=127; scr++) {
         //		printf("trying scrambling %i\n", scr);
 
-        uint8_t descr[BUF_LEN];
-        descramble(f->data + 8, descr, 152, scr);
-        //		printf("descr=");
-        //		print_buf(descr, 152);
+        int scr_ = scr;
+        frame_descramble(f, &scr_);
 
         uint8_t e[BUF_LEN];
-        diffdec_frame(descr, e, 152);
+        diffdec_frame(f->data + 8, e, 152);
         //		printf("e=");
         //		print_buf(e,152);
 
