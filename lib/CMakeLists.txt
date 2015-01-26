@@ -7,13 +7,15 @@ find_library(CMOCKA_LIBRARY
     NAMES
     cmocka)
 
-add_executable (tetrapol
+add_library (tetrapol
     misc.c
     multiblock.c
     radio.c
-    tetrapol.c
     tpdu.c
     tsdu.c)
+
+add_executable (tetrapol_app tetrapol.c)
+target_link_libraries (tetrapol_app tetrapol)
 
 add_executable (test_radio
     misc.c
