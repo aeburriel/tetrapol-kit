@@ -31,7 +31,7 @@ struct _tetrapol_t {
 int mod = -1;
 static uint8_t scramb_table[127];
 
-static void radio_process_frame(const uint8_t *f, int framelen, int modulo);
+static int process_frame(frame_t *frame);
 
 void mod_set(int m) {
     mod=m;
@@ -114,16 +114,6 @@ static int tetrapol_recv(tetrapol_t *t)
     }
 
     return do_exit ? 0 : -1;
-}
-
-static int process_frame(frame_t *frame)
-{
-    if (mod != -1)
-        mod++;
-    if (mod==200)
-        mod=0;
-    radio_process_frame(frame->data, FRAME_LEN, mod);
-    return 0;
 }
 
 // compare bite stream to differentialy encoded synchronization sequence
@@ -404,11 +394,16 @@ void radio_init(void)
     }
 }
 
-static void radio_process_frame(const uint8_t *f, int framelen, int modulo)
+static int process_frame(frame_t *f)
 {
     int scr, scr2, i, j;
     uint8_t asbx, asby, fn0, fn1;
     uint8_t frame_bord[FRAME_BITORDER_LEN];
+
+    if (mod != -1)
+        mod++;
+    if (mod==200)
+        mod=0;
 
     //	printf("s=");
     //	print_buf(scramb_table,127);
@@ -421,7 +416,7 @@ static void radio_process_frame(const uint8_t *f, int framelen, int modulo)
         //		printf("trying scrambling %i\n", scr);
 
         uint8_t descr[BUF_LEN];
-        descramble(f+8, descr, 152, scr);
+        descramble(f->data + 8, descr, 152, scr);
         //		printf("descr=");
         //		print_buf(descr, 152);
 
@@ -462,17 +457,19 @@ static void radio_process_frame(const uint8_t *f, int framelen, int modulo)
         scr_ok++;
     }
     if(scr_ok==1) {
-        printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", modulo, fn0, fn1, asbx, asby, scr2);
+        printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", mod, fn0, fn1, asbx, asby, scr2);
         for (i=0; i<8; i++) {
             for(j=0; j<8; j++)
                 printf("%i", frame_bord[i*8+j]);
             printf(" ");
         }
         print_buf(frame_bord, 64);
-        multiblock_process(frame_bord, 2*fn0 + fn1, modulo);
+        multiblock_process(frame_bord, 2*fn0 + fn1, mod);
     } else {
-        printf("ERR2 mod=%03i\n", modulo);
+        printf("ERR2 mod=%03i\n", mod);
         multiblock_reset();
         segmentation_reset();
     }
+
+    return 0;
 }
