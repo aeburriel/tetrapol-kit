@@ -118,6 +118,17 @@ static int tetrapol_recv(tetrapol_phys_ch_t *t)
     return do_exit ? 0 : -1;
 }
 
+int tetrapol_recv2(tetrapol_phys_ch_t *t, uint8_t *buf, int len)
+{
+    const int space = sizeof(t->data) - t->data_len;
+    len = (len > space) ? space : len;
+
+    memcpy(t->data + t->data_len, buf, len);
+    t->data_len += len;
+
+    return len;
+}
+
 // compare bite stream to differentialy encoded synchronization sequence
 static int cmp_frame_sync(const uint8_t *data)
 {

@@ -12,6 +12,13 @@ extern "C" {
     void tetrapol_destroy(tetrapol_phys_ch_t *t);
     int tetrapol_main(tetrapol_phys_ch_t *t);
 
+    /**
+      Eat some data from buf into channel decoder.
+
+      @return number of bytes consumed
+    */
+    int tetrapol_recv2(tetrapol_phys_ch_t *t, uint8_t *buf, int len);
+
 #ifdef __cplusplus
 }
 #endif
