@@ -7,4 +7,5 @@ CTestTestfile.cmake
 lib/libtetrapol.a
 lib/test_radio
 Makefile
+Testing/
 
