@@ -416,11 +416,14 @@ static int process_frame(frame_t *f)
     for(scr=0; scr<=127; scr++) {
         //		printf("trying scrambling %i\n", scr);
 
+        frame_t f_;
+        memcpy(&f_, f, sizeof(f_));
+
         int scr_ = scr;
-        frame_descramble(f, &scr_);
+        frame_descramble(&f_, &scr_);
 
         uint8_t e[FRAME_LEN];
-        diffdec_frame(f->data + 8, e, 152);
+        diffdec_frame(f_.data + 8, e, 152);
         //		printf("e=");
         //		print_buf(e,152);
 
