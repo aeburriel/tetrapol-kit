@@ -1,8 +1,3 @@
-# FIXME. supports non-gcc compillers
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall")
-# TODO: debug only
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -ggdb3")
-
 find_library(CMOCKA_LIBRARY
     NAMES
     cmocka)
@@ -13,9 +8,6 @@ add_library (tetrapol
     radio.c
     tpdu.c
     tsdu.c)
-
-add_executable (tetrapol_app tetrapol.c)
-target_link_libraries (tetrapol_app tetrapol)
 
 add_executable (test_radio
     misc.c
