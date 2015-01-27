@@ -15,17 +15,16 @@
 
 #define DEBUG
 
-#define DATA_SIZE ((10*FRAME_LEN))
 // max error rate for 2 frame synchronization sequences
 #define MAX_FRAME_SYNC_ERR 1
 
 struct _tetrapol_phys_ch_t {
-    uint8_t *data;
-    int data_len;
     int fd;
     int last_sync_err;  ///< errors in last frame synchronization sequence
     int total_sync_err; ///< cumulative error in framing
     int invert;         ///< polarity of differentialy encoded bits stream
+    int data_len;
+    uint8_t data[10*FRAME_LEN];
 };
 
 int mod = -1;
@@ -61,11 +60,6 @@ tetrapol_phys_ch_t *tetrapol_create(int fd)
     }
     t->fd = fd;
 
-    t->data = malloc(DATA_SIZE);
-    if (t->data == NULL) {
-        goto err_fd;
-    }
-
     radio_init();
 
     return t;
@@ -80,7 +74,6 @@ err_fd:
 
 void tetrapol_destroy(tetrapol_phys_ch_t *t)
 {
-    free(t->data);
     free(t);
 }
 
@@ -101,7 +94,7 @@ static int tetrapol_recv(tetrapol_phys_ch_t *t)
     fds.revents = 0;
 
     // hack, buffer is full, but return 0 means EOF
-    if ((DATA_SIZE - t->data_len) == 0) {
+    if ((sizeof(t->data) - t->data_len) == 0) {
         return 1;
     }
 
@@ -109,7 +102,7 @@ static int tetrapol_recv(tetrapol_phys_ch_t *t)
         if (! (fds.revents & POLLIN)) {
             return -1;
         }
-        int rsize = read(t->fd, t->data + t->data_len, DATA_SIZE - t->data_len);
+        int rsize = read(t->fd, t->data + t->data_len, sizeof(t->data) - t->data_len);
         if (rsize == -1) {
             return -1;
         }
@@ -426,12 +419,12 @@ static int process_frame(frame_t *f)
         int scr_ = scr;
         frame_descramble(f, &scr_);
 
-        uint8_t e[DATA_SIZE];
+        uint8_t e[FRAME_LEN];
         diffdec_frame(f->data + 8, e, 152);
         //		printf("e=");
         //		print_buf(e,152);
 
-        uint8_t c[DATA_SIZE];
+        uint8_t c[FRAME_LEN];
         deinterleave_frame(e, c, 152);
         //		printf("c=");
         //		print_buf(c,152);
