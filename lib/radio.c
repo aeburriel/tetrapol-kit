@@ -19,7 +19,7 @@
 // max error rate for 2 frame synchronization sequences
 #define MAX_FRAME_SYNC_ERR 1
 
-struct _tetrapol_t {
+struct _tetrapol_phys_ch_t {
     uint8_t *data;
     int data_len;
     int fd;
@@ -48,13 +48,13 @@ static void sigint_handler(int sig)
 static const uint8_t frame_sync[] = { 0, 1, 1, 0, 0, 0, 1, 0 };
 #define FRAME_SYNC_LEN ((sizeof(frame_sync)))
 
-tetrapol_t *tetrapol_create(int fd)
+tetrapol_phys_ch_t *tetrapol_create(int fd)
 {
-    tetrapol_t *t = malloc(sizeof(tetrapol_t));
+    tetrapol_phys_ch_t *t = malloc(sizeof(tetrapol_phys_ch_t));
     if (t == NULL) {
         return NULL;
     }
-    memset(t, 0, sizeof(tetrapol_t));
+    memset(t, 0, sizeof(tetrapol_phys_ch_t));
 
     if (fcntl(fd, F_SETFL, O_NONBLOCK | fcntl(t->fd, F_GETFL))) {
         goto err_fd;
@@ -78,7 +78,7 @@ err_fd:
     return NULL;
 }
 
-void tetrapol_destroy(tetrapol_t *t)
+void tetrapol_destroy(tetrapol_phys_ch_t *t)
 {
     free(t->data);
     free(t);
@@ -93,7 +93,7 @@ static uint8_t differential_dec(uint8_t *data, int size, uint8_t last_bit)
     return last_bit;
 }
 
-static int tetrapol_recv(tetrapol_t *t)
+static int tetrapol_recv(tetrapol_phys_ch_t *t)
 {
     struct pollfd fds;
     fds.fd = t->fd;
@@ -143,7 +143,7 @@ static int cmp_frame_sync(const uint8_t *data, int invert)
   because only signal polarity must be considered,
   there is lot of troubles with error handlig after differential decoding.
   */
-static int find_frame_sync(tetrapol_t *t)
+static int find_frame_sync(tetrapol_phys_ch_t *t)
 {
     int offs = 0;
     int sync_err = MAX_FRAME_SYNC_ERR + 1;
@@ -181,7 +181,7 @@ static int find_frame_sync(tetrapol_t *t)
 }
 
 /// return number of acquired frames (0 or 1) or -1 on error
-static int get_frame(tetrapol_t *t, frame_t *frame)
+static int get_frame(tetrapol_phys_ch_t *t, frame_t *frame)
 {
     if (t->data_len < FRAME_LEN) {
         return 0;
@@ -210,7 +210,7 @@ static int get_frame(tetrapol_t *t, frame_t *frame)
     return 1;
 }
 
-int tetrapol_main(tetrapol_t *t)
+int tetrapol_main(tetrapol_phys_ch_t *t)
 {
     signal(SIGINT, sigint_handler);
 

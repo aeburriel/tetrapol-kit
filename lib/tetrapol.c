@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    tetrapol_t *t = tetrapol_create(infd);
+    tetrapol_phys_ch_t *t = tetrapol_create(infd);
     if (t == NULL) {
         fprintf(stderr, "Failed to initialize TETRAPOL instance.");
         return -1;
