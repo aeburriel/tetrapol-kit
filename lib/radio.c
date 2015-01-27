@@ -351,16 +351,10 @@ static const int pre_cod[] = {
     1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 };
 
-static void diffdec_frame(const uint8_t *e, uint8_t *ex, int len)
+static void frame_diff_dec(frame_t *f)
 {
-    // in spec is e[0]+f[7], but since f[7] is always 0 fuck you
-    ex[0] = e[0];
-    for(int j = 1; j < len; j++) {
-        ex[j] = e[j] ^ e[j-pre_cod[j]];
-        //		if(is_in_code(j))
-        //			ex[j] = e[j] ^ e[j-2];
-        //		else
-        //			ex[j] = e[j] ^ e[j-1];
+    for (int j = FRAME_LEN - 1; j > 8; --j) {
+        f->data[j] ^= f->data[j - pre_cod[j - 8]];
     }
 }
 
@@ -421,14 +415,10 @@ static int process_frame(frame_t *f)
 
         int scr_ = scr;
         frame_descramble(&f_, &scr_);
-
-        uint8_t e[FRAME_LEN];
-        diffdec_frame(f_.data + 8, e, 152);
-        //		printf("e=");
-        //		print_buf(e,152);
+        frame_diff_dec(&f_);
 
         uint8_t c[FRAME_LEN];
-        deinterleave_frame(e, c, 152);
+        deinterleave_frame(f_.data + 8, c, 152);
         //		printf("c=");
         //		print_buf(c,152);
 

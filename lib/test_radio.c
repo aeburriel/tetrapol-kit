@@ -13,13 +13,12 @@ static void test_frame_diff_dec(void **state)
 {
     (void) state;   // unused
 
-    uint8_t data_in[FRAME_LEN];
-    uint8_t data_out[sizeof(data_in)];
+    frame_t data_in;
     for (int i = 0; i < 8; ++i) {
-        data_in[i] = data_out[i] = 1 << (i % 7);
+        data_in.data[i] = 1 << (i % 7);
     }
     for (int i = 0; i < FRAME_LEN - 8; ++i) {
-        data_in[i + 8] = 1 << (i % 7);
+        data_in.data[i + 8] = 1 << (i % 7);
     }
     uint8_t data_exp[FRAME_LEN] = {
         0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x01,
@@ -38,8 +37,8 @@ static void test_frame_diff_dec(void **state)
         0x18, 0x30, 0x50, 0x41, 0x03, 0x05, 0x0c, 0x18,
     };
 
-    diffdec_frame(data_in + 8, data_out + 8, FRAME_LEN - 8);
-    assert_memory_equal(data_exp, data_out, FRAME_LEN);
+    frame_diff_dec(&data_in);
+    assert_memory_equal(data_exp, data_in.data, FRAME_LEN);
 }
 
 static void test_mk_crc5(void **state)
