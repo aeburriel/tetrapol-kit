@@ -1,9 +1,10 @@
 *.o
+apps/tetrapol_dump
 CMakeCache.txt
-CMakeFiles/
-Makefile
+CMakeFiles
 cmake_install.cmake
-lib/CMakeFiles/
-lib/Makefile
-lib/cmake_install.cmake
-lib/tetrapol
+CTestTestfile.cmake
+lib/libtetrapol.a
+lib/test_radio
+Makefile
+
