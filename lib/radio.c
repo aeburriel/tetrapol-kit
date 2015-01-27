@@ -100,6 +100,11 @@ static int tetrapol_recv(tetrapol_t *t)
     fds.events = POLLIN;
     fds.revents = 0;
 
+    // hack, buffer is full, but return 0 means EOF
+    if ((BUF_LEN - t->data_len) == 0) {
+        return 1;
+    }
+
     if (poll(&fds, 1, -1) > 0 && !do_exit) {
         if (! (fds.revents & POLLIN)) {
             return -1;
