@@ -1,11 +1,78 @@
 #include "tetrapol.h"
 
 #include <fcntl.h>
+#include <poll.h>
+#include <signal.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+// set on SIGINT
+volatile static int do_exit = 0;
+
+
+static void sigint_handler(int sig)
+{
+    do_exit = 1;
+}
+
+static int do_read(int fd, uint8_t *buf, int len)
+{
+    struct pollfd fds;
+    fds.fd = fd;
+    fds.events = POLLIN;
+    fds.revents = 0;
+
+    if (poll(&fds, 1, -1) > 0 && !do_exit) {
+        if (! (fds.revents & POLLIN)) {
+            return -1;
+        }
+
+        return read(fd, buf, len);
+    }
+
+    return do_exit ? 0 : -1;
+}
+
+static int tetrapol_dump_loop(tetrapol_phys_ch_t *t, int fd)
+{
+    int ret = 0;
+    int data_len = 0;
+    uint8_t data[4096];
+
+    if (fcntl(fd, F_SETFL, O_NONBLOCK | fcntl(fd, F_GETFL))) {
+        return -1;
+    }
+
+    signal(SIGINT, sigint_handler);
+
+    while (ret == 0 && !do_exit) {
+        if (sizeof(data) - data_len > 0) {
+            const int rsize = do_read(fd, data + data_len, sizeof(data) - data_len);
+            if (rsize <= 0) {
+                return rsize;
+            }
+            data_len += rsize;
+        }
+
+        const int rsize = tetrapol_recv2(t, data, data_len);
+        if (rsize < 0) {
+            return rsize;
+        }
+        if (rsize > 0) {
+            memmove(data, data + rsize, data_len - rsize);
+            data_len -= rsize;
+        }
+
+        // TODO
+        // ret = tetrapol_phys_ch_process(t);
+    }
+
+    return ret;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -39,7 +106,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    const int ret = tetrapol_main(t);
+    const int ret = tetrapol_dump_loop(t, infd);
     tetrapol_destroy(t);
     if (infd != STDIN_FILENO) {
         close(infd);
