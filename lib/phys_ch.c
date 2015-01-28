@@ -243,55 +243,65 @@ static int check_data_crc(const uint8_t *d)
     return res ? 0 : 1;
 }
 
-static void decode_data_frame(const uint8_t *c, uint8_t *d)
+static void decode_data_frame(const frame_t *f, uint8_t *d)
 {
+    // decode first 52 bites of frame
     uint8_t b1[26];
-    uint8_t b2[50];
 
-    int j, check=1;
+    int check = 1;
 
-    for (j=0; j<=25; j++) b1[j] = 2;
-    for (j=0; j<=49; j++) b2[j] = 2;
-    for (j=0; j<=73; j++) d[j] = 2;
+    memset(b1, 2, 26);
+    memset(d, 2, 74);
 
-    // b'(25)=b'(-1)
-    // b'(j-1)=C(2j)-C(2j+1)
+    // b'(25) = b'(-1)
+    // b'(j-1) = C(2j) - C(2j+1)
 
-    // j=0 
-    b1[25]=c[0] ^ c[1];
-    for(j=1; j<=25; j++) {
-        b1[j-1]=c[2*j] ^ c[2*j+1];
+    // j=0
+    b1[25] = f->data[0] ^ f->data[1];
+    for(int j = 1; j <= 25; j++) {
+        b1[j-1] = f->data[2*j] ^ f->data[2*j+1];
     }
 
     //	printf("b1=");
     //	print_buf(b1,26);
 
-    b2[0] = c[53];
-    for(j=2; j<=48; j++) {
-        b2[j-1]=c[2*j+52] ^ c[2*j+53];
+    for(int j = 0; j <= 25; j++)
+        d[j]=b1[j];
+
+    if ((f->data[150] != f->data[151]) ||
+            ((f->data[148] ^ f->data[149]) != f->data[150]) ||
+            (f->data[52] != f->data[53])) {
+        check=0;
+    }
+
+    for (int j = 3; j < 23; j++) {
+        if (f->data[2*j] != (b1[j] ^ b1[j-1] ^ b1[j-2]))
+            check=0;
+    }
+
+    // TODO: check frame type (AUDIO / DATA)
+    // decode remaining part of frame
+    uint8_t b2[50];
+    memset(b2, 2, 50);
+    b2[0] = f->data[53];
+    for(int j = 2; j <= 48; j++) {
+        b2[j-1] = f->data[2*j+52] ^ f->data[2*j+53];
     }
 
     //	printf("b2=");
     //	print_buf(b2,48);
 
-    for(j=0; j<=25; j++)
-        d[j]=b1[j];
-    for(j=0; j<=47; j++)
-        d[j+26]=b2[j];
-
-    if ((c[150] != c[151]) || ((c[148] ^ c[149]) != c[150]) || (c[52] != c[53]))
-        check=0;
-
-    for (j=3; j < 23; j++) {
-        if (c[2*j] != (b1[j]^b1[j-1]^b1[j-2]))
+    for(int j = 0; j <= 47; j++) {
+        d[j+26] = b2[j];
+    }
+    for (int j = 3; j < 45; j++) {
+        if (f->data[2*j+52] != (b2[j] ^ b2[j-1] ^ b2[j-2]))
             check=0;
     }
-    for (j=3; j < 45; j++) {
-        if (c[2*j+52] != (b2[j]^b2[j-1]^b2[j-2]))
-            check=0;
-    }
-    if (!check)
+
+    if (!check) {
         d[0]=2;
+    }
 }
 
 // PAS 0001-2 6.1.4.1
@@ -447,7 +457,7 @@ static int process_frame(frame_t *f)
         frame_deinterleave(&f_);
 
         uint8_t d[FRAME_DATA_LEN];
-        decode_data_frame(f_.data, d);
+        decode_data_frame(&f_, d);
         //		printf("d=");
         //		print_buf(d,74);
 
