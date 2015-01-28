@@ -1,5 +1,4 @@
 #include "tetrapol.h"
-#include "frame.h"
 #include "multiblock.h"
 #include "tpdu.h"
 #include "radio.h"
@@ -17,6 +16,15 @@
 
 // max error rate for 2 frame synchronization sequences
 #define MAX_FRAME_SYNC_ERR 1
+
+#define FRAME_HDR_LEN (8)
+#define FRAME_DATA_LEN (152)
+#define FRAME_LEN (FRAME_HDR_LEN + FRAME_DATA_LEN)
+
+typedef struct {
+    int frame_no;
+    uint8_t data[FRAME_DATA_LEN];
+} frame_t;
 
 struct _tetrapol_phys_ch_t {
     int fd;
