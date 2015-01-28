@@ -379,17 +379,15 @@ static void frame_diff_dec(frame_t *f)
     }
 }
 
-static void frame_descramble(frame_t *f, int *scr)
+static void frame_descramble(frame_t *f, int scr)
 {
-    if (*scr == 0) {
+    if (scr == 0) {
         return;
     }
 
-    int k = 0;
-    for( ; k < FRAME_DATA_LEN; k++) {
-        f->data[k] ^= scramb_table[(k + *scr) % 127];
+    for(int k = 0 ; k < FRAME_DATA_LEN; k++) {
+        f->data[k] ^= scramb_table[(k + scr) % 127];
     }
-    *scr = (*scr + k) % 127;
 }
 
 #define FRAME_BITORDER_LEN 64
@@ -434,8 +432,7 @@ static int process_frame(frame_t *f)
         frame_t f_;
         memcpy(&f_, f, sizeof(f_));
 
-        int scr_ = scr;
-        frame_descramble(&f_, &scr_);
+        frame_descramble(&f_, scr);
         frame_diff_dec(&f_);
         frame_deinterleave(&f_);
 
