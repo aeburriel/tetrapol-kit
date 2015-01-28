@@ -14,12 +14,12 @@ static void test_frame_deinterleave(void **state)
     (void) state;   // unused
 
     frame_t data;
-    for (int i = 0; i < FRAME_LEN; ++i) {
-        data.data[i] = 0x7f & (i + 1);
+    for (int i = 0; i < FRAME_DATA_LEN; ++i) {
+        data.data[i] = 0x7f & (i + 1 + 8);
     }
 
-    uint8_t data_exp[FRAME_LEN] = {
-        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x0a, 0x56, 0x2f, 0x7b,
+    uint8_t data_exp[FRAME_DATA_LEN] = {
+        0x0a, 0x56, 0x2f, 0x7b,
         0x1d, 0x69, 0x44, 0x10, 0x0c, 0x58, 0x32, 0x7e, 0x20, 0x6c, 0x47, 0x13,
         0x0e, 0x5a, 0x35, 0x01, 0x23, 0x6f, 0x4a, 0x16, 0x11, 0x5d, 0x38, 0x04,
         0x26, 0x72, 0x4d, 0x19, 0x14, 0x60, 0x3b, 0x07, 0x29, 0x75, 0x50, 0x1c,
@@ -36,7 +36,7 @@ static void test_frame_deinterleave(void **state)
     };
 
     frame_deinterleave(&data);
-    assert_memory_equal(data_exp, data.data, FRAME_LEN);
+    assert_memory_equal(data_exp, data.data, FRAME_DATA_LEN);
 }
 
 // the goal is just to make sure the function provides the same results
@@ -46,14 +46,10 @@ static void test_frame_diff_dec(void **state)
     (void) state;   // unused
 
     frame_t data_in;
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < FRAME_DATA_LEN; ++i) {
         data_in.data[i] = 1 << (i % 7);
     }
-    for (int i = 0; i < FRAME_LEN - 8; ++i) {
-        data_in.data[i + 8] = 1 << (i % 7);
-    }
-    uint8_t data_exp[FRAME_LEN] = {
-        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x01,
+    uint8_t data_exp[FRAME_DATA_LEN] = {
         0x01, 0x03, 0x06, 0x0c, 0x18, 0x30, 0x60, 0x21, 0x03, 0x06, 0x0a, 0x18,
         0x30, 0x50, 0x41, 0x03, 0x05, 0x0c, 0x18, 0x28, 0x60, 0x41, 0x42, 0x06,
         0x0c, 0x14, 0x30, 0x60, 0x21, 0x03, 0x06, 0x0a, 0x18, 0x30, 0x50, 0x41,
@@ -70,7 +66,7 @@ static void test_frame_diff_dec(void **state)
     };
 
     frame_diff_dec(&data_in);
-    assert_memory_equal(data_exp, data_in.data, FRAME_LEN);
+    assert_memory_equal(data_exp, data_in.data, FRAME_DATA_LEN);
 }
 
 static void test_mk_crc5(void **state)

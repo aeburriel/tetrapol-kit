@@ -43,9 +43,6 @@ static void sigint_handler(int sig)
     do_exit = 1;
 }
 
-static const uint8_t frame_sync[] = { 0, 1, 1, 0, 0, 0, 1, 0 };
-#define FRAME_SYNC_LEN ((sizeof(frame_sync)))
-
 tetrapol_phys_ch_t *tetrapol_create(int fd)
 {
     tetrapol_phys_ch_t *t = malloc(sizeof(tetrapol_phys_ch_t));
@@ -137,7 +134,7 @@ static int find_frame_sync(tetrapol_phys_ch_t *t)
 {
     int offs = 0;
     int sync_err = MAX_FRAME_SYNC_ERR + 1;
-    while (offs + FRAME_LEN + FRAME_SYNC_LEN < t->data_len) {
+    while (offs + FRAME_LEN + FRAME_HDR_LEN < t->data_len) {
         const uint8_t *data = t->data + offs;
         sync_err = cmp_frame_sync(data) +
             cmp_frame_sync(data + FRAME_LEN);
@@ -177,13 +174,8 @@ static int get_frame(tetrapol_phys_ch_t *t, frame_t *frame)
     }
 
     t->last_sync_err = sync_err;
-    memcpy(frame->data, t->data, FRAME_LEN);
-    // previous input bite for differential decoding is
-    // defined only by signal polarity, ignore data from sync bits
-    differential_dec(frame->data + FRAME_SYNC_LEN,
-            FRAME_LEN - FRAME_SYNC_LEN, 0);
-    // copy header, decoding it from frame leads only to errors
-    memcpy(frame->data, frame_sync, sizeof(frame_sync));
+    memcpy(frame->data, t->data + FRAME_HDR_LEN, FRAME_DATA_LEN);
+    differential_dec(frame->data, FRAME_DATA_LEN, 0);
     t->data_len -= FRAME_LEN;
     memmove(t->data, t->data + FRAME_LEN, t->data_len);
 
@@ -258,8 +250,6 @@ static int check_data_crc(const uint8_t *d)
     //	print_buf(crc,5);
     return res ? 0 : 1;
 }
-
-#define FRAME_DATA_LEN 74
 
 static void decode_data_frame(const uint8_t *c, uint8_t *d)
 {
@@ -360,12 +350,11 @@ static const int interleave_data_UHF[] = {
 
 static void frame_deinterleave(frame_t *f)
 {
-    uint8_t tmp[FRAME_LEN - 8];
-    memcpy(tmp, f->data + 8, FRAME_LEN - 8);
+    uint8_t tmp[FRAME_DATA_LEN];
+    memcpy(tmp, f->data, FRAME_DATA_LEN);
 
-    uint8_t *data = f->data + 8;
-    for (int j = 0; j < FRAME_LEN - 8; ++j) {
-        data[j] = tmp[interleave_data_UHF[j]];
+    for (int j = 0; j < FRAME_DATA_LEN; ++j) {
+        f->data[j] = tmp[interleave_data_UHF[j]];
     }
 }
 
@@ -385,8 +374,8 @@ static const int pre_cod[] = {
 
 static void frame_diff_dec(frame_t *f)
 {
-    for (int j = FRAME_LEN - 1; j > 8; --j) {
-        f->data[j] ^= f->data[j - pre_cod[j - 8]];
+    for (int j = FRAME_DATA_LEN - 1; j > 0; --j) {
+        f->data[j] ^= f->data[j - pre_cod[j]];
     }
 }
 
@@ -397,8 +386,8 @@ static void frame_descramble(frame_t *f, int *scr)
     }
 
     int k = 0;
-    for( ; k < FRAME_LEN - 8; k++) {
-        f->data[k + 8] ^= scramb_table[(k + *scr) % 127];
+    for( ; k < FRAME_DATA_LEN; k++) {
+        f->data[k] ^= scramb_table[(k + *scr) % 127];
     }
     *scr = (*scr + k) % 127;
 }
@@ -451,7 +440,7 @@ static int process_frame(frame_t *f)
         frame_deinterleave(&f_);
 
         uint8_t d[FRAME_DATA_LEN];
-        decode_data_frame(f_.data + 8, d);
+        decode_data_frame(f_.data, d);
         //		printf("d=");
         //		print_buf(d,74);
 
