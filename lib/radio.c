@@ -22,7 +22,6 @@ struct _tetrapol_phys_ch_t {
     int fd;
     int last_sync_err;  ///< errors in last frame synchronization sequence
     int total_sync_err; ///< cumulative error in framing
-    int invert;         ///< polarity of differentialy encoded bits stream
     int data_len;
     uint8_t data[10*FRAME_LEN];
 };
@@ -115,13 +114,11 @@ static int tetrapol_recv(tetrapol_phys_ch_t *t)
 }
 
 // compare bite stream to differentialy encoded synchronization sequence
-static int cmp_frame_sync(const uint8_t *data, int invert)
+static int cmp_frame_sync(const uint8_t *data)
 {
-    const uint8_t frame_dsync_pos[] = { 1, 0, 1, 0, 0, 1, 1, };
-    const uint8_t frame_dsync_neg[] = { 0, 1, 0, 1, 1, 0, 0, };
-    const uint8_t *frame_dsync = invert ? frame_dsync_neg : frame_dsync_pos;
+    const uint8_t frame_dsync[] = { 1, 0, 1, 0, 0, 1, 1, };
     int sync_err = 0;
-    for(int i = 0; i < sizeof(frame_dsync_pos); ++i) {
+    for(int i = 0; i < sizeof(frame_dsync); ++i) {
         if (frame_dsync[i] != data[i + 1]) {
             ++sync_err;
         }
@@ -140,19 +137,10 @@ static int find_frame_sync(tetrapol_phys_ch_t *t)
 {
     int offs = 0;
     int sync_err = MAX_FRAME_SYNC_ERR + 1;
-    int invert = 0;
     while (offs + FRAME_LEN + FRAME_SYNC_LEN < t->data_len) {
-        invert = 0;
         const uint8_t *data = t->data + offs;
-        sync_err = cmp_frame_sync(data, invert) +
-            cmp_frame_sync(data + FRAME_LEN, invert);
-        if (sync_err <= MAX_FRAME_SYNC_ERR) {
-            break;
-        }
-
-        invert = 1;
-        sync_err = cmp_frame_sync(data, invert) +
-            cmp_frame_sync(data + FRAME_LEN, invert);
+        sync_err = cmp_frame_sync(data) +
+            cmp_frame_sync(data + FRAME_LEN);
         if (sync_err <= MAX_FRAME_SYNC_ERR) {
             break;
         }
@@ -166,7 +154,6 @@ static int find_frame_sync(tetrapol_phys_ch_t *t)
     if (sync_err <= MAX_FRAME_SYNC_ERR) {
         t->last_sync_err = 0;
         t->total_sync_err = 0;
-        t->invert = invert;
         return 1;
     }
 
@@ -179,7 +166,7 @@ static int get_frame(tetrapol_phys_ch_t *t, frame_t *frame)
     if (t->data_len < FRAME_LEN) {
         return 0;
     }
-    const int sync_err = cmp_frame_sync(t->data, t->invert);
+    const int sync_err = cmp_frame_sync(t->data);
     if (sync_err + t->last_sync_err > MAX_FRAME_SYNC_ERR) {
         t->total_sync_err = 1 + 2 * t->total_sync_err;
         if (t->total_sync_err >= FRAME_LEN) {
@@ -194,7 +181,7 @@ static int get_frame(tetrapol_phys_ch_t *t, frame_t *frame)
     // previous input bite for differential decoding is
     // defined only by signal polarity, ignore data from sync bits
     differential_dec(frame->data + FRAME_SYNC_LEN,
-            FRAME_LEN - FRAME_SYNC_LEN, t->invert);
+            FRAME_LEN - FRAME_SYNC_LEN, 0);
     // copy header, decoding it from frame leads only to errors
     memcpy(frame->data, frame_sync, sizeof(frame_sync));
     t->data_len -= FRAME_LEN;
