@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "constants.h"
-#include "radio.h"
+#include "phys_ch.h"
 #include <string.h>
 #include <stdlib.h>
 

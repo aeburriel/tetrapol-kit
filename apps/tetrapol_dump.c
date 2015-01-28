@@ -1,4 +1,6 @@
 #include "tetrapol.h"
+// TODO: should use only tetrapol.h, but hi-level interface not implemented yet
+#include "phys_ch.h"
 
 #include <fcntl.h>
 #include <poll.h>

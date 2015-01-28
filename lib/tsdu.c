@@ -1,6 +1,6 @@
 #include "misc.h"
 #include "tsdu.h"
-#include "radio.h"
+#include "phys_ch.h"
 #include "misc.h"
 
 #include <stdio.h>

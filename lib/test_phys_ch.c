@@ -4,7 +4,7 @@
 #include <cmocka.h>
 
 // include, we are testing static methods
-#include "radio.c"
+#include "phys_ch.c"
 
 
 // the goal is just to make sure the function provides the same results

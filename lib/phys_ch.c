@@ -1,7 +1,7 @@
 #include "tetrapol.h"
 #include "multiblock.h"
 #include "tpdu.h"
-#include "radio.h"
+#include "phys_ch.h"
 #include "misc.h"
 
 #include <stdlib.h>
@@ -36,6 +36,7 @@ int mod = -1;
 static uint8_t scramb_table[127];
 
 static int process_frame(frame_t *frame);
+static void radio_init(void);
 
 void mod_set(int m) {
     mod=m;
@@ -362,7 +363,7 @@ static void bitorder_frame(const uint8_t *d, uint8_t *out)
     }
 }
 
-void radio_init(void)
+static void radio_init(void)
 {
     for(int i = 0; i < 127; i++) {
         scramb_table[i] = (i < 7) ? 1 : (scramb_table[i-1] ^ scramb_table[i-7]);
