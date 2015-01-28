@@ -326,14 +326,19 @@ static void decode_data_frame(const uint8_t *c, uint8_t *d)
 }
 
 
-static const int K[] = {
+// PAS 0001-2 6.2.4.1
+static const int interleave_UHF[] = {
     1, 77, 38, 114, 20, 96, 59, 135, 3, 79, 41, 117, 23, 99, 62, 138, 5, 81, 44, 120, 26, 102, 65, 141, 8, 84, 47, 123, 29, 105, 68, 144, 11, 87, 50, 126, 32, 108, 71, 147, 14, 90, 53, 129, 35, 111, 74, 150, 17, 93, 56, 132, 37, 112, 76, 148, 2, 88, 40, 115, 19, 97, 58, 133, 4, 75, 43, 118, 22, 100, 61, 136, 7, 85, 46, 121, 25, 103, 64, 139, 10, 82, 49, 124, 28, 106, 67, 142, 13, 91, 52, 127, 31, 109, 73, 145, 16, 94, 55, 130, 34, 113, 70, 151, 0, 80, 39, 116, 21, 95, 57, 134, 6, 78, 42, 119, 24, 98, 60, 137, 9, 83, 45, 122, 27, 101, 63, 140, 12, 86, 48, 125, 30, 104, 66, 143, 15, 89, 51, 128, 33, 107, 69, 146, 18, 92, 54, 131, 36, 110, 72, 149
 };
 
-static void deinterleave_frame(const uint8_t *e, uint8_t *c, int len)
+static void frame_deinterleave(frame_t *f)
 {
-    for(int j = 0; j < len; j++) {
-        c[j] = e[K[j]];
+    uint8_t tmp[FRAME_LEN - 8];
+    memcpy(tmp, f->data + 8, FRAME_LEN - 8);
+
+    uint8_t *data = f->data + 8;
+    for (int j = 0; j < FRAME_LEN - 8; ++j) {
+        data[j] = tmp[interleave_UHF[j]];
     }
 }
 
@@ -416,14 +421,10 @@ static int process_frame(frame_t *f)
         int scr_ = scr;
         frame_descramble(&f_, &scr_);
         frame_diff_dec(&f_);
-
-        uint8_t c[FRAME_LEN];
-        deinterleave_frame(f_.data + 8, c, 152);
-        //		printf("c=");
-        //		print_buf(c,152);
+        frame_deinterleave(&f_);
 
         uint8_t d[FRAME_DATA_LEN];
-        decode_data_frame(c, d);
+        decode_data_frame(f_.data + 8, d);
         //		printf("d=");
         //		print_buf(d,74);
 

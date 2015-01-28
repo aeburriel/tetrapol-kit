@@ -9,14 +9,13 @@
 
 // the goal is just to make sure the function provides the same results
 // after refactorization
-static void test_deinterleave_frame(void **state)
+static void test_frame_deinterleave(void **state)
 {
     (void) state;   // unused
 
-    uint8_t data[FRAME_LEN];
-    uint8_t data_out[FRAME_LEN];
+    frame_t data;
     for (int i = 0; i < FRAME_LEN; ++i) {
-        data_out[i] = data[i] = 0x7f & (i + 1);
+        data.data[i] = 0x7f & (i + 1);
     }
 
     uint8_t data_exp[FRAME_LEN] = {
@@ -36,8 +35,8 @@ static void test_deinterleave_frame(void **state)
         0x2d, 0x77, 0x51, 0x1e,
     };
 
-    deinterleave_frame(data + 8, data_out + 8, 152);
-    assert_memory_equal(data_exp, data_out, FRAME_LEN);
+    frame_deinterleave(&data);
+    assert_memory_equal(data_exp, data.data, FRAME_LEN);
 }
 
 // the goal is just to make sure the function provides the same results
@@ -106,7 +105,7 @@ static void test_mk_crc5(void **state)
 int main(void)
 {
     const UnitTest tests[] = {
-        unit_test(test_deinterleave_frame),
+        unit_test(test_frame_deinterleave),
         unit_test(test_frame_diff_dec),
         unit_test(test_mk_crc5),
     };
