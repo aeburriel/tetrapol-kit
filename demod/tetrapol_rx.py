@@ -103,7 +103,7 @@ class tetrapol_multi_rx(gr.top_block):
             valve = grc_blks2.valve(item_size=gr.sizeof_gr_complex, open=True)
             gmsk_demod = digital.gmsk_demod(
                     samples_per_symbol=samples_per_symbol,
-                    gain_mu=0.175,
+                    gain_mu=0.050,
                     mu=0.5,
                     omega_relative_limit=0.005,
                     freq_error=0.0,
