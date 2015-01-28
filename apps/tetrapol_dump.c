@@ -66,8 +66,7 @@ static int tetrapol_dump_loop(tetrapol_phys_ch_t *t, int fd)
             data_len -= rsize;
         }
 
-        // TODO
-        // ret = tetrapol_phys_ch_process(t);
+        ret = tetrapol_phys_ch_process(t);
     }
 
     return ret;
@@ -100,14 +99,14 @@ int main(int argc, char* argv[])
         }
     }
 
-    tetrapol_phys_ch_t *t = tetrapol_create(infd);
+    tetrapol_phys_ch_t *t = tetrapol_phys_ch_create();
     if (t == NULL) {
         fprintf(stderr, "Failed to initialize TETRAPOL instance.");
         return -1;
     }
 
     const int ret = tetrapol_dump_loop(t, infd);
-    tetrapol_destroy(t);
+    tetrapol_phys_ch_destroy(t);
     if (infd != STDIN_FILENO) {
         close(infd);
     }

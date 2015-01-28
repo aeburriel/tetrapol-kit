@@ -4,10 +4,8 @@
 #include "radio.h"
 #include "misc.h"
 
-#include <fcntl.h>
-#include <poll.h>
-#include <signal.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -27,10 +25,10 @@ typedef struct {
 } frame_t;
 
 struct _tetrapol_phys_ch_t {
-    int fd;
     int last_sync_err;  ///< errors in last frame synchronization sequence
     int total_sync_err; ///< cumulative error in framing
     int data_len;
+    bool has_frame_sync;
     uint8_t data[10*FRAME_LEN];
 };
 
@@ -43,15 +41,7 @@ void mod_set(int m) {
     mod=m;
 }
 
-// set on SIGINT
-volatile static int do_exit = 0;
-
-static void sigint_handler(int sig)
-{
-    do_exit = 1;
-}
-
-tetrapol_phys_ch_t *tetrapol_create(int fd)
+tetrapol_phys_ch_t *tetrapol_phys_ch_create(void)
 {
     tetrapol_phys_ch_t *t = malloc(sizeof(tetrapol_phys_ch_t));
     if (t == NULL) {
@@ -59,24 +49,12 @@ tetrapol_phys_ch_t *tetrapol_create(int fd)
     }
     memset(t, 0, sizeof(tetrapol_phys_ch_t));
 
-    if (fcntl(fd, F_SETFL, O_NONBLOCK | fcntl(t->fd, F_GETFL))) {
-        goto err_fd;
-    }
-    t->fd = fd;
-
     radio_init();
 
     return t;
-
-//err_data:
-//    free(t->data);
-err_fd:
-    free(t);
-
-    return NULL;
 }
 
-void tetrapol_destroy(tetrapol_phys_ch_t *t)
+void tetrapol_phys_ch_destroy(tetrapol_phys_ch_t *t)
 {
     free(t);
 }
@@ -88,34 +66,6 @@ static uint8_t differential_dec(uint8_t *data, int size, uint8_t last_bit)
         ++data;
     }
     return last_bit;
-}
-
-static int tetrapol_recv(tetrapol_phys_ch_t *t)
-{
-    struct pollfd fds;
-    fds.fd = t->fd;
-    fds.events = POLLIN;
-    fds.revents = 0;
-
-    // hack, buffer is full, but return 0 means EOF
-    if ((sizeof(t->data) - t->data_len) == 0) {
-        return 1;
-    }
-
-    if (poll(&fds, 1, -1) > 0 && !do_exit) {
-        if (! (fds.revents & POLLIN)) {
-            return -1;
-        }
-        int rsize = read(t->fd, t->data + t->data_len, sizeof(t->data) - t->data_len);
-        if (rsize == -1) {
-            return -1;
-        }
-        t->data_len += rsize;
-
-        return rsize;
-    }
-
-    return do_exit ? 0 : -1;
 }
 
 int tetrapol_recv2(tetrapol_phys_ch_t *t, uint8_t *buf, int len)
@@ -201,39 +151,31 @@ static int get_frame(tetrapol_phys_ch_t *t, frame_t *frame)
     return 1;
 }
 
-int tetrapol_main(tetrapol_phys_ch_t *t)
+int tetrapol_phys_ch_process(tetrapol_phys_ch_t *t)
 {
-    signal(SIGINT, sigint_handler);
-
-    while (!do_exit) {
-        int recv = tetrapol_recv(t);
-        if (recv <= 0) {
-            return recv;
+    if (!t->has_frame_sync) {
+        t->has_frame_sync = find_frame_sync(t);
+        if (!t->has_frame_sync) {
+            return 0;
         }
-
-        if (find_frame_sync(t)) {
-            int r = 1;
-
-            fprintf(stderr, "Frame sync found\n");
-            multiblock_reset();
-            segmentation_reset();
-
-            while (r >= 0 && !do_exit) {
-                frame_t frame;
-
-                while ((r = get_frame(t, &frame)) > 0) {
-                    process_frame(&frame);
-                }
-
-                recv = tetrapol_recv(t);
-                if (recv <= 0) {
-                    return recv;
-                }
-            }
-            fprintf(stderr, "Frame sync lost\n");
-        }
-        mod = -1;
+        fprintf(stderr, "Frame sync found\n");
+        multiblock_reset();
+        segmentation_reset();
     }
+
+    int r = 1;
+    frame_t frame;
+    while ((r = get_frame(t, &frame)) > 0) {
+        process_frame(&frame);
+    }
+
+    if (r == 0) {
+        return 0;
+    }
+
+    fprintf(stderr, "Frame sync lost\n");
+    mod = -1;
+    t->has_frame_sync = false;
 
     return 0;
 }

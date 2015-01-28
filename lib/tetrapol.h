@@ -8,9 +8,9 @@ extern "C" {
 
     typedef struct _tetrapol_phys_ch_t tetrapol_phys_ch_t;
 
-    tetrapol_phys_ch_t *tetrapol_create(int fd);
-    void tetrapol_destroy(tetrapol_phys_ch_t *t);
-    int tetrapol_main(tetrapol_phys_ch_t *t);
+    tetrapol_phys_ch_t *tetrapol_phys_ch_create(void);
+    void tetrapol_phys_ch_destroy(tetrapol_phys_ch_t *t);
+    int tetrapol_phys_ch_process(tetrapol_phys_ch_t *t);
 
     /**
       Eat some data from buf into channel decoder.
