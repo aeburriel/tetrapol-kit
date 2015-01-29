@@ -9,6 +9,96 @@
 
 // the goal is just to make sure the function provides the same results
 // after refactorization
+static void test_frame_decode(void **state)
+{
+    {
+        const frame_t f = {
+            .data = {
+                1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0,
+                1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0,
+                1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1,
+                1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+                1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1,
+                1, 0, 1, 0, 0, 1, 1, 1,
+            }
+        };
+        const uint8_t res_exp[] = {
+            1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+            0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
+        };
+
+        uint8_t res[74];
+        memset(res, 3, sizeof(res));
+        decode_data_frame(&f, res);
+        assert_memory_equal(res_exp, res, sizeof(res_exp));
+    }
+    {
+        const frame_t f = {
+            .data = {
+                1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+                0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1,
+                1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+                1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0,
+                1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0,
+                1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0,
+                1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0,
+                1, 0, 0, 0, 1, 0, 1, 1,
+            }
+        };
+        const uint8_t res_exp[] = {
+            1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,
+            1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0,
+            0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0,
+            1, 1, 0, 0, 0, 1, 0, 1, 0, 1,
+        };
+
+        uint8_t res[74];
+        memset(res, 3, sizeof(res));
+        decode_data_frame(&f, res);
+        assert_memory_equal(res_exp, res, sizeof(res_exp));
+    }
+    {
+        const frame_t f = {
+            .data = {
+                1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+                0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0,
+                0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+                1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1,
+                1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0,
+                1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0,
+                0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1,
+                0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0,
+                1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0,
+                0, 1, 1, 0, 0, 1, 1, 1,
+            }
+        };
+        const uint8_t res_exp[] = {
+            1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1,
+            1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1,
+            1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1,
+            0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1,
+            1, 1, 0, 0, 0, 1, 0, 1, 1, 1,
+        };
+
+        uint8_t res[74];
+        memset(res, 3, sizeof(res));
+        decode_data_frame(&f, res);
+        assert_memory_equal(res_exp, res, sizeof(res_exp));
+    }
+}
+
+// the goal is just to make sure the function provides the same results
+// after refactorization
 static void test_frame_deinterleave(void **state)
 {
     (void) state;   // unused
@@ -101,6 +191,7 @@ static void test_mk_crc5(void **state)
 int main(void)
 {
     const UnitTest tests[] = {
+        unit_test(test_frame_decode),
         unit_test(test_frame_deinterleave),
         unit_test(test_frame_diff_dec),
         unit_test(test_mk_crc5),
