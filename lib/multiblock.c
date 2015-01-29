@@ -30,10 +30,24 @@ int multiblock_xor_verify(uint8_t *frame, int num) {
     return 1;
 }
 
-void multiblock_process(const uint8_t * d1, int fn, int mod) {
+#define FRAME_BITORDER_LEN 64
+
+static void bitorder_frame(const uint8_t *d, uint8_t *out)
+{
+    for (int i = 0; i < 8; i++) {
+        for(int j = 0; j < 8; j++) {
+            out[8*i + j] =  d[i*8 + 7-j];
+        }
+    }
+}
+
+void multiblock_process(const uint8_t *data, int fn, int mod)
+{
+    uint8_t frame_bord[FRAME_BITORDER_LEN];
+    bitorder_frame(data, frame_bord);
 
     if (mod%25 == 14) {			// FIXME: RCH, PCH ??
-        decode_rch(d1);
+        decode_rch(frame_bord);
         return;
     }
 
@@ -43,14 +57,14 @@ void multiblock_process(const uint8_t * d1, int fn, int mod) {
             startmod=mod;
             switch(fn) {
                 case 0:
-                    memcpy(buf, d1, 64);
+                    memcpy(buf, frame_bord, 64);
                     printf("MB1 mod=%03i ", startmod);
                     print_buf(buf, 64);
                     tpdu_process(buf, 8, startmod);
                     state=0;
                     break;
                 case 1:
-                    memcpy(buf+64*numblocks, d1, 64);
+                    memcpy(buf+64*numblocks, frame_bord, 64);
                     numblocks++;
                     state=1;
                     break;
@@ -79,12 +93,12 @@ void multiblock_process(const uint8_t * d1, int fn, int mod) {
                     segmentation_reset();
                     break;
                 case 2:
-                    memcpy(buf+64*numblocks, d1, 64);
+                    memcpy(buf+64*numblocks, frame_bord, 64);
                     numblocks++;
                     state=2;
                     break;
                 case 3:
-                    memcpy(buf+64*numblocks, d1, 64);
+                    memcpy(buf+64*numblocks, frame_bord, 64);
                     printf("MB2 mod=%03i ", startmod);
                     print_buf(buf, 128);
                     tpdu_process(buf, 16, startmod);
@@ -103,12 +117,12 @@ void multiblock_process(const uint8_t * d1, int fn, int mod) {
                     state=0;
                     break;
                 case 2:
-                    memcpy(buf+64*numblocks, d1, 64);
+                    memcpy(buf+64*numblocks, frame_bord, 64);
                     numblocks++;
                     state=3;
                     break;
                 case 3:
-                    memcpy(buf+64*numblocks, d1, 64);
+                    memcpy(buf+64*numblocks, frame_bord, 64);
                     numblocks++;
                     state=4;
                     break;
@@ -122,7 +136,7 @@ void multiblock_process(const uint8_t * d1, int fn, int mod) {
                     segmentation_reset();
                     break;
                 case 1:
-                    memcpy(buf+64*numblocks, d1, 64);
+                    memcpy(buf+64*numblocks, frame_bord, 64);
                     numblocks++;
                     if (multiblock_xor_verify(buf, numblocks)) {
                         printf("MB%i mod=%03i ", numblocks-1, startmod);
@@ -160,12 +174,12 @@ void multiblock_process(const uint8_t * d1, int fn, int mod) {
                     segmentation_reset();
                     break;
                 case 2:
-                    memcpy(buf+64*numblocks, d1, 64);
+                    memcpy(buf+64*numblocks, frame_bord, 64);
                     numblocks++;
                     state=3;
                     break;
                 case 3:
-                    memcpy(buf+64*numblocks, d1, 64);
+                    memcpy(buf+64*numblocks, frame_bord, 64);
                     numblocks++;
                     state=4;
                     break;

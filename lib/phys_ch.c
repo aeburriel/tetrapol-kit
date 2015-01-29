@@ -409,22 +409,11 @@ static void frame_descramble(frame_t *f, int scr)
     }
 }
 
-#define FRAME_BITORDER_LEN 64
-
-static void bitorder_frame(const uint8_t *d, uint8_t *out)
-{
-    for (int i = 0; i < 8; i++) {
-        for(int j = 0; j < 8; j++) {
-            out[8*i + j] =  d[i*8 + 7-j];
-        }
-    }
-}
-
 static int process_frame(frame_t *f)
 {
-    int scr, scr2, i, j;
+    int scr, scr2;
     uint8_t asbx, asby, fn0, fn1;
-    uint8_t frame_bord[FRAME_BITORDER_LEN];
+    data_frame_t data_frame;
 
     if (mod != -1)
         mod++;
@@ -470,19 +459,14 @@ static int process_frame(frame_t *f)
         asby = df.data[68];
         fn0 = df.data[2];   // swapped?
         fn1 = df.data[1];
-        bitorder_frame(df.data+3, frame_bord);
+        memcpy(&data_frame, &df, sizeof(df));
 
         scr_ok++;
     }
     if(scr_ok==1) {
         printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", mod, fn0, fn1, asbx, asby, scr2);
-        for (i=0; i<8; i++) {
-            for(j=0; j<8; j++)
-                printf("%i", frame_bord[i*8+j]);
-            printf(" ");
-        }
-        print_buf(frame_bord, 64);
-        multiblock_process(frame_bord, 2*fn0 + fn1, mod);
+        print_buf(data_frame.data + 3, 64);
+        multiblock_process(data_frame.data + 3, 2*fn0 + fn1, mod);
     } else {
         printf("ERR2 mod=%03i\n", mod);
         multiblock_reset();
