@@ -9,7 +9,7 @@
 
 // the goal is just to make sure the function provides the same results
 // after refactorization
-static void test_frame_decode(void **state)
+static void test_frame_decode_data(void **state)
 {
     {
         const frame_t f = {
@@ -34,10 +34,10 @@ static void test_frame_decode(void **state)
             1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
         };
 
-        uint8_t res[74];
-        memset(res, 3, sizeof(res));
-        decode_data_frame(&f, res);
-        assert_memory_equal(res_exp, res, sizeof(res_exp));
+        data_frame_t res;
+        memset(&res, 3, sizeof(res));
+        frame_decode_data(&f, &res);
+        assert_memory_equal(res_exp, res.data, sizeof(res_exp));
     }
     {
         const frame_t f = {
@@ -62,10 +62,10 @@ static void test_frame_decode(void **state)
             1, 1, 0, 0, 0, 1, 0, 1, 0, 1,
         };
 
-        uint8_t res[74];
-        memset(res, 3, sizeof(res));
-        decode_data_frame(&f, res);
-        assert_memory_equal(res_exp, res, sizeof(res_exp));
+        data_frame_t res;
+        memset(&res, 3, sizeof(res));
+        frame_decode_data(&f, &res);
+        assert_memory_equal(res_exp, res.data, sizeof(res_exp));
     }
     {
         const frame_t f = {
@@ -90,10 +90,10 @@ static void test_frame_decode(void **state)
             1, 1, 0, 0, 0, 1, 0, 1, 1, 1,
         };
 
-        uint8_t res[74];
-        memset(res, 3, sizeof(res));
-        decode_data_frame(&f, res);
-        assert_memory_equal(res_exp, res, sizeof(res_exp));
+        data_frame_t res;
+        memset(&res, 3, sizeof(res));
+        frame_decode_data(&f, &res);
+        assert_memory_equal(res_exp, res.data, sizeof(res_exp));
     }
 }
 
@@ -191,7 +191,7 @@ static void test_mk_crc5(void **state)
 int main(void)
 {
     const UnitTest tests[] = {
-        unit_test(test_frame_decode),
+        unit_test(test_frame_decode_data),
         unit_test(test_frame_deinterleave),
         unit_test(test_frame_diff_dec),
         unit_test(test_mk_crc5),

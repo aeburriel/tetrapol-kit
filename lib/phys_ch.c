@@ -32,6 +32,21 @@ struct _tetrapol_phys_ch_t {
     uint8_t data[10*FRAME_LEN];
 };
 
+enum {
+    FRAME_TYPE_AUDIO = 0,
+    FRAME_TYPE_DATA = 1,
+};
+
+// now only data frame, in future might comprise different types of frame
+typedef struct {
+    bool fn0;
+    bool fn1;
+    bool asbx;
+    bool asby;
+    uint8_t data[74];
+    uint8_t data2[74];
+} data_frame_t;
+
 int mod = -1;
 
 /**
@@ -243,65 +258,40 @@ static int check_data_crc(const uint8_t *d)
     return res ? 0 : 1;
 }
 
-static void decode_data_frame(const frame_t *f, uint8_t *d)
+/**
+  PAS 0001-2 6.1.2
+  PAS 0001-2 6.2.2
+*/
+static int channel_decoder(uint8_t *res, uint8_t *err, const uint8_t *in, int len)
+{
+#ifdef GET_IN_
+#error "Collision in definition of macro GET_IN_!"
+#endif
+#define GET_IN_(x, y) in[(x + y) % len]
+
+    int errs = 0;
+    for (int i = 0; i < len; ++i) {
+        res[i] = GET_IN_(2*i, 2) ^ GET_IN_(2*i, 3);
+        err[i] = GET_IN_(2*i, 5) ^ GET_IN_(2*i, 6) ^ GET_IN_(2*i, 7);
+
+        // we have 2 solutions, if match set to 0, 1 othervise
+        err[i] ^= res[i];
+        errs += err[i];
+    }
+#undef GET_IN_
+
+    return errs;
+}
+
+static int frame_decode_data(const frame_t *f, data_frame_t *df)
 {
     // decode first 52 bites of frame
-    uint8_t b1[26];
-
-    int check = 1;
-
-    memset(b1, 2, 26);
-    memset(d, 2, 74);
-
-    // b'(25) = b'(-1)
-    // b'(j-1) = C(2j) - C(2j+1)
-
-    // j=0
-    b1[25] = f->data[0] ^ f->data[1];
-    for(int j = 1; j <= 25; j++) {
-        b1[j-1] = f->data[2*j] ^ f->data[2*j+1];
-    }
-
-    //	printf("b1=");
-    //	print_buf(b1,26);
-
-    for(int j = 0; j <= 25; j++)
-        d[j]=b1[j];
-
-    if ((f->data[150] != f->data[151]) ||
-            ((f->data[148] ^ f->data[149]) != f->data[150]) ||
-            (f->data[52] != f->data[53])) {
-        check=0;
-    }
-
-    for (int j = 3; j < 23; j++) {
-        if (f->data[2*j] != (b1[j] ^ b1[j-1] ^ b1[j-2]))
-            check=0;
-    }
-
+    int errs = channel_decoder(df->data, df->data2, f->data, 52);
     // TODO: check frame type (AUDIO / DATA)
     // decode remaining part of frame
-    uint8_t b2[50];
-    memset(b2, 2, 50);
-    b2[0] = f->data[53];
-    for(int j = 2; j <= 48; j++) {
-        b2[j-1] = f->data[2*j+52] ^ f->data[2*j+53];
-    }
+    errs += channel_decoder(df->data + 26, df->data2 + 26, f->data + 52, 100);
 
-    //	printf("b2=");
-    //	print_buf(b2,48);
-
-    for(int j = 0; j <= 47; j++) {
-        d[j+26] = b2[j];
-    }
-    for (int j = 3; j < 45; j++) {
-        if (f->data[2*j+52] != (b2[j] ^ b2[j-1] ^ b2[j-2]))
-            check=0;
-    }
-
-    if (!check) {
-        d[0]=2;
-    }
+    return errs;
 }
 
 // PAS 0001-2 6.1.4.1
@@ -456,17 +446,17 @@ static int process_frame(frame_t *f)
         frame_diff_dec(&f_);
         frame_deinterleave(&f_);
 
-        uint8_t d[FRAME_DATA_LEN];
-        decode_data_frame(&f_, d);
-        //		printf("d=");
-        //		print_buf(d,74);
+        data_frame_t df;
+        if (frame_decode_data(&f_, &df)) {
+            continue;
+        }
 
-        if(d[0]!=1) {
+        if(df.data[0] != FRAME_TYPE_DATA) {
             //			printf("not data frame!\n");
             continue;
         }
 
-        if(!check_data_crc(d)) {
+        if(!check_data_crc(df.data)) {
             //			printf("crc mismatch!\n");
             continue;
         }
@@ -474,11 +464,11 @@ static int process_frame(frame_t *f)
         //		print_buf(d+1, 68);
 
         scr2=scr;
-        asbx=d[67];			// maybe x=68, y=67
-        asby=d[68];
-        fn0=d[2];
-        fn1=d[1];
-        bitorder_frame(d+3, frame_bord);
+        asbx = df.data[67];			// maybe x=68, y=67
+        asby = df.data[68];
+        fn0 = df.data[2];   // swapped?
+        fn1 = df.data[1];
+        bitorder_frame(df.data+3, frame_bord);
 
         scr_ok++;
     }
