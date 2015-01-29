@@ -38,7 +38,7 @@ static int do_read(int fd, uint8_t *buf, int len)
     return do_exit ? 0 : -1;
 }
 
-static int tetrapol_dump_loop(tetrapol_phys_ch_t *t, int fd)
+static int tetrapol_dump_loop(phys_ch_t *t, int fd)
 {
     int ret = 0;
     int data_len = 0;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    tetrapol_phys_ch_t *t = tetrapol_phys_ch_create();
+    phys_ch_t *t = tetrapol_phys_ch_create();
     if (t == NULL) {
         fprintf(stderr, "Failed to initialize TETRAPOL instance.");
         return -1;

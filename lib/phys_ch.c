@@ -24,7 +24,7 @@ typedef struct {
     uint8_t data[FRAME_DATA_LEN];
 } frame_t;
 
-struct _tetrapol_phys_ch_t {
+struct _phys_ch_t {
     int last_sync_err;  ///< errors in last frame synchronization sequence
     int total_sync_err; ///< cumulative error in framing
     int data_len;
@@ -91,18 +91,18 @@ void mod_set(int m) {
     mod=m;
 }
 
-tetrapol_phys_ch_t *tetrapol_phys_ch_create(void)
+phys_ch_t *tetrapol_phys_ch_create(void)
 {
-    tetrapol_phys_ch_t *t = malloc(sizeof(tetrapol_phys_ch_t));
+    phys_ch_t *t = malloc(sizeof(phys_ch_t));
     if (t == NULL) {
         return NULL;
     }
-    memset(t, 0, sizeof(tetrapol_phys_ch_t));
+    memset(t, 0, sizeof(phys_ch_t));
 
     return t;
 }
 
-void tetrapol_phys_ch_destroy(tetrapol_phys_ch_t *t)
+void tetrapol_phys_ch_destroy(phys_ch_t *t)
 {
     free(t);
 }
@@ -116,7 +116,7 @@ static uint8_t differential_dec(uint8_t *data, int size, uint8_t last_bit)
     return last_bit;
 }
 
-int tetrapol_recv2(tetrapol_phys_ch_t *t, uint8_t *buf, int len)
+int tetrapol_recv2(phys_ch_t *t, uint8_t *buf, int len)
 {
     const int space = sizeof(t->data) - t->data_len;
     len = (len > space) ? space : len;
@@ -147,7 +147,7 @@ static int cmp_frame_sync(const uint8_t *data)
   because only signal polarity must be considered,
   there is lot of troubles with error handlig after differential decoding.
   */
-static int find_frame_sync(tetrapol_phys_ch_t *t)
+static int find_frame_sync(phys_ch_t *t)
 {
     int offs = 0;
     int sync_err = MAX_FRAME_SYNC_ERR + 1;
@@ -175,7 +175,7 @@ static int find_frame_sync(tetrapol_phys_ch_t *t)
 }
 
 /// return number of acquired frames (0 or 1) or -1 on error
-static int get_frame(tetrapol_phys_ch_t *t, frame_t *frame)
+static int get_frame(phys_ch_t *t, frame_t *frame)
 {
     if (t->data_len < FRAME_LEN) {
         return 0;
@@ -199,7 +199,7 @@ static int get_frame(tetrapol_phys_ch_t *t, frame_t *frame)
     return 1;
 }
 
-int tetrapol_phys_ch_process(tetrapol_phys_ch_t *t)
+int tetrapol_phys_ch_process(phys_ch_t *t)
 {
     if (!t->has_frame_sync) {
         t->has_frame_sync = find_frame_sync(t);
