@@ -2,7 +2,8 @@
 #include <string.h>
 #include "misc.h"
 #include "tsdu.h"
-#include "phys_ch.h"
+#include "tpdu.h"
+#include "multiblock.h"
 #include "misc.h"
 
 
@@ -191,31 +192,32 @@ static void hdlc_process(const uint8_t *t, int length, int mod) {
     }
 }
 
-void tpdu_process(const uint8_t* t, int length, int mod) {
+void tpdu_process(const uint8_t* t, int length, int *frame_no) {
 
     printf("\tADDR=");
     decode_addr(t);
 
 
-    if (((mod==-1) && (length==24)) || (mod==0) || (mod==100)) {
-        decode_bch(t);
+    if (((*frame_no == FRAME_NO_UNKNOWN) && (length == 24)) ||
+            (*frame_no == 0) ||
+            (*frame_no == 100)) {
+        decode_bch(t, frame_no);
         return;
     }
 
     //	if (mod==-1)
     //		return;
 
-    if ((mod==98) ||(mod==198)) {
+    if ((*frame_no == 98) || (*frame_no == 198)) {
         decode_pch(t);
         return;
     }
 
-    if (mod%25 == 14) {
+    if (*frame_no % 25 == 14) {
         decode_rch(t);
         return;
     }
 
-    hdlc_process(t+16,length-2, mod);
-
+    hdlc_process(t+16,length-2, *frame_no);
 }
 

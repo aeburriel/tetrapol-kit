@@ -57,9 +57,9 @@ void multiblock_process(data_frame_t *df, int fn)
             switch(fn) {
                 case 0:
                     memcpy(buf, frame_bord, 64);
-                    printf("MB1 frame_no=%03i ", startmod);
+                    printf("MB1 frame_no=%03i ", df->frame_no);
                     print_buf(buf, 64);
-                    tpdu_process(buf, 8, startmod);
+                    tpdu_process(buf, 8, &df->frame_no);
                     state=0;
                     break;
                 case 1:
@@ -100,7 +100,8 @@ void multiblock_process(data_frame_t *df, int fn)
                     memcpy(buf+64*numblocks, frame_bord, 64);
                     printf("MB2 frame_no=%03i ", startmod);
                     print_buf(buf, 128);
-                    tpdu_process(buf, 16, startmod);
+                    tpdu_process(buf, 16, &startmod);
+                    df->frame_no = startmod;
                     state=0;
                     break;
             }
@@ -140,7 +141,8 @@ void multiblock_process(data_frame_t *df, int fn)
                     if (multiblock_xor_verify(buf, numblocks)) {
                         printf("MB%i frame_no=%03i ", numblocks-1, startmod);
                         print_buf(buf, (numblocks-1) * 64);
-                        tpdu_process(buf, (numblocks-1)*8, startmod);
+                        tpdu_process(buf, (numblocks-1)*8, &startmod);
+                        df->frame_no = startmod;
                     } else {
                         printf("mb xor err %i frame_no=%03i ", numblocks, startmod);
                         print_buf(buf, (numblocks-1) * 64);

@@ -38,8 +38,6 @@ enum {
     FRAME_TYPE_DATA = 1,
 };
 
-int mod = -1;
-
 /**
   PAS 0001-2 6.1.5.1
   PAS 0001-2 6.2.5.1
@@ -75,10 +73,6 @@ static uint8_t scramb_table[127] = {
 };
 
 static int process_frame(frame_t *frame);
-
-void mod_set(int m) {
-    mod=m;
-}
 
 phys_ch_t *tetrapol_phys_ch_create(void)
 {
@@ -219,7 +213,6 @@ int tetrapol_phys_ch_process(phys_ch_t *t)
     }
 
     fprintf(stderr, "Frame sync lost\n");
-    mod = -1;
     t->has_frame_sync = false;
 
     return 0;
@@ -414,11 +407,6 @@ static int process_frame(frame_t *f)
     uint8_t asbx, asby, fn0, fn1;
     data_frame_t data_frame;
 
-    if (mod != -1)
-        mod++;
-    if (mod==200)
-        mod=0;
-
     //	printf("s=");
     //	print_buf(scramb_table,127);
     //	printf("f=");
@@ -463,13 +451,11 @@ static int process_frame(frame_t *f)
         scr_ok++;
     }
     if(scr_ok==1) {
-        printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ", mod, fn0, fn1, asbx, asby, scr2);
+        printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ", data_frame.frame_no, fn0, fn1, asbx, asby, scr2);
         print_buf(data_frame.data + 3, 64);
-        // TODO: hack, remove
-        data_frame.frame_no = mod;
         multiblock_process(&data_frame, 2*fn0 + fn1);
     } else {
-        printf("ERR2 frame_no=%03i\n", mod);
+        printf("ERR2 frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
     }

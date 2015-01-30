@@ -116,7 +116,7 @@
 
 void tsdu_process(const uint8_t* t, int data_length, int mod);
 
-void decode_bch(const uint8_t *t);
+void decode_bch(const uint8_t *t, int *frame_no);
 void decode_pch(const uint8_t *t);
 void decode_rch(const uint8_t *t);
 // TODO

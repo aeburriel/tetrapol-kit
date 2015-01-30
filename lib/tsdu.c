@@ -36,7 +36,7 @@ static void decode_key_reference(int key_reference) {
     // TODO: Decode key_type
 }
 
-static void d_system_info(const uint8_t *t) {
+static void d_system_info(const uint8_t *t, int *frame_no) {
 
     int mode, bch, roam, exp;
     int ecch, atta, mux_type, sim, dc;
@@ -93,9 +93,7 @@ static void d_system_info(const uint8_t *t) {
 
     superframe_cpt=bits_to_int(t+124, 12);
 
-    if (bch==0)
-        mod_set(3);
-
+    *frame_no = (bch == 0) ? 3 : 103;
 
     printf("\t\tCELL_STATE\n");
     printf("\t\t\tMODE=%i%i%i ", t[48], t[49], t[50]);
@@ -647,7 +645,7 @@ static void d_data_authentication(const uint8_t *t) {
     printf("\tCODOP=0x63 (D_DATA_AUTHENTICATION)\n");
 }
 
-void decode_bch(const uint8_t *t) {
+void decode_bch(const uint8_t *t, int *frame_no) {
 
     int codop;
 
@@ -664,7 +662,7 @@ void decode_bch(const uint8_t *t) {
     switch (codop) {
         case D_SYSTEM_INFO:
             printf("\tCODOP=0x%02x (D_SYSTEM_INFO)\n", codop);
-            d_system_info(t+40);
+            d_system_info(t+40, frame_no);
             break;
         default:
             printf("\tCODOP=0x%02x (Unknown) ", codop);

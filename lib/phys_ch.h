@@ -2,8 +2,6 @@
 
 #include <stdint.h>
 
-void mod_set(int m);
-
 typedef struct _phys_ch_t phys_ch_t;
 
 phys_ch_t *tetrapol_phys_ch_create(void);
