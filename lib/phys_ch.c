@@ -182,9 +182,6 @@ static int get_frame(phys_ch_t *t, frame_t *frame)
     memmove(t->data, t->data + FRAME_LEN, t->data_len);
 
     frame->frame_no = t->frame_no;
-    if (t->frame_no != FRAME_NO_UNKNOWN) {
-        t->frame_no = (t->frame_no + 1) % 200;
-    }
 
     return 1;
 }
@@ -206,6 +203,9 @@ int tetrapol_phys_ch_process(phys_ch_t *t)
     frame_t frame;
     while ((r = get_frame(t, &frame)) > 0) {
         process_frame(&frame);
+        if (frame.frame_no != FRAME_NO_UNKNOWN) {
+            t->frame_no = (frame.frame_no + 1) % 200;
+        }
     }
 
     if (r == 0) {
@@ -454,6 +454,7 @@ static int process_frame(frame_t *f)
         printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ", data_frame.frame_no, fn0, fn1, asbx, asby, scr2);
         print_buf(data_frame.data + 3, 64);
         multiblock_process(&data_frame, 2*fn0 + fn1);
+        f->frame_no = data_frame.frame_no;
     } else {
         printf("ERR2 frame_no=%03i\n", f->frame_no);
         multiblock_reset();
