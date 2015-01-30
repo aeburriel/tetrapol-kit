@@ -37,18 +37,6 @@ enum {
     FRAME_TYPE_DATA = 1,
 };
 
-// now only data frame, in future might comprise different types of frame
-typedef struct {
-    union {
-        uint8_t data[74];
-        uint8_t _tmpd[76];  // extra space, data frame have 2 stuffing bist
-    };
-    union {
-        uint8_t err[74];
-        uint8_t _tmpe[76];  // extra space, data frame have 2 stuffing bist
-    };
-} data_frame_t;
-
 int mod = -1;
 
 /**
@@ -466,7 +454,7 @@ static int process_frame(frame_t *f)
     if(scr_ok==1) {
         printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", mod, fn0, fn1, asbx, asby, scr2);
         print_buf(data_frame.data + 3, 64);
-        multiblock_process(data_frame.data + 3, 2*fn0 + fn1, mod);
+        multiblock_process(&data_frame, 2*fn0 + fn1, mod);
     } else {
         printf("ERR2 mod=%03i\n", mod);
         multiblock_reset();

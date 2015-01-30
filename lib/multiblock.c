@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "tpdu.h"
 #include "tsdu.h"
-#include "phys_ch.h"
 #include "misc.h"
 #include "multiblock.h"
 
@@ -41,10 +40,10 @@ static void bitorder_frame(const uint8_t *d, uint8_t *out)
     }
 }
 
-void multiblock_process(const uint8_t *data, int fn, int mod)
+void multiblock_process(data_frame_t *df, int fn, int mod)
 {
     uint8_t frame_bord[FRAME_BITORDER_LEN];
-    bitorder_frame(data, frame_bord);
+    bitorder_frame(df->data + 3, frame_bord);
 
     if (mod%25 == 14) {			// FIXME: RCH, PCH ??
         decode_rch(frame_bord);
