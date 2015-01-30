@@ -39,8 +39,14 @@ enum {
 
 // now only data frame, in future might comprise different types of frame
 typedef struct {
-    uint8_t data[74];
-    uint8_t data2[74];
+    union {
+        uint8_t data[74];
+        uint8_t _tmpd[76];  // extra space, data frame have 2 stuffing bist
+    };
+    union {
+        uint8_t err[74];
+        uint8_t _tmpe[76];  // extra space, data frame have 2 stuffing bist
+    };
 } data_frame_t;
 
 int mod = -1;
@@ -282,10 +288,10 @@ static int channel_decoder(uint8_t *res, uint8_t *err, const uint8_t *in, int le
 static int frame_decode_data(const frame_t *f, data_frame_t *df)
 {
     // decode first 52 bites of frame
-    int errs = channel_decoder(df->data, df->data2, f->data, 52);
+    int errs = channel_decoder(df->data, df->err, f->data, 52);
     // TODO: check frame type (AUDIO / DATA)
     // decode remaining part of frame
-    errs += channel_decoder(df->data + 26, df->data2 + 26, f->data + 52, 100);
+    errs += channel_decoder(df->data + 26, df->err + 26, f->data + 52, 100);
 
     return errs;
 }
