@@ -39,10 +39,6 @@ enum {
 
 // now only data frame, in future might comprise different types of frame
 typedef struct {
-    bool fn0;
-    bool fn1;
-    bool asbx;
-    bool asby;
     uint8_t data[74];
     uint8_t data2[74];
 } data_frame_t;
