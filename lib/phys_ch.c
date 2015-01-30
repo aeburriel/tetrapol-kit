@@ -27,8 +27,9 @@ typedef struct {
 struct _phys_ch_t {
     int last_sync_err;  ///< errors in last frame synchronization sequence
     int total_sync_err; ///< cumulative error in framing
-    int data_len;
     bool has_frame_sync;
+    int frame_no;
+    int data_len;
     uint8_t data[10*FRAME_LEN];
 };
 
@@ -86,6 +87,8 @@ phys_ch_t *tetrapol_phys_ch_create(void)
         return NULL;
     }
     memset(t, 0, sizeof(phys_ch_t));
+
+    t->frame_no = FRAME_NO_UNKNOWN;
 
     return t;
 }
@@ -184,6 +187,11 @@ static int get_frame(phys_ch_t *t, frame_t *frame)
     t->data_len -= FRAME_LEN;
     memmove(t->data, t->data + FRAME_LEN, t->data_len);
 
+    frame->frame_no = t->frame_no;
+    if (t->frame_no != FRAME_NO_UNKNOWN) {
+        t->frame_no = (t->frame_no + 1) % 200;
+    }
+
     return 1;
 }
 
@@ -195,6 +203,7 @@ int tetrapol_phys_ch_process(phys_ch_t *t)
             return 0;
         }
         fprintf(stderr, "Frame sync found\n");
+        t->frame_no = FRAME_NO_UNKNOWN;
         multiblock_reset();
         segmentation_reset();
     }
@@ -280,6 +289,8 @@ static int frame_decode_data(const frame_t *f, data_frame_t *df)
     // TODO: check frame type (AUDIO / DATA)
     // decode remaining part of frame
     errs += channel_decoder(df->data + 26, df->err + 26, f->data + 2*26, 50);
+
+    df->frame_no = f->frame_no;
 
     return errs;
 }
@@ -452,11 +463,13 @@ static int process_frame(frame_t *f)
         scr_ok++;
     }
     if(scr_ok==1) {
-        printf("OK mod=%03i fn=%i%i asb=%i%i scr=%03i ", mod, fn0, fn1, asbx, asby, scr2);
+        printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ", mod, fn0, fn1, asbx, asby, scr2);
         print_buf(data_frame.data + 3, 64);
-        multiblock_process(&data_frame, 2*fn0 + fn1, mod);
+        // TODO: hack, remove
+        data_frame.frame_no = mod;
+        multiblock_process(&data_frame, 2*fn0 + fn1);
     } else {
-        printf("ERR2 mod=%03i\n", mod);
+        printf("ERR2 frame_no=%03i\n", mod);
         multiblock_reset();
         segmentation_reset();
     }

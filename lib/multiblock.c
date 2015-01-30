@@ -40,12 +40,12 @@ static void bitorder_frame(const uint8_t *d, uint8_t *out)
     }
 }
 
-void multiblock_process(data_frame_t *df, int fn, int mod)
+void multiblock_process(data_frame_t *df, int fn)
 {
     uint8_t frame_bord[FRAME_BITORDER_LEN];
     bitorder_frame(df->data + 3, frame_bord);
 
-    if (mod%25 == 14) {			// FIXME: RCH, PCH ??
+    if (df->frame_no % 25 == 14) {			// FIXME: RCH, PCH ??
         decode_rch(frame_bord);
         return;
     }
@@ -53,11 +53,11 @@ void multiblock_process(data_frame_t *df, int fn, int mod)
     switch(state) {
         case 0:
             numblocks=0;
-            startmod=mod;
+            startmod = df->frame_no;
             switch(fn) {
                 case 0:
                     memcpy(buf, frame_bord, 64);
-                    printf("MB1 mod=%03i ", startmod);
+                    printf("MB1 frame_no=%03i ", startmod);
                     print_buf(buf, 64);
                     tpdu_process(buf, 8, startmod);
                     state=0;
@@ -98,7 +98,7 @@ void multiblock_process(data_frame_t *df, int fn, int mod)
                     break;
                 case 3:
                     memcpy(buf+64*numblocks, frame_bord, 64);
-                    printf("MB2 mod=%03i ", startmod);
+                    printf("MB2 frame_no=%03i ", startmod);
                     print_buf(buf, 128);
                     tpdu_process(buf, 16, startmod);
                     state=0;
@@ -138,11 +138,11 @@ void multiblock_process(data_frame_t *df, int fn, int mod)
                     memcpy(buf+64*numblocks, frame_bord, 64);
                     numblocks++;
                     if (multiblock_xor_verify(buf, numblocks)) {
-                        printf("MB%i mod=%03i ", numblocks-1, startmod);
+                        printf("MB%i frame_no=%03i ", numblocks-1, startmod);
                         print_buf(buf, (numblocks-1) * 64);
                         tpdu_process(buf, (numblocks-1)*8, startmod);
                     } else {
-                        printf("mb xor err %i mod=%03i ", numblocks, startmod);
+                        printf("mb xor err %i frame_no=%03i ", numblocks, startmod);
                         print_buf(buf, (numblocks-1) * 64);
                     }
                     state=0;
