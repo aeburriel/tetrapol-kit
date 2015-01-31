@@ -499,14 +499,14 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
 
     data_frame_t df;
     if (frame_decode_data(f, &df)) {
-        printf("ERR2 frame_no=%03i\n", f->frame_no);
+        printf("ERR decode frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
         return 0;
     }
 
     if(df.data[0] != FRAME_TYPE_DATA) {
-        printf("ERR2 frame_no=%03i\n", f->frame_no);
+        printf("ERR type frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
         //			printf("not data frame!\n");
@@ -515,7 +515,7 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
 
     if(!frame_data_check_crc(&df)) {
         //			printf("crc mismatch!\n");
-        printf("ERR2 frame_no=%03i\n", f->frame_no);
+        printf("ERR crc frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
 
