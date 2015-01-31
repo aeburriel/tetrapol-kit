@@ -236,18 +236,12 @@ static void mk_crc5(uint8_t *res, const uint8_t *input, int input_len)
     }
 }
 
-static int check_data_crc(const uint8_t *d)
+static int frame_data_check_crc(const data_frame_t *df)
 {
     uint8_t crc[5];
-    int res;
 
-    mk_crc5(crc, d, 69);
-    res = memcmp(d+69, crc, 5);
-    //	printf("crc=");
-    //	print_buf(d+69,5);
-    //	printf("crcc=");
-    //	print_buf(crc,5);
-    return res ? 0 : 1;
+    mk_crc5(crc, df->data, 69);
+    return !memcmp(df->data + 69, crc, 5);
 }
 
 /**
@@ -429,7 +423,7 @@ static int process_frame(frame_t *f)
             continue;
         }
 
-        if(!check_data_crc(df.data)) {
+        if(!frame_data_check_crc(&df)) {
             //			printf("crc mismatch!\n");
             continue;
         }
