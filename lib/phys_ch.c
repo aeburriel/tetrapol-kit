@@ -76,20 +76,20 @@ static int process_frame(frame_t *frame);
 
 phys_ch_t *tetrapol_phys_ch_create(void)
 {
-    phys_ch_t *t = malloc(sizeof(phys_ch_t));
-    if (t == NULL) {
+    phys_ch_t *phys_ch = malloc(sizeof(phys_ch_t));
+    if (phys_ch == NULL) {
         return NULL;
     }
-    memset(t, 0, sizeof(phys_ch_t));
+    memset(phys_ch, 0, sizeof(phys_ch_t));
 
-    t->frame_no = FRAME_NO_UNKNOWN;
+    phys_ch->frame_no = FRAME_NO_UNKNOWN;
 
-    return t;
+    return phys_ch;
 }
 
-void tetrapol_phys_ch_destroy(phys_ch_t *t)
+void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
 {
-    free(t);
+    free(phys_ch);
 }
 
 static uint8_t differential_dec(uint8_t *data, int size, uint8_t last_bit)
@@ -101,13 +101,13 @@ static uint8_t differential_dec(uint8_t *data, int size, uint8_t last_bit)
     return last_bit;
 }
 
-int tetrapol_recv2(phys_ch_t *t, uint8_t *buf, int len)
+int tetrapol_recv2(phys_ch_t *phys_ch, uint8_t *buf, int len)
 {
-    const int space = sizeof(t->data) - t->data_len;
+    const int space = sizeof(phys_ch->data) - phys_ch->data_len;
     len = (len > space) ? space : len;
 
-    memcpy(t->data + t->data_len, buf, len);
-    t->data_len += len;
+    memcpy(phys_ch->data + phys_ch->data_len, buf, len);
+    phys_ch->data_len += len;
 
     return len;
 }
@@ -132,12 +132,12 @@ static int cmp_frame_sync(const uint8_t *data)
   because only signal polarity must be considered,
   there is lot of troubles with error handlig after differential decoding.
   */
-static int find_frame_sync(phys_ch_t *t)
+static int find_frame_sync(phys_ch_t *phys_ch)
 {
     int offs = 0;
     int sync_err = MAX_FRAME_SYNC_ERR + 1;
-    while (offs + FRAME_LEN + FRAME_HDR_LEN < t->data_len) {
-        const uint8_t *data = t->data + offs;
+    while (offs + FRAME_LEN + FRAME_HDR_LEN < phys_ch->data_len) {
+        const uint8_t *data = phys_ch->data + offs;
         sync_err = cmp_frame_sync(data) +
             cmp_frame_sync(data + FRAME_LEN);
         if (sync_err <= MAX_FRAME_SYNC_ERR) {
@@ -147,12 +147,12 @@ static int find_frame_sync(phys_ch_t *t)
         ++offs;
     }
 
-    t->data_len -= offs;
-    memmove(t->data, t->data + offs, t->data_len);
+    phys_ch->data_len -= offs;
+    memmove(phys_ch->data, phys_ch->data + offs, phys_ch->data_len);
 
     if (sync_err <= MAX_FRAME_SYNC_ERR) {
-        t->last_sync_err = 0;
-        t->total_sync_err = 0;
+        phys_ch->last_sync_err = 0;
+        phys_ch->total_sync_err = 0;
         return 1;
     }
 
@@ -160,51 +160,51 @@ static int find_frame_sync(phys_ch_t *t)
 }
 
 /// return number of acquired frames (0 or 1) or -1 on error
-static int get_frame(phys_ch_t *t, frame_t *frame)
+static int get_frame(phys_ch_t *phys_ch, frame_t *frame)
 {
-    if (t->data_len < FRAME_LEN) {
+    if (phys_ch->data_len < FRAME_LEN) {
         return 0;
     }
-    const int sync_err = cmp_frame_sync(t->data);
-    if (sync_err + t->last_sync_err > MAX_FRAME_SYNC_ERR) {
-        t->total_sync_err = 1 + 2 * t->total_sync_err;
-        if (t->total_sync_err >= FRAME_LEN) {
+    const int sync_err = cmp_frame_sync(phys_ch->data);
+    if (sync_err + phys_ch->last_sync_err > MAX_FRAME_SYNC_ERR) {
+        phys_ch->total_sync_err = 1 + 2 * phys_ch->total_sync_err;
+        if (phys_ch->total_sync_err >= FRAME_LEN) {
             return -1;
         }
     } else {
-        t->total_sync_err = 0;
+        phys_ch->total_sync_err = 0;
     }
 
-    t->last_sync_err = sync_err;
-    memcpy(frame->data, t->data + FRAME_HDR_LEN, FRAME_DATA_LEN);
+    phys_ch->last_sync_err = sync_err;
+    memcpy(frame->data, phys_ch->data + FRAME_HDR_LEN, FRAME_DATA_LEN);
     differential_dec(frame->data, FRAME_DATA_LEN, 0);
-    t->data_len -= FRAME_LEN;
-    memmove(t->data, t->data + FRAME_LEN, t->data_len);
+    phys_ch->data_len -= FRAME_LEN;
+    memmove(phys_ch->data, phys_ch->data + FRAME_LEN, phys_ch->data_len);
 
-    frame->frame_no = t->frame_no;
+    frame->frame_no = phys_ch->frame_no;
 
     return 1;
 }
 
-int tetrapol_phys_ch_process(phys_ch_t *t)
+int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
 {
-    if (!t->has_frame_sync) {
-        t->has_frame_sync = find_frame_sync(t);
-        if (!t->has_frame_sync) {
+    if (!phys_ch->has_frame_sync) {
+        phys_ch->has_frame_sync = find_frame_sync(phys_ch);
+        if (!phys_ch->has_frame_sync) {
             return 0;
         }
         fprintf(stderr, "Frame sync found\n");
-        t->frame_no = FRAME_NO_UNKNOWN;
+        phys_ch->frame_no = FRAME_NO_UNKNOWN;
         multiblock_reset();
         segmentation_reset();
     }
 
     int r = 1;
     frame_t frame;
-    while ((r = get_frame(t, &frame)) > 0) {
+    while ((r = get_frame(phys_ch, &frame)) > 0) {
         process_frame(&frame);
         if (frame.frame_no != FRAME_NO_UNKNOWN) {
-            t->frame_no = (frame.frame_no + 1) % 200;
+            phys_ch->frame_no = (frame.frame_no + 1) % 200;
         }
     }
 
@@ -213,7 +213,7 @@ int tetrapol_phys_ch_process(phys_ch_t *t)
     }
 
     fprintf(stderr, "Frame sync lost\n");
-    t->has_frame_sync = false;
+    phys_ch->has_frame_sync = false;
 
     return 0;
 }
