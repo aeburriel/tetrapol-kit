@@ -72,7 +72,7 @@ static uint8_t scramb_table[127] = {
     1, 0, 0, 0, 0, 0, 0,
 };
 
-static int process_frame(frame_t *frame);
+static int process_frame(phys_ch_t *phys_ch, frame_t *frame);
 
 phys_ch_t *tetrapol_phys_ch_create(void)
 {
@@ -202,7 +202,7 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
     int r = 1;
     frame_t frame;
     while ((r = get_frame(phys_ch, &frame)) > 0) {
-        process_frame(&frame);
+        process_frame(phys_ch, &frame);
         if (frame.frame_no != FRAME_NO_UNKNOWN) {
             phys_ch->frame_no = (frame.frame_no + 1) % 200;
         }
@@ -395,7 +395,7 @@ static void frame_descramble(frame_t *f, int scr)
     }
 }
 
-static int process_frame(frame_t *f)
+static int process_frame(phys_ch_t *phys_ch, frame_t *f)
 {
     int scr, scr2;
     uint8_t asbx, asby, fn0, fn1;
