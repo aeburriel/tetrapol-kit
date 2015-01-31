@@ -264,15 +264,15 @@ static int check_data_crc(const uint8_t *d)
   PAS 0001-2 6.1.2
   PAS 0001-2 6.2.2
 */
-static int channel_decoder(uint8_t *res, uint8_t *err, const uint8_t *in, int len)
+static int channel_decoder(uint8_t *res, uint8_t *err, const uint8_t *in, int res_len)
 {
 #ifdef GET_IN_
 #error "Collision in definition of macro GET_IN_!"
 #endif
-#define GET_IN_(x, y) in[(x + y) % len]
+#define GET_IN_(x, y) in[((x) + (y)) % (2*res_len)]
 
     int errs = 0;
-    for (int i = 0; i < len; ++i) {
+    for (int i = 0; i < res_len; ++i) {
         res[i] = GET_IN_(2*i, 2) ^ GET_IN_(2*i, 3);
         err[i] = GET_IN_(2*i, 5) ^ GET_IN_(2*i, 6) ^ GET_IN_(2*i, 7);
 
@@ -288,10 +288,10 @@ static int channel_decoder(uint8_t *res, uint8_t *err, const uint8_t *in, int le
 static int frame_decode_data(const frame_t *f, data_frame_t *df)
 {
     // decode first 52 bites of frame
-    int errs = channel_decoder(df->data, df->err, f->data, 52);
+    int errs = channel_decoder(df->data, df->err, f->data, 26);
     // TODO: check frame type (AUDIO / DATA)
     // decode remaining part of frame
-    errs += channel_decoder(df->data + 26, df->err + 26, f->data + 52, 100);
+    errs += channel_decoder(df->data + 26, df->err + 26, f->data + 2*26, 50);
 
     return errs;
 }
