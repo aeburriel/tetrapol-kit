@@ -422,17 +422,15 @@ static void frame_descramble(frame_t *f, int scr)
     }
 }
 
-static int process_frame(phys_ch_t *phys_ch, frame_t *f)
+/**
+  Try detect (and set) SCR - scrambling constant.
+
+  @return SCR wich have now best score
+  */
+static int detect_scr(phys_ch_t *phys_ch, const frame_t *f)
 {
-    int scr, scr2;
-    uint8_t asbx, asby, fn0, fn1;
-    data_frame_t data_frame;
-
-    //	printf("Attempting descramble\n");
-    int scr_ok = 0;
-    for(scr = 0; scr <= 127; scr++) {
-        //		printf("trying scrambling %i\n", scr);
-
+    // compute SCR statistics
+    for(int scr = 0; scr < ARRAY_LEN(phys_ch->scr_stat); ++scr) {
         frame_t f_;
         memcpy(&f_, f, sizeof(f_));
 
@@ -442,37 +440,97 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
 
         data_frame_t df;
         if (frame_decode_data(&f_, &df)) {
+            phys_ch->scr_stat[scr] -= 2;
+            if (phys_ch->scr_stat[scr] < 0) {
+                phys_ch->scr_stat[scr] = 0;
+            }
             continue;
         }
 
         if(df.data[0] != FRAME_TYPE_DATA) {
-            //			printf("not data frame!\n");
+            // TODO: support for audio frames
             continue;
         }
 
         if(!frame_data_check_crc(&df)) {
-            //			printf("crc mismatch!\n");
+            phys_ch->scr_stat[scr] -= 2;
+            if (phys_ch->scr_stat[scr] < 0) {
+                phys_ch->scr_stat[scr] = 0;
+            }
             continue;
         }
 
-        scr2 = scr;
-        memcpy(&data_frame, &df, sizeof(df));
-        scr_ok = 1;
+        ++phys_ch->scr_stat[scr];
     }
-    if(scr_ok == 1) {
-        asbx = data_frame.data[67];
-        asby = data_frame.data[68];
-        fn0 = data_frame.data[1];
-        fn1 = data_frame.data[2];
-        printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ", data_frame.frame_no, fn1, fn0, asbx, asby, scr2);
-        print_buf(data_frame.data + 3, 64);
-        multiblock_process(&data_frame, 2*fn1 + fn0);
-        f->frame_no = data_frame.frame_no;
-    } else {
+
+    // get difference in statistic for two best SCRs
+    // and check best SCR confidence
+    int scr_max = 0, scr_max2 = 1;
+    if (phys_ch->scr_stat[0] < phys_ch->scr_stat[1]) {
+        scr_max = 1;
+        scr_max2 = 0;
+    }
+    for(int scr = 2; scr < ARRAY_LEN(phys_ch->scr_stat); ++scr) {
+        if (phys_ch->scr_stat[scr] >= phys_ch->scr_stat[scr_max]) {
+            scr_max2 = scr_max;
+            scr_max = scr;
+        }
+    }
+    if (phys_ch->scr_stat[scr_max] - phys_ch->scr_confidence > phys_ch->scr_stat[scr_max2]) {
+        phys_ch->scr = scr_max;
+        printf("SCR detected %d\n", scr_max);
+    }
+
+    return scr_max;
+}
+
+
+static int process_frame(phys_ch_t *phys_ch, frame_t *f)
+{
+    int scr = phys_ch->scr;
+
+    if (phys_ch->scr == PHYS_CH_SCR_DETECT) {
+        scr = detect_scr(phys_ch, f);
+    }
+
+    frame_descramble(f, scr);
+    frame_diff_dec(f);
+    frame_deinterleave(f);
+
+    data_frame_t df;
+    if (frame_decode_data(f, &df)) {
         printf("ERR2 frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
+        return 0;
     }
+
+    if(df.data[0] != FRAME_TYPE_DATA) {
+        printf("ERR2 frame_no=%03i\n", f->frame_no);
+        multiblock_reset();
+        segmentation_reset();
+        //			printf("not data frame!\n");
+        return 0;
+    }
+
+    if(!frame_data_check_crc(&df)) {
+        //			printf("crc mismatch!\n");
+        printf("ERR2 frame_no=%03i\n", f->frame_no);
+        multiblock_reset();
+        segmentation_reset();
+
+        return 0;
+    }
+
+    int asbx = df.data[67];
+    int asby = df.data[68];
+    int fn0 = df.data[1];
+    int fn1 = df.data[2];
+    printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ",
+            df.frame_no, fn1, fn0, asbx, asby, scr);
+    print_buf(df.data + 3, 64);
+    multiblock_process(&df, 2*fn1 + fn0);
+    f->frame_no = df.frame_no;
 
     return 0;
 }
