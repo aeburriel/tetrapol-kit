@@ -407,14 +407,9 @@ static int process_frame(frame_t *f)
     uint8_t asbx, asby, fn0, fn1;
     data_frame_t data_frame;
 
-    //	printf("s=");
-    //	print_buf(scramb_table,127);
-    //	printf("f=");
-    //	print_buf(f,160);
-
     //	printf("Attempting descramble\n");
-    int scr_ok=0;
-    for(scr=0; scr<=127; scr++) {
+    int scr_ok = 0;
+    for(scr = 0; scr <= 127; scr++) {
         //		printf("trying scrambling %i\n", scr);
 
         frame_t f_;
@@ -438,22 +433,19 @@ static int process_frame(frame_t *f)
             //			printf("crc mismatch!\n");
             continue;
         }
-        //		printf("b=");
-        //		print_buf(d+1, 68);
 
-        scr2=scr;
-        asbx = df.data[67];			// maybe x=68, y=67
-        asby = df.data[68];
-        fn0 = df.data[2];   // swapped?
-        fn1 = df.data[1];
+        scr2 = scr;
         memcpy(&data_frame, &df, sizeof(df));
-
-        scr_ok++;
+        scr_ok = 1;
     }
-    if(scr_ok==1) {
-        printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ", data_frame.frame_no, fn0, fn1, asbx, asby, scr2);
+    if(scr_ok == 1) {
+        asbx = data_frame.data[67];
+        asby = data_frame.data[68];
+        fn0 = data_frame.data[1];
+        fn1 = data_frame.data[2];
+        printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ", data_frame.frame_no, fn1, fn0, asbx, asby, scr2);
         print_buf(data_frame.data + 3, 64);
-        multiblock_process(&data_frame, 2*fn0 + fn1);
+        multiblock_process(&data_frame, 2*fn1 + fn0);
         f->frame_no = data_frame.frame_no;
     } else {
         printf("ERR2 frame_no=%03i\n", f->frame_no);
