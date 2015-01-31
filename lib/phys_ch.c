@@ -30,6 +30,9 @@ struct _phys_ch_t {
     bool has_frame_sync;
     int frame_no;
     int data_len;
+    int scr;            ///< SCR, scrambling constant
+    int scr_confidence; ///< required confidence for SCR detection
+    int scr_stat[128];  ///< statistics for SCR detection
     uint8_t data[10*FRAME_LEN];
 };
 
@@ -83,6 +86,8 @@ phys_ch_t *tetrapol_phys_ch_create(void)
     memset(phys_ch, 0, sizeof(phys_ch_t));
 
     phys_ch->frame_no = FRAME_NO_UNKNOWN;
+    phys_ch->scr = PHYS_CH_SCR_DETECT;
+    phys_ch->scr_confidence = 50;
 
     return phys_ch;
 }
@@ -90,6 +95,28 @@ phys_ch_t *tetrapol_phys_ch_create(void)
 void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
 {
     free(phys_ch);
+}
+
+int tetrapol_phys_ch_get_scr(phys_ch_t *phys_ch)
+{
+    return phys_ch->scr;
+}
+
+void tetrapol_phys_ch_set_scr(phys_ch_t *phys_ch, int scr)
+{
+    phys_ch->scr = scr;
+    memset(&phys_ch->scr_stat, 0, sizeof(phys_ch->scr_stat));
+}
+
+int tetrapol_phys_ch_get_scr_confidence(phys_ch_t *phys_ch)
+{
+    return phys_ch->scr_confidence;
+}
+
+void tetrapol_phys_ch_set_scr_confidence(
+        phys_ch_t *phys_ch, int scr_confidence)
+{
+    phys_ch->scr_confidence = scr_confidence;
 }
 
 static uint8_t differential_dec(uint8_t *data, int size, uint8_t last_bit)
