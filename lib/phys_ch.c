@@ -11,8 +11,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define DEBUG
-
 // max error rate for 2 frame synchronization sequences
 #define MAX_FRAME_SYNC_ERR 1
 
