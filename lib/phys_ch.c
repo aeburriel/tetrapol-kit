@@ -2,6 +2,7 @@
 #include "multiblock.h"
 #include "tpdu.h"
 #include "misc.h"
+#include "data_frame.h"
 #include "decoded_frame.h"
 #include "phys_ch.h"
 
@@ -36,6 +37,8 @@ struct _phys_ch_t {
     int scr_stat[128];  ///< statistics for SCR detection
     int data_len;
     uint8_t data[10*FRAME_LEN];
+    // CCH specific data, will be union with traffich CH specicic data
+    data_frame_t *bch_data_fr;    ///< used for decoding BCH
 };
 
 /**
@@ -102,11 +105,26 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
     phys_ch->scr_confidence = 50;
     phys_ch->rch_type = rch_type;
 
+    if (rch_type == TETRAPOL_RCH_CONTROL) {
+        phys_ch->bch_data_fr = data_frame_create();
+        if (!phys_ch->bch_data_fr) {
+            goto err_bch_data_fr;
+        }
+    }
+
     return phys_ch;
+
+err_bch_data_fr:
+    free(phys_ch);
+
+    return NULL;
 }
 
 void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
 {
+    if (phys_ch->rch_type == TETRAPOL_RCH_CONTROL) {
+        data_frame_destroy(phys_ch->bch_data_fr);
+    }
     free(phys_ch);
 }
 
@@ -235,6 +253,9 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
         }
         fprintf(stderr, "Frame sync found\n");
         phys_ch->frame_no = FRAME_NO_UNKNOWN;
+        if (phys_ch->rch_type == TETRAPOL_RCH_CONTROL) {
+            data_frame_reset(phys_ch->bch_data_fr);
+        }
         multiblock_reset();
         segmentation_reset();
     }
@@ -503,10 +524,23 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
 
     decoded_frame_t df;
     int errs = frame_decode_data(f, &df);
+
     if (errs) {
         printf("ERR decode frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
+        return 0;
+    }
+
+    if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
+        if (data_frame_push_decoded_frame(phys_ch->bch_data_fr, &df)) {
+            uint8_t tpdu_data[TPDU_DATA_SIZE_MAX];
+            int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
+
+            // TODO: try decode sysinfo -> BCH detected?
+
+            data_frame_reset(phys_ch->bch_data_fr);
+        }
         return 0;
     }
 
