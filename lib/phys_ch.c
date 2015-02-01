@@ -39,11 +39,6 @@ struct _phys_ch_t {
     uint8_t data[10*FRAME_LEN];
 };
 
-enum {
-    FRAME_TYPE_AUDIO = 0,
-    FRAME_TYPE_DATA = 1,
-};
-
 /**
   PAS 0001-2 6.1.5.1
   PAS 0001-2 6.2.5.1
@@ -282,12 +277,29 @@ static void mk_crc5(uint8_t *res, const uint8_t *input, int input_len)
     }
 }
 
-static int decoded_frame_check_crc(const decoded_frame_t *df)
+bool decoded_frame_check_crc(const decoded_frame_t *df, frame_type_t df_type)
 {
-    uint8_t crc[5];
+    if (df_type == FRAME_TYPE_AUTO) {
+        df_type = df->data[0];
+    } else {
+        if (df_type != df->data[0]) {
+            return false;
+        }
+    }
 
-    mk_crc5(crc, df->data, 69);
-    return !memcmp(df->data + 69, crc, 5);
+    if (df_type == FRAME_TYPE_DATA) {
+        uint8_t crc[5];
+
+        mk_crc5(crc, df->data, 69);
+        return !memcmp(df->data + 69, crc, 5);
+    }
+
+    if (df_type == FRAME_TYPE_VOICE) {
+        // TODO
+        fprintf(stderr, "CRC checking for VOICE frames not implemented");
+        return false;
+    }
+    return false;
 }
 
 /**
@@ -471,12 +483,7 @@ static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
             continue;
         }
 
-        if(df.data[0] != FRAME_TYPE_DATA) {
-            // TODO: support for audio frames
-            continue;
-        }
-
-        if(!decoded_frame_check_crc(&df)) {
+        if(!decoded_frame_check_crc(&df, FRAME_TYPE_DATA)) {
             phys_ch->scr_stat[scr] -= 2;
             if (phys_ch->scr_stat[scr] < 0) {
                 phys_ch->scr_stat[scr] = 0;
@@ -539,7 +546,8 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
     }
 
     decoded_frame_t df;
-    if (frame_decode_data(f, &df)) {
+    int errs = frame_decode_data(f, &df);
+    if (errs) {
         printf("ERR decode frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
@@ -554,7 +562,7 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
-    if(!decoded_frame_check_crc(&df)) {
+    if(!decoded_frame_check_crc(&df, FRAME_TYPE_DATA)) {
         //			printf("crc mismatch!\n");
         printf("ERR crc frame_no=%03i\n", f->frame_no);
         multiblock_reset();
