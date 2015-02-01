@@ -32,6 +32,7 @@ struct _phys_ch_t {
     bool has_frame_sync;
     int frame_no;
     int scr;            ///< SCR, scrambling constant
+    int scr_guess;      ///< SCR with best score when guessing SCR
     int scr_confidence; ///< required confidence for SCR detection
     int scr_stat[128];  ///< statistics for SCR detection
     int data_len;
@@ -78,6 +79,8 @@ static uint8_t scramb_table[127] = {
 };
 
 static int process_frame(phys_ch_t *phys_ch, frame_t *frame);
+static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f);
+static int process_frame_traffic_ch(phys_ch_t *phys_ch, frame_t *f);
 
 phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
 {
@@ -279,7 +282,7 @@ static void mk_crc5(uint8_t *res, const uint8_t *input, int input_len)
     }
 }
 
-static int frame_data_check_crc(const decoded_frame_t *df)
+static int decoded_frame_check_crc(const decoded_frame_t *df)
 {
     uint8_t crc[5];
 
@@ -443,7 +446,7 @@ static void frame_descramble(frame_t *f, int scr)
 
   @return SCR wich have now best score
   */
-static int detect_scr(phys_ch_t *phys_ch, const frame_t *f)
+static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
 {
     // compute SCR statistics
     for(int scr = 0; scr < ARRAY_LEN(phys_ch->scr_stat); ++scr) {
@@ -473,7 +476,7 @@ static int detect_scr(phys_ch_t *phys_ch, const frame_t *f)
             continue;
         }
 
-        if(!frame_data_check_crc(&df)) {
+        if(!decoded_frame_check_crc(&df)) {
             phys_ch->scr_stat[scr] -= 2;
             if (phys_ch->scr_stat[scr] < 0) {
                 phys_ch->scr_stat[scr] = 0;
@@ -502,17 +505,27 @@ static int detect_scr(phys_ch_t *phys_ch, const frame_t *f)
         printf("SCR detected %d\n", scr_max);
     }
 
-    return scr_max;
+    phys_ch->scr_guess = scr_max;
 }
 
 
 static int process_frame(phys_ch_t *phys_ch, frame_t *f)
 {
-    int scr = phys_ch->scr;
-
     if (phys_ch->scr == PHYS_CH_SCR_DETECT) {
-        scr = detect_scr(phys_ch, f);
+        detect_scr(phys_ch, f);
     }
+
+    if (phys_ch->rch_type == TETRAPOL_RCH_CONTROL) {
+        return process_frame_cch(phys_ch, f);
+    }
+
+    return process_frame_traffic_ch(phys_ch, f);
+}
+
+static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
+{
+    const int scr = (phys_ch->scr == PHYS_CH_SCR_DETECT) ?
+        phys_ch->scr_guess : phys_ch->scr;
 
     frame_descramble(f, scr);
     if (phys_ch->band == TETRAPOL_BAND_VHF) {
@@ -539,7 +552,7 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
-    if(!frame_data_check_crc(&df)) {
+    if(!decoded_frame_check_crc(&df)) {
         //			printf("crc mismatch!\n");
         printf("ERR crc frame_no=%03i\n", f->frame_no);
         multiblock_reset();
@@ -559,4 +572,11 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
     f->frame_no = df.frame_no;
 
     return 0;
+}
+
+static int process_frame_traffic_ch(phys_ch_t *phys_ch, frame_t *f)
+{
+    // TODO
+    fprintf(stderr, "process_frame_traffic_ch() not implemented\n");
+    return -1;
 }
