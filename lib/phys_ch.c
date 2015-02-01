@@ -25,14 +25,15 @@ typedef struct {
 } frame_t;
 
 struct _phys_ch_t {
+    int band;           ///< VHF or UHF
     int last_sync_err;  ///< errors in last frame synchronization sequence
     int total_sync_err; ///< cumulative error in framing
     bool has_frame_sync;
     int frame_no;
-    int data_len;
     int scr;            ///< SCR, scrambling constant
     int scr_confidence; ///< required confidence for SCR detection
     int scr_stat[128];  ///< statistics for SCR detection
+    int data_len;
     uint8_t data[10*FRAME_LEN];
 };
 
@@ -77,13 +78,19 @@ static uint8_t scramb_table[127] = {
 
 static int process_frame(phys_ch_t *phys_ch, frame_t *frame);
 
-phys_ch_t *tetrapol_phys_ch_create(void)
+phys_ch_t *tetrapol_phys_ch_create(int band)
 {
+    if (band != TETRAPOL_BAND_VHF && band != TETRAPOL_BAND_UHF) {
+        return NULL;
+    }
+
     phys_ch_t *phys_ch = malloc(sizeof(phys_ch_t));
     if (phys_ch == NULL) {
         return NULL;
     }
     memset(phys_ch, 0, sizeof(phys_ch_t));
+
+    phys_ch->band = band;
 
     phys_ch->frame_no = FRAME_NO_UNKNOWN;
     phys_ch->scr = PHYS_CH_SCR_DETECT;
