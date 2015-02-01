@@ -3,6 +3,7 @@ find_library(CMOCKA_LIBRARY
     cmocka)
 
 add_library (tetrapol
+    data_frame.c
     decoded_frame.c
     misc.c
     multiblock.c
@@ -16,6 +17,7 @@ target_link_libraries (test_decoded_frame ${CMOCKA_LIBRARY})
 
 add_executable (test_phys_ch
     decoded_frame.c
+    data_frame.c
     misc.c
     multiblock.c
     test_phys_ch.c
