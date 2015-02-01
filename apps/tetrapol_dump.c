@@ -79,6 +79,7 @@ int main(int argc, char* argv[])
 {
     // TODO: move to config
     const int band = TETRAPOL_BAND_UHF;
+    const int rch_type = TETRAPOL_RCH_CONTROL;
 
     const char *in = NULL;
 
@@ -104,7 +105,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    phys_ch_t *phys_ch = tetrapol_phys_ch_create(band);
+    phys_ch_t *phys_ch = tetrapol_phys_ch_create(band, rch_type);
     if (phys_ch == NULL) {
         fprintf(stderr, "Failed to initialize TETRAPOL instance.");
         return -1;

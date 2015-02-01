@@ -26,6 +26,7 @@ typedef struct {
 
 struct _phys_ch_t {
     int band;           ///< VHF or UHF
+    int rch_type;       ///< control or traffic
     int last_sync_err;  ///< errors in last frame synchronization sequence
     int total_sync_err; ///< cumulative error in framing
     bool has_frame_sync;
@@ -78,9 +79,16 @@ static uint8_t scramb_table[127] = {
 
 static int process_frame(phys_ch_t *phys_ch, frame_t *frame);
 
-phys_ch_t *tetrapol_phys_ch_create(int band)
+phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
 {
     if (band != TETRAPOL_BAND_VHF && band != TETRAPOL_BAND_UHF) {
+        fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'band'\n");
+        return NULL;
+    }
+
+    if (rch_type != TETRAPOL_RCH_CONTROL &&
+            rch_type != TETRAPOL_RCH_TRAFFIC) {
+        fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'rch_type'\n");
         return NULL;
     }
 
@@ -95,6 +103,7 @@ phys_ch_t *tetrapol_phys_ch_create(int band)
     phys_ch->frame_no = FRAME_NO_UNKNOWN;
     phys_ch->scr = PHYS_CH_SCR_DETECT;
     phys_ch->scr_confidence = 50;
+    phys_ch->rch_type = rch_type;
 
     return phys_ch;
 }
