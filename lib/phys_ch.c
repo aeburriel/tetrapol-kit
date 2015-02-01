@@ -317,7 +317,7 @@ static int frame_decode_data(const frame_t *f, data_frame_t *df)
 }
 
 // PAS 0001-2 6.1.4.1
-static const int interleave_voice_UHF[] = {
+static const uint8_t interleave_voice_UHF[] = {
     1, 77, 38, 114, 20, 96, 59, 135,
     3, 79, 41, 117, 23, 99, 62, 138,
     5, 81, 44, 120, 26, 102, 65, 141,
@@ -340,7 +340,7 @@ static const int interleave_voice_UHF[] = {
 };
 
 // PAS 0001-2 6.2.4.1
-static const int interleave_data_UHF[] = {
+static const uint8_t interleave_data_UHF[] = {
     1, 77, 38, 114, 20, 96, 59, 135,
     3, 79, 41, 117, 23, 99, 62, 138,
     5, 81, 44, 120, 26, 102, 65, 141,
@@ -362,13 +362,13 @@ static const int interleave_data_UHF[] = {
     18, 92, 54, 131, 36, 110, 72, 149,
 };
 
-static void frame_deinterleave(frame_t *f)
+static void frame_deinterleave(frame_t *f, const uint8_t *int_table)
 {
     uint8_t tmp[FRAME_DATA_LEN];
     memcpy(tmp, f->data, FRAME_DATA_LEN);
 
     for (int j = 0; j < FRAME_DATA_LEN; ++j) {
-        f->data[j] = tmp[interleave_data_UHF[j]];
+        f->data[j] = tmp[int_table[j]];
     }
 }
 
@@ -442,8 +442,13 @@ static int detect_scr(phys_ch_t *phys_ch, const frame_t *f)
         memcpy(&f_, f, sizeof(f_));
 
         frame_descramble(&f_, scr);
-        frame_diff_dec(&f_);
-        frame_deinterleave(&f_);
+        if (phys_ch->band == TETRAPOL_BAND_VHF) {
+            // TODO: deinterleave for VHF
+            // frame_deinterleave(&f_, interleave_data_VHF);
+        } else {
+            frame_diff_dec(&f_);
+            frame_deinterleave(&f_, interleave_data_UHF);
+        }
 
         data_frame_t df;
         if (frame_decode_data(&f_, &df)) {
@@ -501,8 +506,13 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
     }
 
     frame_descramble(f, scr);
-    frame_diff_dec(f);
-    frame_deinterleave(f);
+    if (phys_ch->band == TETRAPOL_BAND_VHF) {
+        // TODO
+        // frame_deinterleave(&f_, interleave_data_VHF);
+    } else {
+        frame_diff_dec(f);
+        frame_deinterleave(f, interleave_data_UHF);
+    }
 
     data_frame_t df;
     if (frame_decode_data(f, &df)) {
