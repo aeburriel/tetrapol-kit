@@ -279,7 +279,7 @@ static void mk_crc5(uint8_t *res, const uint8_t *input, int input_len)
     }
 }
 
-static int frame_data_check_crc(const data_frame_t *df)
+static int frame_data_check_crc(const decoded_frame_t *df)
 {
     uint8_t crc[5];
 
@@ -312,7 +312,7 @@ static int channel_decoder(uint8_t *res, uint8_t *err, const uint8_t *in, int re
     return errs;
 }
 
-static int frame_decode_data(const frame_t *f, data_frame_t *df)
+static int frame_decode_data(const frame_t *f, decoded_frame_t *df)
 {
     // decode first 52 bites of frame
     int errs = channel_decoder(df->data, df->err, f->data, 26);
@@ -459,7 +459,7 @@ static int detect_scr(phys_ch_t *phys_ch, const frame_t *f)
             frame_deinterleave(&f_, interleave_data_UHF);
         }
 
-        data_frame_t df;
+        decoded_frame_t df;
         if (frame_decode_data(&f_, &df)) {
             phys_ch->scr_stat[scr] -= 2;
             if (phys_ch->scr_stat[scr] < 0) {
@@ -523,7 +523,7 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
         frame_deinterleave(f, interleave_data_UHF);
     }
 
-    data_frame_t df;
+    decoded_frame_t df;
     if (frame_decode_data(f, &df)) {
         printf("ERR decode frame_no=%03i\n", f->frame_no);
         multiblock_reset();

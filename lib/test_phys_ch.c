@@ -34,7 +34,7 @@ static void test_frame_decode_data(void **state)
             1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0
         };
 
-        data_frame_t res;
+        decoded_frame_t res;
         memset(&res, 3, sizeof(res));
         frame_decode_data(&f, &res);
         assert_memory_equal(res_exp, res._tmpd, sizeof(res_exp));
@@ -62,7 +62,7 @@ static void test_frame_decode_data(void **state)
             1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0,
         };
 
-        data_frame_t res;
+        decoded_frame_t res;
         memset(&res, 3, sizeof(res));
         frame_decode_data(&f, &res);
         assert_memory_equal(res_exp, res._tmpd, sizeof(res_exp));
@@ -90,7 +90,7 @@ static void test_frame_decode_data(void **state)
             1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0,
         };
 
-        data_frame_t res;
+        decoded_frame_t res;
         memset(&res, 3, sizeof(res));
         frame_decode_data(&f, &res);
         assert_memory_equal(res_exp, res._tmpd, sizeof(res_exp));

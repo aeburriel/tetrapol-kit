@@ -40,7 +40,7 @@ static void bitorder_frame(const uint8_t *d, uint8_t *out)
     }
 }
 
-void multiblock_process(data_frame_t *df, int fn)
+void multiblock_process(decoded_frame_t *df, int fn)
 {
     uint8_t frame_bord[FRAME_BITORDER_LEN];
     bitorder_frame(df->data + 3, frame_bord);
