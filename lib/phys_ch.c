@@ -531,6 +531,8 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
     if (phys_ch->band == TETRAPOL_BAND_VHF) {
         // TODO
         // frame_deinterleave(&f_, interleave_data_VHF);
+        fprintf(stderr, "process_frame_cch VHF processing not implemented\n");
+        return -1;
     } else {
         frame_diff_dec(f);
         frame_deinterleave(f, interleave_data_UHF);
