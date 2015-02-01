@@ -506,6 +506,18 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
     return process_frame_traffic_ch(phys_ch, f);
 }
 
+static void bitorder_frame(uint8_t *d, int size)
+{
+    for (int i = 0; i < size; i++) {
+        uint8_t b[8];
+        memcpy(b, d, 8);
+        d[0] = b[7], d[1] = b[6], d[2] = b[5], d[3] = b[4],
+        d[4] = b[3], d[5] = b[2], d[6] = b[1]; d[7] = b[0];
+
+        d += 8;
+    }
+}
+
 static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
 {
     const int scr = (phys_ch->scr == PHYS_CH_SCR_DETECT) ?
@@ -533,11 +545,26 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
     }
 
     if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
+        int asbx = df.data[67];
+        int asby = df.data[68];
+        int fn0 = df.data[1];
+        int fn1 = df.data[2];
+        printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ",
+                df.frame_no, fn1, fn0, asbx, asby, scr);
+        print_buf(df.data + 3, 64);
+
         if (data_frame_push_decoded_frame(phys_ch->bch_data_fr, &df)) {
             uint8_t tpdu_data[TPDU_DATA_SIZE_MAX];
             int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
 
-            // TODO: try decode sysinfo -> BCH detected?
+            int frame_no = f->frame_no;
+            bitorder_frame(tpdu_data, size/8);
+            // TODO: try decode only BCH - D_SYSTEM_INFO
+            tpdu_process(tpdu_data, size / 8, &frame_no);
+            if (frame_no != FRAME_NO_UNKNOWN) {
+                // D_SYSTEM_INFO frame_no hack
+                f->frame_no = frame_no + 3;
+            }
 
             data_frame_reset(phys_ch->bch_data_fr);
         }
