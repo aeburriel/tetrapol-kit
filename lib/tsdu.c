@@ -93,7 +93,7 @@ static void d_system_info(const uint8_t *t, int *frame_no) {
 
     superframe_cpt=bits_to_int(t+124, 12);
 
-    *frame_no = (bch == 0) ? 3 : 103;
+    *frame_no = ((bch == 0) ? 0 : 100);
 
     printf("\t\tCELL_STATE\n");
     printf("\t\t\tMODE=%i%i%i ", t[48], t[49], t[50]);

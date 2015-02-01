@@ -101,7 +101,6 @@ void multiblock_process(data_frame_t *df, int fn)
                     printf("MB2 frame_no=%03i ", startmod);
                     print_buf(buf, 128);
                     tpdu_process(buf, 16, &startmod);
-                    df->frame_no = startmod;
                     state=0;
                     break;
             }
@@ -142,7 +141,10 @@ void multiblock_process(data_frame_t *df, int fn)
                         printf("MB%i frame_no=%03i ", numblocks-1, startmod);
                         print_buf(buf, (numblocks-1) * 64);
                         tpdu_process(buf, (numblocks-1)*8, &startmod);
-                        df->frame_no = startmod;
+                        if (df->frame_no == FRAME_NO_UNKNOWN &&
+                                startmod != FRAME_NO_UNKNOWN) {
+                            df->frame_no = startmod + numblocks - 1;
+                        }
                     } else {
                         printf("mb xor err %i frame_no=%03i ", numblocks, startmod);
                         print_buf(buf, (numblocks-1) * 64);
