@@ -35,7 +35,8 @@ struct _phys_ch_t {
     int scr_guess;      ///< SCR with best score when guessing SCR
     int scr_confidence; ///< required confidence for SCR detection
     int scr_stat[128];  ///< statistics for SCR detection
-    int data_len;
+    uint8_t *data_begin;    ///< start of unprocessed part of data
+    uint8_t *data_end;      ///< end of unprocessed part of data
     uint8_t data[10*FRAME_LEN];
     // CCH specific data, will be union with traffich CH specicic data
     data_frame_t *bch_data_fr;    ///< used for decoding BCH
@@ -99,11 +100,11 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
     memset(phys_ch, 0, sizeof(phys_ch_t));
 
     phys_ch->band = band;
-
+    phys_ch->rch_type = rch_type;
+    phys_ch->data_begin = phys_ch->data_end = phys_ch->data;
     phys_ch->frame_no = FRAME_NO_UNKNOWN;
     phys_ch->scr = PHYS_CH_SCR_DETECT;
     phys_ch->scr_confidence = 50;
-    phys_ch->rch_type = rch_type;
 
     if (rch_type == TETRAPOL_RCH_CONTROL) {
         phys_ch->bch_data_fr = data_frame_create();
@@ -159,13 +160,19 @@ static uint8_t differential_dec(uint8_t *data, int size, uint8_t first_bit)
     return first_bit;
 }
 
-int tetrapol_recv2(phys_ch_t *phys_ch, uint8_t *buf, int len)
+int tetrapol_phys_ch_recv(phys_ch_t *phys_ch, uint8_t *buf, int len)
 {
-    const int space = sizeof(phys_ch->data) - phys_ch->data_len;
+    const int data_len = phys_ch->data_end - phys_ch->data_begin;
+
+    memmove(phys_ch->data, phys_ch->data_begin, data_len);
+    phys_ch->data_begin = phys_ch->data;
+    phys_ch->data_end = phys_ch->data + data_len;
+
+    const int space = sizeof(phys_ch->data) - data_len;
     len = (len > space) ? space : len;
 
-    memcpy(phys_ch->data + phys_ch->data_len, buf, len);
-    phys_ch->data_len += len;
+    memcpy(phys_ch->data_end, buf, len);
+    phys_ch->data_end += len;
 
     return len;
 }
@@ -192,21 +199,17 @@ static int cmp_frame_sync(const uint8_t *data)
   */
 static int find_frame_sync(phys_ch_t *phys_ch)
 {
-    int offs = 0;
+    const uint8_t *end = phys_ch->data_end - FRAME_LEN - FRAME_HDR_LEN;
     int sync_err = MAX_FRAME_SYNC_ERR + 1;
-    while (offs + FRAME_LEN + FRAME_HDR_LEN < phys_ch->data_len) {
-        const uint8_t *data = phys_ch->data + offs;
-        sync_err = cmp_frame_sync(data) +
-            cmp_frame_sync(data + FRAME_LEN);
+    while (phys_ch->data_begin <= end) {
+        sync_err = cmp_frame_sync(phys_ch->data_begin) +
+            cmp_frame_sync(phys_ch->data_begin + FRAME_LEN);
         if (sync_err <= MAX_FRAME_SYNC_ERR) {
             break;
         }
 
-        ++offs;
+        ++phys_ch->data_begin;
     }
-
-    phys_ch->data_len -= offs;
-    memmove(phys_ch->data, phys_ch->data + offs, phys_ch->data_len);
 
     if (sync_err <= MAX_FRAME_SYNC_ERR) {
         phys_ch->last_sync_err = 0;
@@ -220,10 +223,10 @@ static int find_frame_sync(phys_ch_t *phys_ch)
 /// return number of acquired frames (0 or 1) or -1 on error
 static int get_frame(phys_ch_t *phys_ch, frame_t *frame)
 {
-    if (phys_ch->data_len < FRAME_LEN) {
+    if (phys_ch->data_end - phys_ch->data_begin < FRAME_LEN) {
         return 0;
     }
-    const int sync_err = cmp_frame_sync(phys_ch->data);
+    const int sync_err = cmp_frame_sync(phys_ch->data_begin);
     if (sync_err + phys_ch->last_sync_err > MAX_FRAME_SYNC_ERR) {
         phys_ch->total_sync_err = 1 + 2 * phys_ch->total_sync_err;
         if (phys_ch->total_sync_err >= FRAME_LEN) {
@@ -234,12 +237,11 @@ static int get_frame(phys_ch_t *phys_ch, frame_t *frame)
     }
 
     phys_ch->last_sync_err = sync_err;
-    memcpy(frame->data, phys_ch->data + FRAME_HDR_LEN, FRAME_DATA_LEN);
+    memcpy(frame->data, phys_ch->data_begin + FRAME_HDR_LEN, FRAME_DATA_LEN);
     differential_dec(frame->data, FRAME_DATA_LEN, 0);
-    phys_ch->data_len -= FRAME_LEN;
-    memmove(phys_ch->data, phys_ch->data + FRAME_LEN, phys_ch->data_len);
-
     frame->frame_no = phys_ch->frame_no;
+
+    phys_ch->data_begin += FRAME_LEN;
 
     return 1;
 }

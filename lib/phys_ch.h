@@ -42,5 +42,5 @@ void tetrapol_phys_ch_set_scr_confidence(phys_ch_t *phys_ch, int scr_confidence)
 
   @return number of bytes consumed
 */
-int tetrapol_recv2(phys_ch_t *phys_ch, uint8_t *buf, int len);
+int tetrapol_phys_ch_recv(phys_ch_t *phys_ch, uint8_t *buf, int len);
 

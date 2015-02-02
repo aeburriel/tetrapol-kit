@@ -59,7 +59,7 @@ static int tetrapol_dump_loop(phys_ch_t *phys_ch, int fd)
             data_len += rsize;
         }
 
-        const int rsize = tetrapol_recv2(phys_ch, data, data_len);
+        const int rsize = tetrapol_phys_ch_recv(phys_ch, data, data_len);
         if (rsize < 0) {
             return rsize;
         }
