@@ -6,6 +6,7 @@
 #include "decoded_frame.h"
 #include "phys_ch.h"
 
+#include <limits.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -19,6 +20,8 @@
 #define FRAME_DATA_LEN (152)
 #define FRAME_LEN (FRAME_HDR_LEN + FRAME_DATA_LEN)
 
+#define DATA_OFFS (FRAME_LEN/2)
+
 typedef struct {
     int frame_no;
     uint8_t data[FRAME_DATA_LEN];
@@ -27,8 +30,7 @@ typedef struct {
 struct _phys_ch_t {
     int band;           ///< VHF or UHF
     int rch_type;       ///< control or traffic
-    int last_sync_err;  ///< errors in last frame synchronization sequence
-    int total_sync_err; ///< cumulative error in framing
+    int sync_errs;      ///< cumulative no. of errors in frame synchronisation
     bool has_frame_sync;
     int frame_no;
     int scr;            ///< SCR, scrambling constant
@@ -101,7 +103,7 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
 
     phys_ch->band = band;
     phys_ch->rch_type = rch_type;
-    phys_ch->data_begin = phys_ch->data_end = phys_ch->data;
+    phys_ch->data_begin = phys_ch->data_end = phys_ch->data + DATA_OFFS;
     phys_ch->frame_no = FRAME_NO_UNKNOWN;
     phys_ch->scr = PHYS_CH_SCR_DETECT;
     phys_ch->scr_confidence = 50;
@@ -164,11 +166,11 @@ int tetrapol_phys_ch_recv(phys_ch_t *phys_ch, uint8_t *buf, int len)
 {
     const int data_len = phys_ch->data_end - phys_ch->data_begin;
 
-    memmove(phys_ch->data, phys_ch->data_begin, data_len);
-    phys_ch->data_begin = phys_ch->data;
-    phys_ch->data_end = phys_ch->data + data_len;
+    memmove(phys_ch->data, phys_ch->data_begin - DATA_OFFS, data_len + DATA_OFFS);
+    phys_ch->data_begin = phys_ch->data + DATA_OFFS;
+    phys_ch->data_end = phys_ch->data_begin + data_len;
 
-    const int space = sizeof(phys_ch->data) - data_len;
+    const int space = sizeof(phys_ch->data) - data_len - DATA_OFFS;
     len = (len > space) ? space : len;
 
     memcpy(phys_ch->data_end, buf, len);
@@ -212,12 +214,20 @@ static int find_frame_sync(phys_ch_t *phys_ch)
     }
 
     if (sync_err <= MAX_FRAME_SYNC_ERR) {
-        phys_ch->last_sync_err = 0;
-        phys_ch->total_sync_err = 0;
+        phys_ch->sync_errs = 0;
         return 1;
     }
 
     return 0;
+}
+
+static void copy_frame(phys_ch_t *phys_ch, frame_t *frame)
+{
+    memcpy(frame->data, phys_ch->data_begin + FRAME_HDR_LEN, FRAME_DATA_LEN);
+    phys_ch->data_begin += FRAME_LEN;
+
+    frame->frame_no = phys_ch->frame_no;
+    differential_dec(frame->data, FRAME_DATA_LEN, 0);
 }
 
 /// return number of acquired frames (0 or 1) or -1 on error
@@ -226,22 +236,83 @@ static int get_frame(phys_ch_t *phys_ch, frame_t *frame)
     if (phys_ch->data_end - phys_ch->data_begin < FRAME_LEN) {
         return 0;
     }
-    const int sync_err = cmp_frame_sync(phys_ch->data_begin);
-    if (sync_err + phys_ch->last_sync_err > MAX_FRAME_SYNC_ERR) {
-        phys_ch->total_sync_err = 1 + 2 * phys_ch->total_sync_err;
-        if (phys_ch->total_sync_err >= FRAME_LEN) {
-            return -1;
+
+    // are we in sync?
+    if (cmp_frame_sync(phys_ch->data_begin) == 0) {
+        copy_frame(phys_ch, frame);
+        if (phys_ch->sync_errs > 0) {
+            --phys_ch->sync_errs;
         }
-    } else {
-        phys_ch->total_sync_err = 0;
+        return 1;
     }
 
-    phys_ch->last_sync_err = sync_err;
-    memcpy(frame->data, phys_ch->data_begin + FRAME_HDR_LEN, FRAME_DATA_LEN);
-    differential_dec(frame->data, FRAME_DATA_LEN, 0);
-    frame->frame_no = phys_ch->frame_no;
+    if (phys_ch->sync_errs > 6) {
+        printf("get_frame() - sync lost sync_errs=%d\n", phys_ch->sync_errs);
+        return -1;
+    }
 
-    phys_ch->data_begin += FRAME_LEN;
+    // look for synchoronization pattern shifted by some offset from expected
+    // possition. At the same time look for synchronization pattern of the
+    // following frame. If pattern(s) are found, synchronization is restored.
+    int sync_errs1 = INT_MAX;
+    int sync_errs2 = INT_MAX;
+    const uint8_t *end = phys_ch->data_end - FRAME_LEN - FRAME_HDR_LEN;
+    uint8_t *data = phys_ch->data_begin;
+    uint8_t *rdata = phys_ch->data_begin;
+    uint8_t *sync_pos1 = NULL;
+    uint8_t *sync_pos2 = NULL;
+    for (int i = 0; i < DATA_OFFS; ++i) {
+        if (data > end) {
+            return 0;
+        }
+
+        int e = cmp_frame_sync(data);
+        if (e < sync_errs1) {
+            sync_pos1 = data;
+            sync_errs1 = e;
+        }
+
+        e = cmp_frame_sync(rdata);
+        if (e < sync_errs1) {
+            sync_pos1 = rdata;
+            sync_errs1 = e;
+        }
+
+        e = cmp_frame_sync(data + FRAME_LEN);
+        if (e < sync_errs2) {
+            sync_pos2 = data;
+            sync_errs2 = e;
+        }
+
+        e = cmp_frame_sync(rdata + FRAME_LEN);
+        if (e < sync_errs2) {
+            sync_pos2 = rdata;
+            sync_errs2 = e;
+        }
+
+        if (sync_errs1 == 0 || sync_errs2 == 0) {
+            break;
+        }
+
+        ++data;
+        --rdata;
+    }
+
+    // increase error counter only if we have not found 2 consecutive sync patterns
+    if (sync_errs1 != 0 || sync_errs2 != 0 || sync_pos1 != sync_pos2) {
+        phys_ch->sync_errs = 2 * phys_ch->sync_errs + 2;
+    }
+
+    if (phys_ch->sync_errs > 10) {
+        printf("get_frame() sync lost sync_errs=%d\n", phys_ch->sync_errs);
+        return -1;
+    }
+
+
+    phys_ch->data_begin = (sync_errs1 < sync_errs2) ? sync_pos1 : sync_pos2;
+
+    copy_frame(phys_ch, frame);
+    printf("get_frame() sync fail sync_errs=%d\n", phys_ch->sync_errs);
 
     return 1;
 }
