@@ -14,7 +14,7 @@ data_frame_t *data_frame_create(void);
 /**
   Reset internal state of data frame decoder.
 
-  Must be called after data_frame_get_tpdu_data(), before new decoded frame is pushed in.
+  Should be called when stream is interrupted or corrupted.
   */
 void data_frame_reset(data_frame_t *data_fr);
 

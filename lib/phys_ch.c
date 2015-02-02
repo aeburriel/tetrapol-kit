@@ -565,8 +565,6 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
                 // D_SYSTEM_INFO frame_no hack
                 f->frame_no = frame_no + 3;
             }
-
-            data_frame_reset(phys_ch->bch_data_fr);
         }
         return 0;
     }

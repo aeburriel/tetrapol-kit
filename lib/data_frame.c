@@ -140,6 +140,12 @@ int data_frame_get_tpdu_data(data_frame_t *data_fr, uint8_t *tpdu_data)
     if (nframes >= 3) {
         // TODO: check parity, fix broken bites
     }
+
+    data_frame_reset(data_fr);
+
+    printf("tpdu_data=");
+    print_buf(tpdu_data-nframes * 64, nframes * 64);
+
     return nframes * 64;
 }
 
