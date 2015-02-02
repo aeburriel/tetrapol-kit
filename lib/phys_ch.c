@@ -150,13 +150,13 @@ void tetrapol_phys_ch_set_scr_confidence(
     phys_ch->scr_confidence = scr_confidence;
 }
 
-static uint8_t differential_dec(uint8_t *data, int size, uint8_t last_bit)
+static uint8_t differential_dec(uint8_t *data, int size, uint8_t first_bit)
 {
     while (size--) {
-        last_bit = *data = *data ^ last_bit;
+        first_bit = *data = *data ^ first_bit;
         ++data;
     }
-    return last_bit;
+    return first_bit;
 }
 
 int tetrapol_recv2(phys_ch_t *phys_ch, uint8_t *buf, int len)
