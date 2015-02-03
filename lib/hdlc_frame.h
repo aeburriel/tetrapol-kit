@@ -19,4 +19,6 @@ typedef struct {
     uint8_t info[HDLC_INFO_LEN_MAX];    ///< data are stored packed in bytes
 } hdlc_frame_t;
 
+extern const st_addr_t st_addr_all;
+
 bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int len);

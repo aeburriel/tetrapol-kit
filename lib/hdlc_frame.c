@@ -2,6 +2,11 @@
 
 #include <stdbool.h>
 
+const st_addr_t st_addr_all = {
+    .z = 0,
+    .y = 7,
+    .x = 0xfff,
+};
 
 /// PAS 0001-3-3 7.4.1.1
 static bool check_fcs(const uint8_t *data, int len)

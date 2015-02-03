@@ -621,6 +621,12 @@ static void detect_cch(phys_ch_t *phys_ch, decoded_frame_t *df)
         return;
     }
 
+    if (memcmp(&hdlc_frame.addr, &st_addr_all, sizeof(st_addr_all))) {
+        printf("detect_cch(): no All St address: %d %d %d\n",
+                hdlc_frame.addr.z, hdlc_frame.addr.y, hdlc_frame.addr.x);
+        return;
+    }
+
     int frame_no = df->frame_no;
     bitorder_frame(tpdu_data, size/8);
     // TODO: try decode only BCH - D_SYSTEM_INFO
