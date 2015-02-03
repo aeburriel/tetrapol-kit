@@ -637,16 +637,16 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
     decoded_frame_t df;
     int errs = frame_decode_data(f, &df);
 
+    if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
+        detect_cch(phys_ch, &df);
+        f->frame_no = df.frame_no;
+        return 0;
+    }
+
     if (errs) {
         printf("ERR decode frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
-        return 0;
-    }
-
-    if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
-        detect_cch(phys_ch, &df);
-        f->frame_no = df.frame_no;
         return 0;
     }
 
