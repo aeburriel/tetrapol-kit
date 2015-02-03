@@ -591,6 +591,33 @@ static void bitorder_frame(uint8_t *d, int size)
     }
 }
 
+static void detect_cch(phys_ch_t *phys_ch, decoded_frame_t *df)
+{
+    int asbx = df->data[67];
+    int asby = df->data[68];
+    int fn0 = df->data[1];
+    int fn1 = df->data[2];
+    printf("OK frame_no=%03i fn=%i%i asb=%i%i data=",
+            df->frame_no, fn1, fn0, asbx, asby);
+    print_buf(df->data + 3, 64);
+
+    if (!data_frame_push_decoded_frame(phys_ch->bch_data_fr, df)) {
+        return;
+    }
+
+    uint8_t tpdu_data[TPDU_DATA_SIZE_MAX];
+    int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
+
+    int frame_no = df->frame_no;
+    bitorder_frame(tpdu_data, size/8);
+    // TODO: try decode only BCH - D_SYSTEM_INFO
+    tpdu_process(tpdu_data, size / 8, &frame_no);
+    if (frame_no != FRAME_NO_UNKNOWN) {
+        // D_SYSTEM_INFO frame_no hack
+        df->frame_no = frame_no + 3;
+    }
+}
+
 static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
 {
     const int scr = (phys_ch->scr == PHYS_CH_SCR_DETECT) ?
@@ -618,29 +645,8 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
     }
 
     if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
-        int asbx = df.data[67];
-        int asby = df.data[68];
-        int fn0 = df.data[1];
-        int fn1 = df.data[2];
-        printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ",
-                df.frame_no, fn1, fn0, asbx, asby, scr);
-        print_buf(df.data + 3, 64);
-
-        if (!data_frame_push_decoded_frame(phys_ch->bch_data_fr, &df)) {
-            return 0;
-        }
-
-        uint8_t tpdu_data[TPDU_DATA_SIZE_MAX];
-        int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
-
-        int frame_no = f->frame_no;
-        bitorder_frame(tpdu_data, size/8);
-        // TODO: try decode only BCH - D_SYSTEM_INFO
-        tpdu_process(tpdu_data, size / 8, &frame_no);
-        if (frame_no != FRAME_NO_UNKNOWN) {
-            // D_SYSTEM_INFO frame_no hack
-            f->frame_no = frame_no + 3;
-        }
+        detect_cch(phys_ch, &df);
+        f->frame_no = df.frame_no;
         return 0;
     }
 
