@@ -3,6 +3,7 @@
 #include "tpdu.h"
 #include "misc.h"
 #include "data_frame.h"
+#include "hdlc_frame.h"
 #include "decoded_frame.h"
 #include "phys_ch.h"
 
@@ -607,6 +608,18 @@ static void detect_cch(phys_ch_t *phys_ch, decoded_frame_t *df)
 
     uint8_t tpdu_data[TPDU_DATA_SIZE_MAX];
     int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
+
+    hdlc_frame_t hdlc_frame;
+    if (!hdlc_frame_parse(&hdlc_frame, tpdu_data, size)) {
+        printf("detect_cch(): hdlc_frame_parse failed\n");
+        return;
+    }
+
+    // FIXME: proper cmd check for D_SYSTEM_INFO detection
+    if (hdlc_frame.command != 3) {
+        printf("detect_cch(): invalid cmd %d\n", hdlc_frame.command);
+        return;
+    }
 
     int frame_no = df->frame_no;
     bitorder_frame(tpdu_data, size/8);
