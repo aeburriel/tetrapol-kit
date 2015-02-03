@@ -5,6 +5,7 @@ CMakeFiles
 cmake_install.cmake
 CTestTestfile.cmake
 lib/libtetrapol.a
+lib/test_hdlc_frame
 lib/test_phys_ch
 Makefile
 Testing/
