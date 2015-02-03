@@ -8,11 +8,19 @@
 // maximal amount of data frames including single XOR frame
 #define MAX_DATA_FRAMES 9
 
+enum {
+    FN_00 = 00,
+    FN_01 = 01,
+    FN_10 = 02,
+    FN_11 = 03,
+};
+
 struct _data_frame_t {
     decoded_frame_t dfs[MAX_DATA_FRAMES];
     int fn[MAX_DATA_FRAMES];
+    bool crc_ok[MAX_DATA_FRAMES];
     int nframes;
-    int errs;
+    int nerrs;
 };
 
 data_frame_t *data_frame_create(void)
@@ -35,15 +43,65 @@ void data_frame_destroy(data_frame_t *data_fr)
 void data_frame_reset(data_frame_t *data_fr)
 {
     data_fr->nframes = 0;
-    data_fr->errs = 0;
+    data_fr->nerrs = 0;
 }
 
-enum {
-    FN_00 = 00,
-    FN_01 = 01,
-    FN_10 = 02,
-    FN_11 = 03,
-};
+static bool check_parity(data_frame_t *data_fr)
+{
+    for (int i = 1; i < 1 + 64 + 2; ++i) {
+        int parity = 0;
+        for (int fr_no = 0; fr_no < data_fr->nframes; ++fr_no) {
+            parity ^= data_fr->dfs[fr_no].data[i];
+        }
+        if (parity) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static void fix_by_parity(data_frame_t *data_fr)
+{
+    int err_fr_no = 0;
+
+    for (int fr_no = 0; fr_no < data_fr->nframes; ++fr_no) {
+        if (!data_fr->crc_ok[fr_no]) {
+            err_fr_no = fr_no;
+            break;
+        }
+    }
+
+    // do not fix parity frame
+    if (err_fr_no == data_fr->nframes - 1) {
+        return;
+    }
+
+    for (int i = 1; i < 1 + 64 + 2; ++i) {
+        int bit = 0;
+        for (int fr_no = 0; fr_no < data_fr->nframes; ++fr_no) {
+            if (fr_no != err_fr_no) {
+                bit ^= data_fr->dfs[fr_no].data[i];
+            }
+            data_fr->dfs[err_fr_no].data[i] = bit;
+        }
+    }
+}
+
+static bool data_frame_check_multiframe(data_frame_t *data_fr)
+{
+    if (data_fr->nerrs) {
+        fix_by_parity(data_fr);
+    } else {
+        if (!check_parity(data_fr)) {
+            printf("MB parity error %d\n", data_fr->nframes);
+            data_frame_reset(data_fr);
+            return false;
+        }
+    }
+
+    return true;
+}
 
 bool data_frame_push_decoded_frame(data_frame_t *data_fr, decoded_frame_t *df)
 {
@@ -51,40 +109,56 @@ bool data_frame_push_decoded_frame(data_frame_t *data_fr, decoded_frame_t *df)
         data_frame_reset(data_fr);
     }
 
-    memcpy(&data_fr->dfs[data_fr->nframes], df, sizeof(decoded_frame_t));
-    ++data_fr->nframes;
-
     const bool crc_ok = decoded_frame_check_crc(df, FRAME_TYPE_DATA);
-    if (!crc_ok) {
+    data_fr->nerrs += crc_ok ? 0 : 1;
+    data_fr->crc_ok[data_fr->nframes] = crc_ok;
+
+    if (data_fr->nerrs > 1) {
         data_frame_reset(data_fr);
-        // TODO: more inteligent error handling, try repair frames and multiframes
         return false;
     }
 
     const int fn = df->data[1] | (df->data[2] << 1);
-    data_fr->fn[data_fr->nframes - 1] = fn;
+    data_fr->fn[data_fr->nframes] = fn;
+
+    memcpy(&data_fr->dfs[data_fr->nframes], df, sizeof(decoded_frame_t));
+    ++data_fr->nframes;
 
     // single frame
     if (data_fr->nframes == 1) {
+        if (!crc_ok) {
+            return false;
+        }
         if (fn == FN_00) {
-            printf("MB1 frame_no=%d\n", df->frame_no);
             return true;
         }
         if (fn != FN_01) {
-            printf("mb err\n");
+            printf("MB err\n");
             data_frame_reset(data_fr);
         }
         return false;
     }
 
+    const int fn_prev = data_fr->fn[data_fr->nframes - 2];
+    const bool crc_ok_prev = data_fr->crc_ok[data_fr->nframes - 2];
+
     // check for dualframe or multiframe
     if (data_fr->nframes == 2) {
+        if (!crc_ok) {
+            if (fn_prev != FN_01) {
+                data_frame_reset(data_fr);
+            }
+            return false;
+        }
         if (fn == FN_11) {
-            printf("MB2 frame_no=%d\n", df->frame_no);
+            if (!crc_ok_prev) {
+                data_frame_reset(data_fr);
+                return false;
+            }
             return true;
         }
         if (fn != FN_10) {
-            printf("mb err\n");
+            printf("MB err\n");
             data_frame_reset(data_fr);
             return data_frame_push_decoded_frame(data_fr, df);
         }
@@ -92,59 +166,69 @@ bool data_frame_push_decoded_frame(data_frame_t *data_fr, decoded_frame_t *df)
     }
 
     // check multiframe, inner frames
-    const int fn_prev = data_fr->fn[data_fr->nframes - 2];
-    if (fn == FN_11 && (fn_prev == FN_10 || fn_prev == FN_11)) {
+    if (data_fr->nframes == 3) {
+        if (!crc_ok) {
+            return false;
+        }
+        if (fn != FN_10 && fn != FN_11) {
+            data_frame_reset(data_fr);
+            return data_frame_push_decoded_frame(data_fr, df);
+        }
+        return false;
+    }
+
+    // end of multiframe, final frame is invalid
+    if (!crc_ok) {
+        if (fn_prev == FN_10) {
+            return data_frame_check_multiframe(data_fr);
+        }
+        return false;
+    }
+
+    if (fn == FN_11) {
+        if (fn_prev != FN_11 && crc_ok_prev) {
+            data_frame_reset(data_fr);
+        }
         return false;
     }
 
     // check multiframe, pre-end of multiframe
-    if (fn == FN_10 && (fn_prev == FN_10 || fn_prev == FN_11)) {
+    if (fn == FN_10) {
+        if (fn_prev != FN_11 && crc_ok_prev) {
+            data_frame_reset(data_fr);
+        }
         return false;
     }
 
-    // check multiframe, end of multiframe
-    if (fn == FN_01 && fn_prev == FN_10) {
-        // check XOR
-        for (int i = 1; i < 1 + 64 + 2; ++i) {
-            int r = 0;
-            for (int n = 0; n < data_fr->nframes; ++n) {
-                r ^= data_fr->dfs[n].data[i];
-            }
-            if (r) {
-                printf("mb xor err %d frame_no=%d\n", data_fr->nframes, df->frame_no);
-                data_frame_reset(data_fr);
-                return false;
-            }
+    if (fn == FN_01) {
+        if (fn_prev != FN_10 && crc_ok_prev) {
+            data_frame_reset(data_fr);
+            return false;
         }
-        printf("MB%d frame_no=%d\n", data_fr->nframes - 1, df->frame_no);
-        return true;
+        return data_frame_check_multiframe(data_fr);
     }
 
-    printf("mb err\n");
+    printf("MB err\n");
     data_frame_reset(data_fr);
     return data_frame_push_decoded_frame(data_fr, df);
 }
 
 int data_frame_get_tpdu_data(data_frame_t *data_fr, uint8_t *tpdu_data)
 {
-    if (data_fr->nframes == 0) {
-        return 0;
-    }
-
     const int nframes = (data_fr->nframes <= 2) ?
         data_fr->nframes : data_fr->nframes - 1;
-    for (int i = 0; i < nframes; ++i) {
-        memcpy(tpdu_data, data_fr->dfs[i].data + 3, 64);
+
+    printf("MB%d\n", nframes);
+
+    for (int fr_no = 0; fr_no < nframes; ++fr_no) {
+        memcpy(tpdu_data, data_fr->dfs[fr_no].data + 3, 64);
         tpdu_data += 64;
-    }
-    if (nframes >= 3) {
-        // TODO: check parity, fix broken bites
     }
 
     data_frame_reset(data_fr);
 
     printf("tpdu_data=");
-    print_buf(tpdu_data-nframes * 64, nframes * 64);
+    print_buf(tpdu_data - nframes * 64, nframes * 64);
 
     return nframes * 64;
 }

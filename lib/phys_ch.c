@@ -626,18 +626,20 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
                 df.frame_no, fn1, fn0, asbx, asby, scr);
         print_buf(df.data + 3, 64);
 
-        if (data_frame_push_decoded_frame(phys_ch->bch_data_fr, &df)) {
-            uint8_t tpdu_data[TPDU_DATA_SIZE_MAX];
-            int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
+        if (!data_frame_push_decoded_frame(phys_ch->bch_data_fr, &df)) {
+            return 0;
+        }
 
-            int frame_no = f->frame_no;
-            bitorder_frame(tpdu_data, size/8);
-            // TODO: try decode only BCH - D_SYSTEM_INFO
-            tpdu_process(tpdu_data, size / 8, &frame_no);
-            if (frame_no != FRAME_NO_UNKNOWN) {
-                // D_SYSTEM_INFO frame_no hack
-                f->frame_no = frame_no + 3;
-            }
+        uint8_t tpdu_data[TPDU_DATA_SIZE_MAX];
+        int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
+
+        int frame_no = f->frame_no;
+        bitorder_frame(tpdu_data, size/8);
+        // TODO: try decode only BCH - D_SYSTEM_INFO
+        tpdu_process(tpdu_data, size / 8, &frame_no);
+        if (frame_no != FRAME_NO_UNKNOWN) {
+            // D_SYSTEM_INFO frame_no hack
+            f->frame_no = frame_no + 3;
         }
         return 0;
     }

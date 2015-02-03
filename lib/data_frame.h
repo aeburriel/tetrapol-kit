@@ -19,17 +19,16 @@ data_frame_t *data_frame_create(void);
 void data_frame_reset(data_frame_t *data_fr);
 
 /**
-  Pass new decoded frame into data frame processing chain.
+  Add new decoded frame into data frame processing chain.
 
-  @return true if new data frame(s) is/are available, false otherwise.
+  @return true if new data frame is decoded, false otherwise.
   */
 bool data_frame_push_decoded_frame(data_frame_t *data_fr, decoded_frame_t *df);
 
 /**
   Copy data frame into output buffer.
 
-  @return size of result (with one bit per byte) or -1 when no more TPDUs are available
-    or some error occured.
+  @return size of result.
   */
 int data_frame_get_tpdu_data(data_frame_t *data_fr, uint8_t *tpdu_data);
 
