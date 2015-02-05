@@ -90,8 +90,8 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
         return NULL;
     }
 
-    if (rch_type != TETRAPOL_RCH_CONTROL &&
-            rch_type != TETRAPOL_RCH_TRAFFIC) {
+    if (rch_type != TETRAPOL_CONTROL_RCH &&
+            rch_type != TETRAPOL_TRAFFIC_RCH) {
         fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'rch_type'\n");
         return NULL;
     }
@@ -109,7 +109,7 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
     phys_ch->scr = PHYS_CH_SCR_DETECT;
     phys_ch->scr_confidence = 50;
 
-    if (rch_type == TETRAPOL_RCH_CONTROL) {
+    if (rch_type == TETRAPOL_CONTROL_RCH) {
         phys_ch->bch_data_fr = data_frame_create();
         if (!phys_ch->bch_data_fr) {
             goto err_bch_data_fr;
@@ -126,7 +126,7 @@ err_bch_data_fr:
 
 void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
 {
-    if (phys_ch->rch_type == TETRAPOL_RCH_CONTROL) {
+    if (phys_ch->rch_type == TETRAPOL_CONTROL_RCH) {
         data_frame_destroy(phys_ch->bch_data_fr);
     }
     free(phys_ch);
@@ -327,7 +327,7 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
         }
         fprintf(stderr, "Frame sync found\n");
         phys_ch->frame_no = FRAME_NO_UNKNOWN;
-        if (phys_ch->rch_type == TETRAPOL_RCH_CONTROL) {
+        if (phys_ch->rch_type == TETRAPOL_CONTROL_RCH) {
             data_frame_reset(phys_ch->bch_data_fr);
         }
         multiblock_reset();
@@ -573,7 +573,7 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
         detect_scr(phys_ch, f);
     }
 
-    if (phys_ch->rch_type == TETRAPOL_RCH_CONTROL) {
+    if (phys_ch->rch_type == TETRAPOL_CONTROL_RCH) {
         return process_frame_cch(phys_ch, f);
     }
 

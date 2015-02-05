@@ -13,8 +13,8 @@ enum {
 
 /** Radio channel type. */
 enum {
-    TETRAPOL_RCH_CONTROL = 1,
-    TETRAPOL_RCH_TRAFFIC = 2,
+    TETRAPOL_CONTROL_RCH = 1,
+    TETRAPOL_TRAFFIC_RCH = 2,
 };
 
 #ifdef __cplusplus
