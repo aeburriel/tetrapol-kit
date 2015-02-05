@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 
+#include "bit_utils.c"
+
 const st_addr_t st_addr_all = {
     .z = 0,
     .y = 7,
@@ -47,23 +49,6 @@ static bool check_fcs(const uint8_t *data, int len)
 
     return !(crc[0] | crc[1] | crc[2] | crc[3] | crc[4] | crc[5] | crc[6] | crc[7] |
             crc[8] | crc[9] | crc[10] | crc[11] | crc[12] | crc[13] | crc[14] | crc[15]);
-}
-
-// get int from byte array (TETRAPOL data frame)
-static inline uint32_t struct_get_int(const uint8_t *data, int offs, int len)
-{
-    uint64_t r = 0;
-
-    // collect all bites including those extra at begin/end
-    for (int i = offs / 8; i < (offs + len + 7) / 8; ++i) {
-        r = (r << 8) | data[i];
-    }
-    // drop extra bites at end
-    r >>= 7 - ((len + offs - 1) % 8);
-    // mask extra bites at begining
-    r &= ((uint32_t)(~0L)) >> (32 - len);
-
-    return r;
 }
 
 static void st_addr_parse(st_addr_t *addr, uint8_t *buf)
