@@ -120,6 +120,172 @@ enum {
 };
 typedef uint8_t iei_t;
 
+/// PAS 0001-3-2 5.3.23
+enum {
+    CELL_STATE_EXP_NORMAL = 0,
+    CELL_STATE_EXP_EXPERIMENTAL = 1,
+};
+
+enum {
+    CELL_STATE_ROAM_ACCEPTED    = 0,
+    CELL_STATE_ROAM_HOME_ONLY   = 1,
+};
+
+enum {
+    CELL_STATE_MODE_NORMAL              = 0,
+    CELL_STATE_MODE_DISC_INTERN_BN      = 1,
+    CELL_STATE_MODE_DISC_MAIN_SWITCH    = 2,
+    CELL_STATE_MODE_DISC_RADIOSWITCH    = 3,
+    CELL_STATE_MODE_DISC_BSC            = 4,
+    // 3 values reserved
+};
+
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int exp : 1;
+        unsigned int roam : 1;
+        unsigned int _reserved_00 : 2;
+        unsigned int bch : 1;
+        unsigned int mode : 3;
+    };
+} cell_state_t;
+
+/// PAS 0001-3-2 5.3.20
+enum {
+    CELL_CONFIG_DC_SINGLE           = 0,
+    CELL_CONFIG_DC_DOUBLE_COVERAGE  = 1,
+};
+
+enum {
+    CELL_CONFIG_SIM_SINGLE      = 0,
+    CELL_CONFIG_SIM_SIMULCAST   = 1,
+};
+
+enum {
+    CELL_CONFIG_MUX_TYPE_DEFAULT    = 0,
+    CELL_CONFIG_MUX_TYPE_TYPE_2     = 1,
+    // 6 values reserved
+};
+
+enum {
+    CELL_CONFIG_ATTA_NOT_SUPPORTED  = 0,
+    CELL_CONFIG_ATTA_SUPPORTED      = 1,
+};
+
+enum {
+    CELL_CONFIG_ECCH_NOT_PRESENT    = 0,
+    CELL_CONFIG_ECCH_PRESENT        = 1,
+};
+
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int dc : 1;
+        unsigned int sim : 1;
+        unsigned int mux_type : 3;
+        unsigned int _reserved_0 : 1;
+        unsigned int atta : 1;
+        unsigned int eccch : 1;
+    };
+} cell_config_t;
+
+/// PAS 0001-3-2 5.3.65
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int version : 4;
+        unsigned int network : 4;
+    };
+} system_id_t;
+
+/// PAS 0001-3-2 5.3.40
+enum {
+    LOCAL_AREA_ID_MODE_RSW_BS   = 0,
+    LOCAL_AREA_ID_MODE_BS       = 1,
+    LOCAL_AREA_ID_MODE_LOC      = 2,
+    // one value reserved
+};
+
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int loc_id : 6;
+        unsigned int mode : 2;
+    };
+} loc_area_id_t;
+
+/// PAS 0001-3-2 5.3.9
+enum {
+    BN_ID_UNDEFINED = 0,
+};
+
+/// PAS 0001-3-2 5.3.21
+enum {
+    CELL_ID_FORMAT_0    = 0,
+    CELL_ID_FORMAT_1    = 1,
+    // 2 values reserved
+};
+
+typedef struct {
+    uint8_t bs_id;
+    uint8_t rws_id;
+} cell_id_t;
+
+/// PAS 0001-3-2 5.3.22
+enum {
+    CELL_RADIO_PARAM_TX_MAX_UNLIMITED   = 0,
+    // 7 values reserved
+};
+
+enum {
+    CELL_RADIO_PARAM_RADIO_LINK_TIMEOUT_INTERNAL,
+    // 31 values reserved
+};
+
+/// convert pwr_tx_adjust to TX power adjustment in dBm
+extern const int CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[16];
+
+/// shall by used by RT to estimate radio conditions for one cell
+extern const int CELL_RADIO_PARAM_RX_LEV_ACCESS_TO_DBM[16];
+
+typedef struct {
+    uint8_t tx_max;
+    uint8_t radio_link_timeout;
+    uint8_t pwr_tx_adjust;
+    uint8_t rx_lev_access;
+} cell_radio_param_t;
+
+/// PAS 0001-3-2 5.3.18
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int min_service_class : 4;
+        unsigned int min_reg_class : 4;
+    };
+} cell_access_t;
+
+/// PAS 0001-3-2 4.4.71
+typedef struct {
+    codop_t codop;
+    cell_state_t cell_state;
+    cell_config_t cell_config;
+    uint8_t country_code;
+    system_id_t system_id;
+    loc_area_id_t loc_area_id;
+    uint8_t bn_id;
+    uint16_t cell_id;
+    uint16_t cell_bn;
+    uint8_t u_ch_scrambling;
+    cell_radio_param_t cell_radio_param;
+    uint8_t system_time;
+    cell_access_t cell_access;
+    uint16_t superframe_cpt;
+// used only when cell_state == disconnected
+    uint8_t band;
+    uint16_t channel_id;
+} tsdu_system_info_t;
+
 void tsdu_process(const uint8_t* t, int data_length, int mod);
 
 void decode_bch(const uint8_t *t, int *frame_no);

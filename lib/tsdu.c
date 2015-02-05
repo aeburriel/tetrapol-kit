@@ -6,6 +6,17 @@
 #include <stdio.h>
 #include <stdint.h>
 
+const int CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[16] = {
+    -76, -72, -68, -64, -60, -56, -52, -48,
+    -44, -40, -36, -32, -28, -24, -20, -16,
+};
+
+const int CELL_RADIO_PARAM_RX_LEV_ACCESS_TO_DBM[16] = {
+    -92, -88, -84, -80, -76, -72, -68, -64,
+    -60, -56, -52, -48, -44, -40, -36, -32,
+};
+
+
 static void decode_cell_id(int cell_id) {
 
     int cell_id_format, cell_id_bs_id, cell_id_rsw_id;
