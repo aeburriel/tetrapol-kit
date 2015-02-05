@@ -662,6 +662,26 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
+    const int fn_mod = f->frame_no % 100;
+    if (fn_mod == 0 || fn_mod == 1 || fn_mod == 2 || fn_mod == 3) {
+        // TODO: process BCH
+        // return
+    }
+
+    if (fn_mod == 98 || fn_mod == 99) {
+        // TODO: decode_pch(t);
+        // return
+    }
+
+    if (f->frame_no % 25 == 14) {
+        // TODO: decode_rch(t);
+        // return
+    }
+
+    // TODO:
+    // hdlc_process(t+16,length-2, *frame_no);
+    // return
+
     if (errs) {
         printf("ERR decode frame_no=%03i\n", f->frame_no);
         multiblock_reset();
