@@ -1,6 +1,7 @@
 #include "tetrapol.h"
 #include "multiblock.h"
 #include "tpdu.h"
+#include "tsdu.h"
 #include "misc.h"
 #include "data_frame.h"
 #include "hdlc_frame.h"
@@ -630,7 +631,7 @@ static void detect_bch(phys_ch_t *phys_ch, decoded_frame_t *df)
     int frame_no = df->frame_no;
     bitorder_frame(tpdu_data, size/8);
     // TODO: try decode only BCH - D_SYSTEM_INFO
-    tpdu_process(tpdu_data, size / 8, &frame_no);
+    decode_bch(tpdu_data, &frame_no);
     if (frame_no != FRAME_NO_UNKNOWN) {
         // D_SYSTEM_INFO frame_no hack
         df->frame_no = frame_no + 3;
