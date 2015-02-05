@@ -380,15 +380,40 @@ static int channel_decoder(uint8_t *res, uint8_t *err, const uint8_t *in, int re
     return errs;
 }
 
-static int frame_decode_data(const frame_t *f, data_block_t *data_blk)
+static int frame_decode_data(data_block_t *data_blk, const frame_t *f,
+        frame_type_t fr_type)
 {
-    // decode first 52 bites of frame
-    int errs = channel_decoder(data_blk->data, data_blk->err, f->data, 26);
-    // TODO: check frame type (AUDIO / DATA)
-    // decode remaining part of frame
-    errs += channel_decoder(data_blk->data + 26, data_blk->err + 26, f->data + 2*26, 50);
-
     data_blk->frame_no = f->frame_no;
+    int errs = 0;
+
+    if (fr_type == FRAME_TYPE_AUTO) {
+        // TODO: try decode each type of frame
+        fr_type = FRAME_TYPE_DATA;
+    }
+
+    if (fr_type == FRAME_TYPE_VOICE) {
+        // TODO (set fr_type = FRAME_TYPE_DATA) when stollen frame
+        printf("decoding frame type %d not implemented\n", fr_type);
+        errs = INT_MAX;
+    }
+
+    data_blk->fr_type = fr_type;
+
+    if (fr_type == FRAME_TYPE_DATA) {
+        // decode first 52 bites of frame
+        errs = channel_decoder(data_blk->data, data_blk->err, f->data, 26);
+        // decode remaining part of frame
+        errs += channel_decoder(data_blk->data + 26, data_blk->err + 26,
+                f->data + 2*26, 50);
+    } else if (fr_type == FRAME_TYPE_HR_DATA) {
+        // TODO
+        printf("decoding frame type %d not implemented\n", fr_type);
+        errs = INT_MAX;
+    } else {
+        // TODO
+        printf("decoding frame type %d not implemented\n", fr_type);
+        errs = INT_MAX;
+    }
 
     return errs;
 }
@@ -528,7 +553,7 @@ static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
         }
 
         data_block_t data_blk;
-        if (frame_decode_data(&f_, &data_blk)) {
+        if (frame_decode_data(&data_blk, &f_, FRAME_TYPE_AUTO)) {
             phys_ch->scr_stat[scr] -= 2;
             if (phys_ch->scr_stat[scr] < 0) {
                 phys_ch->scr_stat[scr] = 0;
@@ -536,7 +561,7 @@ static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
             continue;
         }
 
-        if(!data_block_check_crc(&data_blk, FRAME_TYPE_DATA)) {
+        if(!data_block_check_crc(&data_blk)) {
             phys_ch->scr_stat[scr] -= 2;
             if (phys_ch->scr_stat[scr] < 0) {
                 phys_ch->scr_stat[scr] = 0;
@@ -656,7 +681,7 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
     }
 
     data_block_t data_blk;
-    int errs = frame_decode_data(f, &data_blk);
+    int errs = frame_decode_data(&data_blk, f, FRAME_TYPE_DATA);
 
     if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
         detect_bch(phys_ch, &data_blk);
@@ -699,7 +724,7 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
-    if(!data_block_check_crc(&data_blk, FRAME_TYPE_DATA)) {
+    if(!data_block_check_crc(&data_blk)) {
         //			printf("crc mismatch!\n");
         printf("ERR crc frame_no=%03i\n", f->frame_no);
         multiblock_reset();

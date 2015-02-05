@@ -18,6 +18,7 @@ typedef enum {
 
 // now only data frame, in future might comprise different types of frame
 typedef struct {
+    frame_type_t fr_type;
     int frame_no;
     union {
         uint8_t data[74];
@@ -29,5 +30,5 @@ typedef struct {
     };
 } data_block_t;
 
-bool data_block_check_crc(const data_block_t *data_blk, frame_type_t fr_type);
+bool data_block_check_crc(data_block_t *data_blk);
 

@@ -21,24 +21,24 @@ static void mk_crc5(uint8_t *res, const uint8_t *input, int input_len)
     }
 }
 
-bool data_block_check_crc(const data_block_t *data_blk, frame_type_t fr_type)
+bool data_block_check_crc(data_block_t *data_blk)
 {
-    if (fr_type == FRAME_TYPE_AUTO) {
-        fr_type = data_blk->data[0];
+    if (data_blk->fr_type == FRAME_TYPE_AUTO) {
+        data_blk->fr_type = data_blk->data[0];
     } else {
-        if (fr_type != data_blk->data[0]) {
+        if (data_blk->fr_type != data_blk->data[0]) {
             return false;
         }
     }
 
-    if (fr_type == FRAME_TYPE_DATA) {
+    if (data_blk->fr_type == FRAME_TYPE_DATA) {
         uint8_t crc[5];
 
         mk_crc5(crc, data_blk->data, 69);
         return !memcmp(data_blk->data + 69, crc, 5);
     }
 
-    if (fr_type == FRAME_TYPE_VOICE) {
+    if (data_blk->fr_type == FRAME_TYPE_VOICE) {
         // TODO
         fprintf(stderr, "CRC checking for VOICE frames not implemented");
         return false;
