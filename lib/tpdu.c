@@ -130,14 +130,14 @@ static void tpdu_i_process(const uint8_t* t, int length, int mod) {
 
 static void hdlc_process(const uint8_t *t, int length, int mod) {
 
-    int hdlc, r, s, pe, m;
+    int hdlc, r, s, m;
 
     hdlc = bits_to_int(t, 8);
 
     if ((hdlc & 0x01) == 0) {
         r = (hdlc & 0xe0) >> 5;
         s = (hdlc & 0x0e) >> 1;
-        pe = (hdlc & 0x10) >> 4;
+        //pe = (hdlc & 0x10) >> 4;
         printf("\tHDLC I(%i,%i)\n", r, s);
         tpdu_i_process(t+8, length-1, mod);
     } else if ((hdlc & 0x0f) == 13) {
