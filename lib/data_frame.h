@@ -2,8 +2,6 @@
 
 #include "decoded_frame.h"
 
-#define TPDU_DATA_SIZE_MAX ((64 * 8))
-
 typedef struct _data_frame_t data_frame_t;
 
 /**

@@ -1,4 +1,5 @@
 #include "tetrapol.h"
+#include "system_config.h"
 #include "multiblock.h"
 #include "tpdu.h"
 #include "tsdu.h"
@@ -607,7 +608,7 @@ static void detect_bch(phys_ch_t *phys_ch, decoded_frame_t *df)
         return;
     }
 
-    uint8_t tpdu_data[TPDU_DATA_SIZE_MAX];
+    uint8_t tpdu_data[SYS_PAR_N200_BITS_MAX];
     int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
 
     hdlc_frame_t hdlc_frame;

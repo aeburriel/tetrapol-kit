@@ -1,12 +1,10 @@
+#include "system_config.h"
 #include "data_frame.h"
 #include "misc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// maximal amount of data frames including single XOR frame
-#define MAX_DATA_FRAMES 9
 
 enum {
     FN_00 = 00,
@@ -16,9 +14,9 @@ enum {
 };
 
 struct _data_frame_t {
-    decoded_frame_t dfs[MAX_DATA_FRAMES];
-    int fn[MAX_DATA_FRAMES];
-    bool crc_ok[MAX_DATA_FRAMES];
+    decoded_frame_t dfs[SYS_PAR_DATA_FRAME_BLOCKS_MAX + 1];
+    int fn[SYS_PAR_DATA_FRAME_BLOCKS_MAX + 1];
+    bool crc_ok[SYS_PAR_DATA_FRAME_BLOCKS_MAX + 1];
     int nframes;
     int nerrs;
 };
