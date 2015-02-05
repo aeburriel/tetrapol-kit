@@ -27,7 +27,7 @@ typedef struct {
         uint8_t err[74];
         uint8_t _tmpe[76];  // extra space, data frame have 2 stuffing bist
     };
-} decoded_frame_t;
+} data_block_t;
 
-bool decoded_frame_check_crc(const decoded_frame_t *df, frame_type_t df_type);
+bool data_block_check_crc(const data_block_t *data_blk, frame_type_t fr_type);
 

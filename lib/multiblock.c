@@ -40,12 +40,12 @@ static void bitorder_frame(const uint8_t *d, uint8_t *out)
     }
 }
 
-void multiblock_process(decoded_frame_t *df, int fn)
+void multiblock_process(data_block_t *data_blk, int fn)
 {
     uint8_t frame_bord[FRAME_BITORDER_LEN];
-    bitorder_frame(df->data + 3, frame_bord);
+    bitorder_frame(data_blk->data + 3, frame_bord);
 
-    if (df->frame_no % 25 == 14) {			// FIXME: RCH, PCH ??
+    if (data_blk->frame_no % 25 == 14) {			// FIXME: RCH, PCH ??
         decode_rch(frame_bord);
         return;
     }
@@ -53,13 +53,13 @@ void multiblock_process(decoded_frame_t *df, int fn)
     switch(state) {
         case 0:
             numblocks=0;
-            startmod = df->frame_no;
+            startmod = data_blk->frame_no;
             switch(fn) {
                 case 0:
                     memcpy(buf, frame_bord, 64);
-                    printf("MB1 frame_no=%03i ", df->frame_no);
+                    printf("MB1 frame_no=%03i ", data_blk->frame_no);
                     print_buf(buf, 64);
-                    tpdu_process(buf, 8, &df->frame_no);
+                    tpdu_process(buf, 8, &data_blk->frame_no);
                     state=0;
                     break;
                 case 1:
@@ -141,9 +141,9 @@ void multiblock_process(decoded_frame_t *df, int fn)
                         printf("MB%i frame_no=%03i ", numblocks-1, startmod);
                         print_buf(buf, (numblocks-1) * 64);
                         tpdu_process(buf, (numblocks-1)*8, &startmod);
-                        if (df->frame_no == FRAME_NO_UNKNOWN &&
+                        if (data_blk->frame_no == FRAME_NO_UNKNOWN &&
                                 startmod != FRAME_NO_UNKNOWN) {
-                            df->frame_no = startmod + numblocks - 1;
+                            data_blk->frame_no = startmod + numblocks - 1;
                         }
                     } else {
                         printf("mb xor err %i frame_no=%03i ", numblocks, startmod);

@@ -21,14 +21,14 @@ void data_frame_reset(data_frame_t *data_fr);
 
   @return true if new data frame is decoded, false otherwise.
   */
-bool data_frame_push_decoded_frame(data_frame_t *data_fr, decoded_frame_t *df);
+bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk);
 
 /**
-  Copy data frame into output buffer.
+  Copy data from data frame into output buffer.
 
   @return size of result.
   */
-int data_frame_get_tpdu_data(data_frame_t *data_fr, uint8_t *tpdu_data);
+int data_frame_get_data(data_frame_t *data_fr, uint8_t *bits);
 
 /**
   Destroy data frame instance

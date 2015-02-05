@@ -380,15 +380,15 @@ static int channel_decoder(uint8_t *res, uint8_t *err, const uint8_t *in, int re
     return errs;
 }
 
-static int frame_decode_data(const frame_t *f, decoded_frame_t *df)
+static int frame_decode_data(const frame_t *f, data_block_t *data_blk)
 {
     // decode first 52 bites of frame
-    int errs = channel_decoder(df->data, df->err, f->data, 26);
+    int errs = channel_decoder(data_blk->data, data_blk->err, f->data, 26);
     // TODO: check frame type (AUDIO / DATA)
     // decode remaining part of frame
-    errs += channel_decoder(df->data + 26, df->err + 26, f->data + 2*26, 50);
+    errs += channel_decoder(data_blk->data + 26, data_blk->err + 26, f->data + 2*26, 50);
 
-    df->frame_no = f->frame_no;
+    data_blk->frame_no = f->frame_no;
 
     return errs;
 }
@@ -527,8 +527,8 @@ static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
             frame_deinterleave(&f_, interleave_data_UHF);
         }
 
-        decoded_frame_t df;
-        if (frame_decode_data(&f_, &df)) {
+        data_block_t data_blk;
+        if (frame_decode_data(&f_, &data_blk)) {
             phys_ch->scr_stat[scr] -= 2;
             if (phys_ch->scr_stat[scr] < 0) {
                 phys_ch->scr_stat[scr] = 0;
@@ -536,7 +536,7 @@ static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
             continue;
         }
 
-        if(!decoded_frame_check_crc(&df, FRAME_TYPE_DATA)) {
+        if(!data_block_check_crc(&data_blk, FRAME_TYPE_DATA)) {
             phys_ch->scr_stat[scr] -= 2;
             if (phys_ch->scr_stat[scr] < 0) {
                 phys_ch->scr_stat[scr] = 0;
@@ -594,22 +594,22 @@ static void bitorder_frame(uint8_t *d, int size)
     }
 }
 
-static void detect_bch(phys_ch_t *phys_ch, decoded_frame_t *df)
+static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
 {
-    int asbx = df->data[67];
-    int asby = df->data[68];
-    int fn0 = df->data[1];
-    int fn1 = df->data[2];
+    int asbx = data_blk->data[67];
+    int asby = data_blk->data[68];
+    int fn0 = data_blk->data[1];
+    int fn1 = data_blk->data[2];
     printf("OK frame_no=%03i fn=%i%i asb=%i%i data=",
-            df->frame_no, fn1, fn0, asbx, asby);
-    print_buf(df->data + 3, 64);
+            data_blk->frame_no, fn1, fn0, asbx, asby);
+    print_buf(data_blk->data + 3, 64);
 
-    if (!data_frame_push_decoded_frame(phys_ch->bch_data_fr, df)) {
+    if (!data_frame_push_data_block(phys_ch->bch_data_fr, data_blk)) {
         return;
     }
 
     uint8_t tpdu_data[SYS_PAR_N200_BITS_MAX];
-    int size = data_frame_get_tpdu_data(phys_ch->bch_data_fr, tpdu_data);
+    int size = data_frame_get_data(phys_ch->bch_data_fr, tpdu_data);
 
     hdlc_frame_t hdlc_frame;
     if (!hdlc_frame_parse(&hdlc_frame, tpdu_data, size)) {
@@ -629,13 +629,13 @@ static void detect_bch(phys_ch_t *phys_ch, decoded_frame_t *df)
         return;
     }
 
-    int frame_no = df->frame_no;
+    int frame_no = data_blk->frame_no;
     bitorder_frame(tpdu_data, size/8);
     // TODO: try decode only BCH - D_SYSTEM_INFO
     decode_bch(tpdu_data, &frame_no);
     if (frame_no != FRAME_NO_UNKNOWN) {
         // D_SYSTEM_INFO frame_no hack
-        df->frame_no = frame_no + 3;
+        data_blk->frame_no = frame_no + 3;
     }
 }
 
@@ -655,12 +655,12 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
         frame_deinterleave(f, interleave_data_UHF);
     }
 
-    decoded_frame_t df;
-    int errs = frame_decode_data(f, &df);
+    data_block_t data_blk;
+    int errs = frame_decode_data(f, &data_blk);
 
     if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
-        detect_bch(phys_ch, &df);
-        f->frame_no = df.frame_no;
+        detect_bch(phys_ch, &data_blk);
+        f->frame_no = data_blk.frame_no;
         return 0;
     }
 
@@ -691,7 +691,7 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
-    if(df.data[0] != FRAME_TYPE_DATA) {
+    if(data_blk.data[0] != FRAME_TYPE_DATA) {
         printf("ERR type frame_no=%03i\n", f->frame_no);
         multiblock_reset();
         segmentation_reset();
@@ -699,7 +699,7 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
-    if(!decoded_frame_check_crc(&df, FRAME_TYPE_DATA)) {
+    if(!data_block_check_crc(&data_blk, FRAME_TYPE_DATA)) {
         //			printf("crc mismatch!\n");
         printf("ERR crc frame_no=%03i\n", f->frame_no);
         multiblock_reset();
@@ -708,15 +708,15 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
-    int asbx = df.data[67];
-    int asby = df.data[68];
-    int fn0 = df.data[1];
-    int fn1 = df.data[2];
+    int asbx = data_blk.data[67];
+    int asby = data_blk.data[68];
+    int fn0 = data_blk.data[1];
+    int fn1 = data_blk.data[2];
     printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ",
-            df.frame_no, fn1, fn0, asbx, asby, scr);
-    print_buf(df.data + 3, 64);
-    multiblock_process(&df, 2*fn1 + fn0);
-    f->frame_no = df.frame_no;
+            data_blk.frame_no, fn1, fn0, asbx, asby, scr);
+    print_buf(data_blk.data + 3, 64);
+    multiblock_process(&data_blk, 2*fn1 + fn0);
+    f->frame_no = data_blk.frame_no;
 
     return 0;
 }
