@@ -6,7 +6,7 @@
 #include "misc.h"
 #include "data_frame.h"
 #include "hdlc_frame.h"
-#include "decoded_frame.h"
+#include "data_block.h"
 #include "phys_ch.h"
 
 #include <limits.h>

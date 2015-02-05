@@ -4,7 +4,7 @@
 #include <cmocka.h>
 
 // include, we are testing static methods
-#include "decoded_frame.c"
+#include "data_block.c"
 
 static void test_mk_crc5(void **state)
 {
