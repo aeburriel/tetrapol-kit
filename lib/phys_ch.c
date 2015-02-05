@@ -592,7 +592,7 @@ static void bitorder_frame(uint8_t *d, int size)
     }
 }
 
-static void detect_cch(phys_ch_t *phys_ch, decoded_frame_t *df)
+static void detect_bch(phys_ch_t *phys_ch, decoded_frame_t *df)
 {
     int asbx = df->data[67];
     int asby = df->data[68];
@@ -611,18 +611,18 @@ static void detect_cch(phys_ch_t *phys_ch, decoded_frame_t *df)
 
     hdlc_frame_t hdlc_frame;
     if (!hdlc_frame_parse(&hdlc_frame, tpdu_data, size)) {
-        printf("detect_cch(): hdlc_frame_parse failed\n");
+        printf("detect_bch(): hdlc_frame_parse failed\n");
         return;
     }
 
     // FIXME: proper cmd check for D_SYSTEM_INFO detection
     if (hdlc_frame.command != 3) {
-        printf("detect_cch(): invalid cmd %d\n", hdlc_frame.command);
+        printf("detect_bch(): invalid cmd %d\n", hdlc_frame.command);
         return;
     }
 
     if (memcmp(&hdlc_frame.addr, &st_addr_all, sizeof(st_addr_all))) {
-        printf("detect_cch(): no All St address: %d %d %d\n",
+        printf("detect_bch(): no All St address: %d %d %d\n",
                 hdlc_frame.addr.z, hdlc_frame.addr.y, hdlc_frame.addr.x);
         return;
     }
@@ -657,7 +657,7 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
     int errs = frame_decode_data(f, &df);
 
     if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
-        detect_cch(phys_ch, &df);
+        detect_bch(phys_ch, &df);
         f->frame_no = df.frame_no;
         return 0;
     }
