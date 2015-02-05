@@ -80,8 +80,8 @@ static uint8_t scramb_table[127] = {
 };
 
 static int process_frame(phys_ch_t *phys_ch, frame_t *frame);
-static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f);
-static int process_frame_traffic_ch(phys_ch_t *phys_ch, frame_t *f);
+static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f);
+static int process_frame_traffic_rch(phys_ch_t *phys_ch, frame_t *f);
 
 phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
 {
@@ -574,10 +574,10 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
     }
 
     if (phys_ch->rch_type == TETRAPOL_CONTROL_RCH) {
-        return process_frame_cch(phys_ch, f);
+        return process_frame_control_rch(phys_ch, f);
     }
 
-    return process_frame_traffic_ch(phys_ch, f);
+    return process_frame_traffic_rch(phys_ch, f);
 }
 
 static void bitorder_frame(uint8_t *d, int size)
@@ -637,7 +637,7 @@ static void detect_cch(phys_ch_t *phys_ch, decoded_frame_t *df)
     }
 }
 
-static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
+static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
 {
     const int scr = (phys_ch->scr == PHYS_CH_SCR_DETECT) ?
         phys_ch->scr_guess : phys_ch->scr;
@@ -646,7 +646,7 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
     if (phys_ch->band == TETRAPOL_BAND_VHF) {
         // TODO
         // frame_deinterleave(&f_, interleave_data_VHF);
-        fprintf(stderr, "process_frame_cch VHF processing not implemented\n");
+        fprintf(stderr, "process_frame_control_rch VHF processing not implemented\n");
         return -1;
     } else {
         frame_diff_dec(f);
@@ -699,9 +699,9 @@ static int process_frame_cch(phys_ch_t *phys_ch, frame_t *f)
     return 0;
 }
 
-static int process_frame_traffic_ch(phys_ch_t *phys_ch, frame_t *f)
+static int process_frame_traffic_rch(phys_ch_t *phys_ch, frame_t *f)
 {
     // TODO
-    fprintf(stderr, "process_frame_traffic_ch() not implemented\n");
+    fprintf(stderr, "process_frame_traffic_rch() not implemented\n");
     return -1;
 }
