@@ -120,6 +120,17 @@ enum {
 };
 typedef uint8_t iei_t;
 
+// do not use directly, this struct must be first member of each TSDU structure
+typedef struct {
+    codop_t codop;
+    int noptionals;     ///< number of optionals
+    /**
+      In subclassed TSDU structure, noptionals pointers should be present.
+      Those are initialized to NULL by tsdu_base_init and freed by tsdu_destroy.
+      */
+    void *optionals[];
+} tsdu_base_t;
+
 /// PAS 0001-3-2 5.3.23
 enum {
     CELL_STATE_EXP_NORMAL = 0,
@@ -267,7 +278,7 @@ typedef union {
 
 /// PAS 0001-3-2 4.4.71
 typedef struct {
-    codop_t codop;
+    tsdu_base_t base;
     cell_state_t cell_state;
     cell_config_t cell_config;
     uint8_t country_code;
@@ -280,11 +291,18 @@ typedef struct {
     cell_radio_param_t cell_radio_param;
     uint8_t system_time;
     cell_access_t cell_access;
+    uint8_t _unused_1;  // 4b are marked as unused
     uint16_t superframe_cpt;
 // used only when cell_state == disconnected
     uint8_t band;
     uint16_t channel_id;
 } tsdu_system_info_t;
+
+// this might change in future
+typedef tsdu_base_t tsdu_t;
+
+void tsdu_destroy(tsdu_base_t *tsdu);
+tsdu_t *tsdu_decode(const uint8_t *data, int nbits);
 
 void tsdu_process(const uint8_t* t, int data_length, int mod);
 

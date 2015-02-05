@@ -5,6 +5,18 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "bit_utils.c"
+
+#define CHECK_LEN(len, min_exp_len, tsdu) \
+    if ((len) < (min_exp_len)) { \
+        printf("%s:%d TSDU data too short %d < %d\n", \
+                __func__, __LINE__, (len), (min_exp_len)); \
+        tsdu_destroy((tsdu_base_t *)tsdu); \
+        return NULL; \
+    }
 
 const int CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[16] = {
     -76, -72, -68, -64, -60, -56, -52, -48,
@@ -15,6 +27,99 @@ const int CELL_RADIO_PARAM_RX_LEV_ACCESS_TO_DBM[16] = {
     -92, -88, -84, -80, -76, -72, -68, -64,
     -60, -56, -52, -48, -44, -40, -36, -32,
 };
+
+void tsdu_destroy(tsdu_base_t *tsdu)
+{
+    if (!tsdu) {
+        return;
+    }
+    for (int i = 0; i < tsdu->noptionals; ++i) {
+        free(tsdu->optionals[i]);
+    }
+    free(tsdu);
+}
+
+static void tsdu_base_init(tsdu_base_t *tsdu, codop_t codop, int noptionals)
+{
+    tsdu->noptionals = noptionals;
+    tsdu->codop = codop;
+    memset(tsdu->optionals, 0, noptionals * sizeof(void *));
+}
+
+static tsdu_system_info_t *decode_system_info(const uint8_t *data, int nbits)
+{
+    tsdu_system_info_t *tsdu = malloc(sizeof(tsdu_system_info_t));
+    if (!tsdu) {
+        return NULL;
+    }
+
+    tsdu_base_init(&tsdu->base, D_SYSTEM_INFO, 0);
+
+    // minimal size of disconnected mode
+    CHECK_LEN(nbits, 9*8, tsdu);
+
+    GET_BITS(8, 1*8, data, tsdu->cell_state._data);
+    switch (tsdu->cell_state.mode) {
+        case CELL_STATE_MODE_NORMAL:
+            CHECK_LEN(nbits, (17 * 8), tsdu);
+            GET_BITS( 8,  2*8,    data, tsdu->cell_config._data);
+            GET_BITS( 8,  3*8,    data, tsdu->country_code);
+            GET_BITS( 8,  4*8,    data, tsdu->system_id._data);
+            GET_BITS( 8,  5*8,    data, tsdu->loc_area_id._data);
+            GET_BITS( 8,  6*8,    data, tsdu->bn_id);
+            GET_BITS(12,  7*8,    data, tsdu->cell_id);
+            GET_BITS(12,  7*8+12, data, tsdu->cell_bn);
+            GET_BITS( 8, 10*8,    data, tsdu->u_ch_scrambling);
+            GET_BITS( 3, 11*8,    data, tsdu->cell_radio_param.tx_max);
+            GET_BITS( 5, 11*8+3,  data, tsdu->cell_radio_param.radio_link_timeout);
+            GET_BITS( 4, 12*8,    data, tsdu->cell_radio_param.pwr_tx_adjust);
+            GET_BITS( 4, 12*8+4,  data, tsdu->cell_radio_param.rx_lev_access);
+            GET_BITS( 8, 13*8,    data, tsdu->system_time);
+            GET_BITS( 8, 14*8,    data, tsdu->cell_access._data);
+            GET_BITS( 4, 15*8,    data, tsdu->_unused_1);
+            GET_BITS(12, 15*8+4,  data, tsdu->superframe_cpt);
+            break;
+
+        default:
+            printf("unknown cell_state.mode value %d", tsdu->cell_state.mode);
+
+        case CELL_STATE_MODE_DISC_INTERN_BN:
+        case CELL_STATE_MODE_DISC_MAIN_SWITCH:
+        case CELL_STATE_MODE_DISC_RADIOSWITCH:
+        case CELL_STATE_MODE_DISC_BSC:
+            tsdu->cell_state._data &= 0xf0;
+            GET_BITS(12, 1*8+4, data, tsdu->cell_id);
+            GET_BITS( 8, 3*8,   data, tsdu->bn_id);
+            GET_BITS( 8, 4*8,   data, tsdu->u_ch_scrambling);
+            GET_BITS( 3, 5*8,   data, tsdu->cell_radio_param.tx_max);
+            GET_BITS( 5, 5*8+3, data, tsdu->cell_radio_param.radio_link_timeout);
+            GET_BITS( 4, 6*8,   data, tsdu->cell_radio_param.pwr_tx_adjust);
+            GET_BITS( 4, 6*8+4, data, tsdu->cell_radio_param.rx_lev_access);
+            GET_BITS( 4, 7*8,   data, tsdu->band);
+            GET_BITS(12, 7*8+4, data, tsdu->channel_id);
+            break;
+    }
+
+    return tsdu;
+}
+
+tsdu_t *tsdu_decode(const uint8_t *data, int nbits)
+{
+    CHECK_LEN(nbits, 8, NULL);
+
+    codop_t codop;
+    GET_BITS(8, 0, data, codop);
+
+    switch (codop) {
+        case D_SYSTEM_INFO:
+            return (tsdu_t *)decode_system_info(data, nbits);
+
+        default:
+            printf("unsupported TSDU codop %d\n", codop);
+    }
+
+    return NULL;
+}
 
 static void decode_cell_id(int cell_id) {
 
