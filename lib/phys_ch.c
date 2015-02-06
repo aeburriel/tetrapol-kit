@@ -653,6 +653,7 @@ static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
                 hdlc_frame.addr.z, hdlc_frame.addr.y, hdlc_frame.addr.x);
         return;
     }
+    st_addr_print(&hdlc_frame.addr);
 
     int frame_no = data_blk->frame_no;
 

@@ -22,3 +22,5 @@ typedef struct {
 extern const st_addr_t st_addr_all;
 
 bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int len);
+void st_addr_print(const st_addr_t *addr);
+
