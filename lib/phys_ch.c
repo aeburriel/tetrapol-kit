@@ -622,6 +622,7 @@ static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
     }
 
     uint8_t tpdu_data[SYS_PAR_N200_BITS_MAX];
+    int nblocks = data_frame_blocks(phys_ch->bch_data_fr);
     int size = data_frame_get_data(phys_ch->bch_data_fr, tpdu_data);
 
     hdlc_frame_t hdlc_frame;
@@ -656,6 +657,10 @@ static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
     tsdu_t *tsdu = tsdu_decode(hdlc_frame.info+2, hdlc_frame.info_nbits - 16);
     if (tsdu != NULL) {
         tsdu_print(tsdu);
+        if (tsdu->codop == D_SYSTEM_INFO) {
+            data_blk->frame_no = nblocks - 1 +
+                100 * ((tsdu_system_info_t *)tsdu)->cell_state.bch;
+        }
     } else {
         printf("TSDU not decoded\n");
     }

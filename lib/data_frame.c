@@ -38,6 +38,11 @@ void data_frame_destroy(data_frame_t *data_fr)
     free(data_fr);
 }
 
+int data_frame_blocks(data_frame_t *data_fr)
+{
+    return data_fr->nblks;
+}
+
 void data_frame_reset(data_frame_t *data_fr)
 {
     data_fr->nblks = 0;

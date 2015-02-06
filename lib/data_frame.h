@@ -17,6 +17,11 @@ data_frame_t *data_frame_create(void);
 void data_frame_reset(data_frame_t *data_fr);
 
 /**
+  @return number of blocks in current data frame.
+  */
+int data_frame_blocks(data_frame_t *data_fr);
+
+/**
   Add new decoded frame into data frame processing chain.
 
   @return true if new data frame is decoded, false otherwise.
