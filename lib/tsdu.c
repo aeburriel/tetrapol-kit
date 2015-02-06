@@ -124,6 +124,36 @@ tsdu_t *tsdu_decode(const uint8_t *data, int nbits)
 static void tsdu_system_info_print(tsdu_system_info_t *tsdu)
 {
     printf("\tCODOP=%0x (D_SYSTEM_INFO)\n", tsdu->base.codop);
+    printf("\t\tCELL_STATE\n");
+    printf("\t\t\tMODE=%03x\n", tsdu->cell_state.mode);
+    if (tsdu->cell_state.mode == CELL_STATE_MODE_NORMAL) {
+        printf("\t\t\tBCH=%d\n", tsdu->cell_state.bch);
+        printf("\t\t\tROAM=%d\n", tsdu->cell_state.roam);
+        printf("\t\t\tEXP=%d\n", tsdu->cell_state.exp);
+        printf("\t\t\tRSERVED=%d\n", tsdu->cell_state._reserved_00);
+
+        printf("\t\tCELL_CONFIG\n");
+        printf("\t\t\tECCH=%d\n", tsdu->cell_config.eccch);
+        printf("\t\t\tATTA=%d\n", tsdu->cell_config.atta);
+        printf("\t\t\tRESERVED=%d\n", tsdu->cell_config._reserved_0);
+        printf("\t\t\tMUX_TYPE=%d\n", tsdu->cell_config.mux_type);
+        printf("\t\t\tSIM=%d\n", tsdu->cell_config.sim);
+        printf("\t\t\tDC=%d\n", tsdu->cell_config.dc);
+      /*  uint8_t country_code;
+        system_id_t system_id;
+        loc_area_id_t loc_area_id;
+        uint8_t bn_id;
+        uint16_t cell_id;
+        uint16_t cell_bn;
+        uint8_t u_ch_scrambling;
+        cell_radio_param_t cell_radio_param;
+        uint8_t system_time;
+        cell_access_t cell_access;
+        uint16_t superframe_cpt;*/
+    } else {
+//        uint8_t band;
+  //      uint16_t channel_id;
+    }
 }
 
 void tsdu_print(tsdu_t *tsdu)
