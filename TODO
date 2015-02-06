@@ -1,3 +1,4 @@
+ * add logging system
  * remove channel logs
  * add LICENSE and licensign information
  * replace bits_to_int with records
