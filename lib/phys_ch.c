@@ -655,9 +655,19 @@ static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
     }
 
     int frame_no = data_blk->frame_no;
-    bitorder_frame(tpdu_data, size/8);
+
+    printf("HDLC frame info=");
+    print_hex(hdlc_frame.info, hdlc_frame.info_nbits / 8);
+    // TODO: add proper TPDU layer handler
+    tsdu_t *tsdu = tsdu_decode(hdlc_frame.info+2, hdlc_frame.info_nbits - 16);
+    if (tsdu != NULL) {
+        printf("TSDU decoded\n");
+    } else {
+        printf("TSDU not decoded\n");
+    }
+
+    tsdu_destroy(tsdu);
     // TODO: try decode only BCH - D_SYSTEM_INFO
-    decode_bch(tpdu_data, &frame_no);
     if (frame_no != FRAME_NO_UNKNOWN) {
         // D_SYSTEM_INFO frame_no hack
         data_blk->frame_no = frame_no + 3;
