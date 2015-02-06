@@ -2,8 +2,11 @@
 
 #include <stdint.h>
 
+#define GET_BITS(n, offs, src, dst) \
+    dst = get_bits((n), (offs), src)
+
 // get int from byte array (bytes of TETRAPOL data frame)
-inline uint32_t struct_get_int(const uint8_t *data, int offs, int len)
+inline uint32_t get_bits(int len, int offs, const uint8_t *data)
 {
     uint64_t r = 0;
 

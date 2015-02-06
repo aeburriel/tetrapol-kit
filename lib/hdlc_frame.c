@@ -53,9 +53,9 @@ static bool check_fcs(const uint8_t *data, int len)
 
 static void st_addr_parse(st_addr_t *addr, uint8_t *buf)
 {
-    addr->z = struct_get_int(buf, 0, 1);
-    addr->y = struct_get_int(buf, 1, 3);
-    addr->x = struct_get_int(buf, 4, 12);
+    addr->z = get_bits(1, 0, buf);
+    addr->y = get_bits(3, 1, buf);
+    addr->x = get_bits(12, 4, buf);
 }
 
 // converts array of bits into bytes, uses TETRAPOL bite order
