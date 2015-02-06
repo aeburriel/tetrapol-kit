@@ -303,6 +303,7 @@ typedef tsdu_base_t tsdu_t;
 
 void tsdu_destroy(tsdu_base_t *tsdu);
 tsdu_t *tsdu_decode(const uint8_t *data, int nbits);
+void tsdu_print(tsdu_t *tsdu);
 
 void tsdu_process(const uint8_t* t, int data_length, int mod);
 

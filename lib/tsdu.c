@@ -121,6 +121,23 @@ tsdu_t *tsdu_decode(const uint8_t *data, int nbits)
     return NULL;
 }
 
+static void tsdu_system_info_print(tsdu_system_info_t *tsdu)
+{
+    printf("\tCODOP=%0x (D_SYSTEM_INFO)\n", tsdu->base.codop);
+}
+
+void tsdu_print(tsdu_t *tsdu)
+{
+    switch (tsdu->codop) {
+        case D_SYSTEM_INFO:
+            tsdu_system_info_print((tsdu_system_info_t *)tsdu);
+            break;
+        default:
+            printf("    CODOP=%0x\n", tsdu->codop);
+            printf("print not implemented for this TSDU\n");
+    }
+}
+
 static void decode_cell_id(int cell_id) {
 
     int cell_id_format, cell_id_bs_id, cell_id_rsw_id;

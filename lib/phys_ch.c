@@ -661,7 +661,7 @@ static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
     // TODO: add proper TPDU layer handler
     tsdu_t *tsdu = tsdu_decode(hdlc_frame.info+2, hdlc_frame.info_nbits - 16);
     if (tsdu != NULL) {
-        printf("TSDU decoded\n");
+        tsdu_print(tsdu);
     } else {
         printf("TSDU not decoded\n");
     }
