@@ -1,6 +1,5 @@
  * add logging system
  * remove channel logs
- * add LICENSE and licensign information
  * replace bits_to_int with records
  * support multiple signal sources (multiple SDRs devices)
  * Xtal runtime calibration
