@@ -139,20 +139,50 @@ static void tsdu_system_info_print(tsdu_system_info_t *tsdu)
         printf("\t\t\tMUX_TYPE=%d\n", tsdu->cell_config.mux_type);
         printf("\t\t\tSIM=%d\n", tsdu->cell_config.sim);
         printf("\t\t\tDC=%d\n", tsdu->cell_config.dc);
-      /*  uint8_t country_code;
-        system_id_t system_id;
-        loc_area_id_t loc_area_id;
-        uint8_t bn_id;
-        uint16_t cell_id;
-        uint16_t cell_bn;
-        uint8_t u_ch_scrambling;
-        cell_radio_param_t cell_radio_param;
-        uint8_t system_time;
-        cell_access_t cell_access;
-        uint16_t superframe_cpt;*/
+        printf("\t\tCOUNTRY_CODE=%d\n", tsdu->country_code);
+        printf("\t\tSYSTEM_ID\n");
+        printf("\t\t\tVERSION=%d\n", tsdu->system_id.version);
+        printf("\t\t\tNETWORK=%d\n", tsdu->system_id.network);
+        printf("\t\tLOC_AREA_ID\n");
+        printf("\t\t\tLOC_ID=%d\n", tsdu->loc_area_id.loc_id);
+        printf("\t\t\tMODE=%d\n", tsdu->loc_area_id.mode);
+        printf("\t\tBN_ID=%d\n", tsdu->bn_id);
+        printf("\t\tCELL_ID=%d\n", tsdu->cell_id);
+        printf("\t\tCELL_BN=%d\n", tsdu->cell_bn);
+        printf("\t\tU_CH_SCRAMBLING=%d\n", tsdu->u_ch_scrambling);
+        printf("\t\tCELL_RADIO_PARAM\n");
+        printf("\t\t\tTX_MAX=%d\n", tsdu->cell_radio_param.tx_max);
+        printf("\t\t\tRADIO_LINK_TIMEOUT=%d\n",
+                tsdu->cell_radio_param.radio_link_timeout);
+        printf("\t\t\tPWR_TX_ADJUST=%d dBm\n",
+                CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[
+                    tsdu->cell_radio_param.pwr_tx_adjust]);
+        printf("\t\t\tRX_LEV_ACCESS=%d dBm\n",
+                CELL_RADIO_PARAM_RX_LEV_ACCESS_TO_DBM[
+                    tsdu->cell_radio_param.rx_lev_access]);
+        printf("\t\tSYSTEM_TIME=%d\n", tsdu->system_time);
+        printf("\t\tCELL_ACCESS\n");
+        printf("\t\t\tMIN_SERVICE_CLASS=%d\n",
+                tsdu->cell_access.min_service_class);
+        printf("\t\t\tMIN_REG_CLASS=%d\n",
+                tsdu->cell_access.min_reg_class);
+        printf("\t\tSUPERFRAME_CPT=%d\n", tsdu->superframe_cpt);
     } else {
-//        uint8_t band;
-  //      uint16_t channel_id;
+        printf("\t\tCELL_ID=%d\n", tsdu->cell_id);
+        printf("\t\tCELL_BN=%d\n", tsdu->cell_bn);
+        printf("\t\tU_CH_SCRAMBLING=%d\n", tsdu->u_ch_scrambling);
+        printf("\t\tCELL_RADIO_PARAM\n");
+        printf("\t\t\tTX_MAX=%d\n", tsdu->cell_radio_param.tx_max);
+        printf("\t\t\tRADIO_LINK_TIMEOUT=%d\n",
+                tsdu->cell_radio_param.radio_link_timeout);
+        printf("\t\t\tPWR_TX_ADJUST=%d dBm\n",
+                CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[
+                    tsdu->cell_radio_param.pwr_tx_adjust]);
+        printf("\t\t\tRX_LEV_ACCESS=%d dBm\n",
+                CELL_RADIO_PARAM_RX_LEV_ACCESS_TO_DBM[
+                    tsdu->cell_radio_param.rx_lev_access]);
+        printf("\t\tBAND=%d\n", tsdu->band);
+        printf("\t\tCHANNEL_ID=%d\n", tsdu->channel_id);
     }
 }
 
