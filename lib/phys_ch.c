@@ -659,6 +659,10 @@ static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
 
     printf("HDLC frame info=");
     print_hex(hdlc_frame.info, hdlc_frame.info_nbits / 8);
+    printf("\tBCH\n");
+    printf("\tRT_REF=TODO\n");
+    printf("\tBS_REF=TODO\n");
+    printf("\tCALL_PRIO=TODO\n");
     // TODO: add proper TPDU layer handler
     tsdu_t *tsdu = tsdu_decode(hdlc_frame.info+2, hdlc_frame.info_nbits - 16);
     if (tsdu != NULL) {
