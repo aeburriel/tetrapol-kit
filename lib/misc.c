@@ -46,3 +46,14 @@ void print_buf(const uint8_t *data, int len)
     printf("\n");
 }
 
+void print_hex(const uint8_t *bytes, int n)
+{
+    for(int i = 0; i < n; i++) {
+        printf("%02x ", bytes[i]);
+        if (i % 8 == 7) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+}
+
