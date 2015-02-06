@@ -631,8 +631,9 @@ static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
     }
 
     // FIXME: proper cmd check for D_SYSTEM_INFO detection
-    if (hdlc_frame.command != 3) {
-        printf("detect_bch(): invalid cmd %d\n", hdlc_frame.command);
+    if (hdlc_frame.command.cmd != COMMAND_UNNUMBERED_UI) {
+        printf("detect_bch(): invalid cmd %d\n",
+                hdlc_frame.command._reserved);
         return;
     }
 
