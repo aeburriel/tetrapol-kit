@@ -607,18 +607,6 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
     return process_frame_traffic_rch(phys_ch, f);
 }
 
-static void bitorder_frame(uint8_t *d, int size)
-{
-    for (int i = 0; i < size; i++) {
-        uint8_t b[8];
-        memcpy(b, d, 8);
-        d[0] = b[7], d[1] = b[6], d[2] = b[5], d[3] = b[4],
-        d[4] = b[3], d[5] = b[2], d[6] = b[1]; d[7] = b[0];
-
-        d += 8;
-    }
-}
-
 static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
 {
     int asbx = data_blk->data[67];
