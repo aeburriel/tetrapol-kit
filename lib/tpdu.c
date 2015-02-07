@@ -197,17 +197,6 @@ void tpdu_process(const uint8_t* t, int length, int *frame_no) {
     printf("\tADDR=");
     decode_addr(t);
 
-
-    if (((*frame_no == FRAME_NO_UNKNOWN) && (length == 24)) ||
-            (*frame_no == 0) ||
-            (*frame_no == 100)) {
-        decode_bch(t, frame_no);
-        return;
-    }
-
-    //	if (mod==-1)
-    //		return;
-
     if ((*frame_no == 98) || (*frame_no == 198)) {
         decode_pch(t);
         return;
