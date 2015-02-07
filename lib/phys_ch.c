@@ -33,7 +33,7 @@ typedef struct {
 
 struct _phys_ch_t {
     int band;           ///< VHF or UHF
-    int rch_type;       ///< control or traffic
+    int radio_ch_type;  ///< control or traffic
     int sync_errs;      ///< cumulative no. of errors in frame synchronisation
     bool has_frame_sync;
     int frame_no;
@@ -83,19 +83,19 @@ static uint8_t scramb_table[127] = {
 };
 
 static int process_frame(phys_ch_t *phys_ch, frame_t *frame);
-static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f);
-static int process_frame_traffic_rch(phys_ch_t *phys_ch, frame_t *f);
+static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f);
+static int process_traffic_radio_ch(phys_ch_t *phys_ch, frame_t *f);
 
-phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
+phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
 {
     if (band != TETRAPOL_BAND_VHF && band != TETRAPOL_BAND_UHF) {
         fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'band'\n");
         return NULL;
     }
 
-    if (rch_type != RADIO_CH_TYPE_CONTROL &&
-            rch_type != RADIO_CH_TYPE_TRAFFIC) {
-        fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'rch_type'\n");
+    if (radio_ch_type != RADIO_CH_TYPE_CONTROL &&
+            radio_ch_type != RADIO_CH_TYPE_TRAFFIC) {
+        fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'radio_ch_type'\n");
         return NULL;
     }
 
@@ -106,13 +106,13 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
     memset(phys_ch, 0, sizeof(phys_ch_t));
 
     phys_ch->band = band;
-    phys_ch->rch_type = rch_type;
+    phys_ch->radio_ch_type = radio_ch_type;
     phys_ch->data_begin = phys_ch->data_end = phys_ch->data + DATA_OFFS;
     phys_ch->frame_no = FRAME_NO_UNKNOWN;
     phys_ch->scr = PHYS_CH_SCR_DETECT;
     phys_ch->scr_confidence = 50;
 
-    if (rch_type == RADIO_CH_TYPE_CONTROL) {
+    if (radio_ch_type == RADIO_CH_TYPE_CONTROL) {
         phys_ch->bch = bch_create();
         if (!phys_ch->bch) {
             goto err_bch;
@@ -129,7 +129,7 @@ err_bch:
 
 void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
 {
-    if (phys_ch->rch_type == RADIO_CH_TYPE_CONTROL) {
+    if (phys_ch->radio_ch_type == RADIO_CH_TYPE_CONTROL) {
         bch_destroy(phys_ch->bch);
     }
     free(phys_ch);
@@ -598,14 +598,14 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
         detect_scr(phys_ch, f);
     }
 
-    if (phys_ch->rch_type == RADIO_CH_TYPE_CONTROL) {
-        return process_frame_control_rch(phys_ch, f);
+    if (phys_ch->radio_ch_type == RADIO_CH_TYPE_CONTROL) {
+        return process_control_radio_ch(phys_ch, f);
     }
 
-    return process_frame_traffic_rch(phys_ch, f);
+    return process_traffic_radio_ch(phys_ch, f);
 }
 
-static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
+static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 {
     const int scr = (phys_ch->scr == PHYS_CH_SCR_DETECT) ?
         phys_ch->scr_guess : phys_ch->scr;
@@ -614,7 +614,7 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
     if (phys_ch->band == TETRAPOL_BAND_VHF) {
         // TODO
         // frame_deinterleave(&f_, interleave_data_VHF);
-        fprintf(stderr, "process_frame_control_rch VHF processing not implemented\n");
+        fprintf(stderr, "process_control_radio_ch VHF processing not implemented\n");
         return -1;
     } else {
         frame_diff_dec(f);
@@ -698,9 +698,9 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
     return 0;
 }
 
-static int process_frame_traffic_rch(phys_ch_t *phys_ch, frame_t *f)
+static int process_traffic_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 {
     // TODO
-    fprintf(stderr, "process_frame_traffic_rch() not implemented\n");
+    fprintf(stderr, "process_traffic_radio_ch() not implemented\n");
     return -1;
 }

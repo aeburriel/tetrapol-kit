@@ -10,11 +10,11 @@ typedef struct _phys_ch_t phys_ch_t;
 /**
   Create new TETRAPOL physical cahnnel instance.
   @param band VHF or UHF
-  @param rch_type Radio channel type, control or traffic.
+  @param radio_ch_type Radio channel type, control or traffic.
 
   @return net phys_ch_t instance of NULL.
   */
-phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type);
+phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type);
 void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch);
 int tetrapol_phys_ch_process(phys_ch_t *phys_ch);
 
