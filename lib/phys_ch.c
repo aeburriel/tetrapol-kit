@@ -93,8 +93,8 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
         return NULL;
     }
 
-    if (rch_type != TETRAPOL_CONTROL_RCH &&
-            rch_type != TETRAPOL_TRAFFIC_RCH) {
+    if (rch_type != RADIO_CH_TYPE_CONTROL &&
+            rch_type != RADIO_CH_TYPE_TRAFFIC) {
         fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'rch_type'\n");
         return NULL;
     }
@@ -112,7 +112,7 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
     phys_ch->scr = PHYS_CH_SCR_DETECT;
     phys_ch->scr_confidence = 50;
 
-    if (rch_type == TETRAPOL_CONTROL_RCH) {
+    if (rch_type == RADIO_CH_TYPE_CONTROL) {
         phys_ch->bch = bch_create();
         if (!phys_ch->bch) {
             goto err_bch;
@@ -129,7 +129,7 @@ err_bch:
 
 void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
 {
-    if (phys_ch->rch_type == TETRAPOL_CONTROL_RCH) {
+    if (phys_ch->rch_type == RADIO_CH_TYPE_CONTROL) {
         bch_destroy(phys_ch->bch);
     }
     free(phys_ch);
@@ -598,7 +598,7 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
         detect_scr(phys_ch, f);
     }
 
-    if (phys_ch->rch_type == TETRAPOL_CONTROL_RCH) {
+    if (phys_ch->rch_type == RADIO_CH_TYPE_CONTROL) {
         return process_frame_control_rch(phys_ch, f);
     }
 

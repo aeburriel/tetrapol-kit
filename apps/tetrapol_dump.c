@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 {
     // TODO: move to config
     const int band = TETRAPOL_BAND_UHF;
-    const int rch_type = TETRAPOL_CONTROL_RCH;
+    const int rch_type = RADIO_CH_TYPE_CONTROL;
 
     const char *in = NULL;
 
