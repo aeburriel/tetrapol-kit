@@ -123,7 +123,7 @@ tsdu_t *tsdu_decode(const uint8_t *data, int nbits)
 
 static void tsdu_system_info_print(tsdu_system_info_t *tsdu)
 {
-    printf("\tCODOP=%0x (D_SYSTEM_INFO)\n", tsdu->base.codop);
+    printf("\tCODOP=0x%0x (D_SYSTEM_INFO)\n", tsdu->base.codop);
     printf("\t\tCELL_STATE\n");
     printf("\t\t\tMODE=%03x\n", tsdu->cell_state.mode);
     if (tsdu->cell_state.mode == CELL_STATE_MODE_NORMAL) {
