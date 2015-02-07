@@ -12,7 +12,7 @@ const st_addr_t st_addr_all = {
     .x = 0xfff,
 };
 
-const command_mask_t commands[] = {
+static const command_mask_t commands[] = {
     {   .cmd = COMMAND_INFORMATION,         .mask = 0x01 },
     {   .cmd = COMMAND_SUPERVISION_RR,      .mask = 0x0f },
     {   .cmd = COMMAND_SUPERVISION_RNR,     .mask = 0x0f },
@@ -87,13 +87,14 @@ static void command_parse(command_t *cmd, uint8_t data)
     int cmd_idx = 0;
     for ( ; cmd_idx < ARRAY_LEN(commands); ++cmd_idx) {
         if ((data & commands[cmd_idx].mask) == commands[cmd_idx].cmd) {
+            cmd->cmd = commands[cmd_idx].cmd;
             break;
         }
     }
     if (cmd_idx >= ARRAY_LEN(commands)) {
+        cmd->cmd = data;
         return;
     }
-    cmd->cmd = commands[cmd_idx].cmd;
 
     switch (cmd->cmd) {
         case COMMAND_INFORMATION:

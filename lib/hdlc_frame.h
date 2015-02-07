@@ -41,8 +41,6 @@ enum {
     //COMMAND_UNNUMBERED__BLANK4 = 0x0f, ///< suspicious blank line in table
 };
 
-extern const command_mask_t commands[];
-
 typedef struct {
     uint8_t cmd;
     uint8_t _reserved;      ///< used to store value if cmd is not known
