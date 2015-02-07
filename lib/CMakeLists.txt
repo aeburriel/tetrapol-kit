@@ -10,6 +10,7 @@ add_library (tetrapol
     hdlc_frame.c
     misc.c
     multiblock.c
+    pch.c
     phys_ch.c
     tpdu.c
     tsdu.c)
@@ -35,6 +36,7 @@ add_executable (test_phys_ch
     hdlc_frame.c
     misc.c
     multiblock.c
+    pch.c
     test_phys_ch.c
     tpdu.c
     tsdu.c)
