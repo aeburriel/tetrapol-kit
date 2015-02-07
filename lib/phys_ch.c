@@ -45,7 +45,7 @@ struct _phys_ch_t {
     uint8_t *data_end;      ///< end of unprocessed part of data
     uint8_t data[10*FRAME_LEN];
     // CCH specific data, will be union with traffich CH specicic data
-    data_frame_t *bch_data_fr;    ///< used for decoding BCH
+    bch_t *bch;
 };
 
 /**
@@ -113,15 +113,15 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int rch_type)
     phys_ch->scr_confidence = 50;
 
     if (rch_type == TETRAPOL_CONTROL_RCH) {
-        phys_ch->bch_data_fr = data_frame_create();
-        if (!phys_ch->bch_data_fr) {
-            goto err_bch_data_fr;
+        phys_ch->bch = bch_create();
+        if (!phys_ch->bch) {
+            goto err_bch;
         }
     }
 
     return phys_ch;
 
-err_bch_data_fr:
+err_bch:
     free(phys_ch);
 
     return NULL;
@@ -130,7 +130,7 @@ err_bch_data_fr:
 void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
 {
     if (phys_ch->rch_type == TETRAPOL_CONTROL_RCH) {
-        data_frame_destroy(phys_ch->bch_data_fr);
+        bch_destroy(phys_ch->bch);
     }
     free(phys_ch);
 }
@@ -330,9 +330,6 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
         }
         fprintf(stderr, "Frame sync found\n");
         phys_ch->frame_no = FRAME_NO_UNKNOWN;
-        if (phys_ch->rch_type == TETRAPOL_CONTROL_RCH) {
-            data_frame_reset(phys_ch->bch_data_fr);
-        }
         multiblock_reset();
         segmentation_reset();
     }
@@ -608,72 +605,6 @@ static int process_frame(phys_ch_t *phys_ch, frame_t *f)
     return process_frame_traffic_rch(phys_ch, f);
 }
 
-static void detect_bch(phys_ch_t *phys_ch, data_block_t *data_blk)
-{
-    int asbx = data_blk->data[67];
-    int asby = data_blk->data[68];
-    int fn0 = data_blk->data[1];
-    int fn1 = data_blk->data[2];
-    printf("OK frame_no=%03i fn=%i%i asb=%i%i data=",
-            data_blk->frame_no, fn1, fn0, asbx, asby);
-    print_buf(data_blk->data + 3, 64);
-
-    if (!data_frame_push_data_block(phys_ch->bch_data_fr, data_blk)) {
-        return;
-    }
-
-    uint8_t tpdu_data[SYS_PAR_N200_BITS_MAX];
-    int nblocks = data_frame_blocks(phys_ch->bch_data_fr);
-    int size = data_frame_get_data(phys_ch->bch_data_fr, tpdu_data);
-
-    hdlc_frame_t hdlc_frame;
-    if (!hdlc_frame_parse(&hdlc_frame, tpdu_data, size)) {
-        printf("detect_bch(): hdlc_frame_parse failed\n");
-        return;
-    }
-
-    // FIXME: proper cmd check for D_SYSTEM_INFO detection
-    if (hdlc_frame.command.cmd != COMMAND_UNNUMBERED_UI) {
-        printf("detect_bch(): invalid cmd %d\n",
-                hdlc_frame.command._reserved);
-        return;
-    }
-
-    if (memcmp(&hdlc_frame.addr, &st_addr_all, sizeof(st_addr_all))) {
-        printf("detect_bch(): no All St address: %d %d %d\n",
-                hdlc_frame.addr.z, hdlc_frame.addr.y, hdlc_frame.addr.x);
-        return;
-    }
-    st_addr_print(&hdlc_frame.addr);
-
-    int frame_no = data_blk->frame_no;
-
-    printf("HDLC frame info=");
-    print_hex(hdlc_frame.info, hdlc_frame.info_nbits / 8);
-    printf("\tBCH\n");
-    printf("\tRT_REF=TODO\n");
-    printf("\tBS_REF=TODO\n");
-    printf("\tCALL_PRIO=TODO\n");
-    // TODO: add proper TPDU layer handler
-    tsdu_t *tsdu = tsdu_decode(hdlc_frame.info+2, hdlc_frame.info_nbits - 16);
-    if (tsdu != NULL) {
-        tsdu_print(tsdu);
-        if (tsdu->codop == D_SYSTEM_INFO) {
-            data_blk->frame_no = nblocks - 1 +
-                100 * ((tsdu_system_info_t *)tsdu)->cell_state.bch;
-        }
-    } else {
-        printf("TSDU not decoded\n");
-    }
-
-    tsdu_destroy(tsdu);
-    // TODO: try decode only BCH - D_SYSTEM_INFO
-    if (frame_no != FRAME_NO_UNKNOWN) {
-        // D_SYSTEM_INFO frame_no hack
-        data_blk->frame_no = frame_no + 3;
-    }
-}
-
 static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
 {
     const int scr = (phys_ch->scr == PHYS_CH_SCR_DETECT) ?
@@ -692,17 +623,41 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
 
     data_block_t data_blk;
     int errs = frame_decode_data(&data_blk, f, FRAME_TYPE_DATA);
+    if (!errs) {
+        int asbx = data_blk.data[67];
+        int asby = data_blk.data[68];
+        int fn0 = data_blk.data[1];
+        int fn1 = data_blk.data[2];
+        printf("OK frame_no=%03i fn=%i%i asb=%i%i data=",
+                data_blk.frame_no, fn1, fn0, asbx, asby);
+    } else {
+        multiblock_reset();
+        segmentation_reset();
+        printf("ERR frame_no=%03i ", data_blk.frame_no);
+    }
+    print_buf(data_blk.data + 3, 64);
 
-    if (phys_ch->frame_no == FRAME_NO_UNKNOWN) {
-        detect_bch(phys_ch, &data_blk);
-        f->frame_no = data_blk.frame_no;
+    // For decoding BCH are used always all frames, not only 0-3, 100-103
+    // Firs of all for detection BCH (frame 0/100 in superblock).
+    // The second reason is just to check frame synchronization.
+    if (bch_push_data_block(phys_ch->bch, &data_blk)) {
+        tsdu_system_info_t *tsdu = bch_get_tsdu(phys_ch->bch);
+        if (tsdu) {
+            tsdu_print(&tsdu->base);
+            tsdu_destroy(&tsdu->base);
+            f->frame_no = data_blk.frame_no;
+            return 0;
+        }
+    }
+
+    if (f->frame_no == FRAME_NO_UNKNOWN) {
         return 0;
     }
 
     const int fn_mod = f->frame_no % 100;
-    if (fn_mod == 0 || fn_mod == 1 || fn_mod == 2 || fn_mod == 3) {
-        // TODO: process BCH
-        // return
+    // BCH is processed above
+    if (fn_mod >= 0 && fn_mod <= 3) {
+        return 0;
     }
 
     if (fn_mod == 98 || fn_mod == 99) {
@@ -718,13 +673,6 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
     // TODO:
     // hdlc_process(t+16,length-2, *frame_no);
     // return
-
-    if (errs) {
-        printf("ERR decode frame_no=%03i\n", f->frame_no);
-        multiblock_reset();
-        segmentation_reset();
-        return 0;
-    }
 
     if(data_blk.data[0] != FRAME_TYPE_DATA) {
         printf("ERR type frame_no=%03i\n", f->frame_no);
@@ -743,15 +691,9 @@ static int process_frame_control_rch(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
-    int asbx = data_blk.data[67];
-    int asby = data_blk.data[68];
     int fn0 = data_blk.data[1];
     int fn1 = data_blk.data[2];
-    printf("OK frame_no=%03i fn=%i%i asb=%i%i scr=%03i ",
-            data_blk.frame_no, fn1, fn0, asbx, asby, scr);
-    print_buf(data_blk.data + 3, 64);
     multiblock_process(&data_blk, 2*fn1 + fn0);
-    f->frame_no = data_blk.frame_no;
 
     return 0;
 }
