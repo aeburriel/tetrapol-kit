@@ -8,6 +8,7 @@
 #include "hdlc_frame.h"
 #include "data_block.h"
 #include "phys_ch.h"
+#include "bch.h"
 
 #include <limits.h>
 #include <stdlib.h>

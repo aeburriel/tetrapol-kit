@@ -3,6 +3,7 @@ find_library(CMOCKA_LIBRARY
     cmocka)
 
 add_library (tetrapol
+    bch.c
     data_block.c
     data_frame.c
     hdlc_frame.c
@@ -21,6 +22,7 @@ add_executable (test_hdlc_frame
 target_link_libraries (test_hdlc_frame ${CMOCKA_LIBRARY})
 
 add_executable (test_phys_ch
+    bch.c
     data_block.c
     data_frame.c
     hdlc_frame.c
