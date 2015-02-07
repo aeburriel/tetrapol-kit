@@ -46,6 +46,7 @@ struct _phys_ch_t {
     uint8_t data[10*FRAME_LEN];
     // CCH specific data, will be union with traffich CH specicic data
     bch_t *bch;
+    int cch_mux_type;   ///< control CH multiplexing, see PAS 0001-3-3 5.1.3
 };
 
 /**
@@ -643,6 +644,12 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
     if (bch_push_data_block(phys_ch->bch, &data_blk)) {
         tsdu_system_info_t *tsdu = bch_get_tsdu(phys_ch->bch);
         if (tsdu) {
+            phys_ch->cch_mux_type = tsdu->cell_config.mux_type;
+            if (phys_ch->cch_mux_type != CELL_CONFIG_MUX_TYPE_DEFAULT &&
+                    phys_ch->cch_mux_type != CELL_CONFIG_MUX_TYPE_TYPE_2) {
+                printf("Unknown channel multiplexing type\n");
+                return -1;
+            }
             tsdu_print(&tsdu->base);
             tsdu_destroy(&tsdu->base);
             f->frame_no = data_blk.frame_no;
@@ -663,6 +670,12 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
     if (fn_mod == 98 || fn_mod == 99) {
         // TODO: decode_pch(t);
         // return
+    }
+    if (phys_ch->cch_mux_type != CELL_CONFIG_MUX_TYPE_TYPE_2) {
+        if (fn_mod == 48 || fn_mod == 49) {
+        // TODO: decode_pch(t);
+        // return
+        }
     }
 
     if (f->frame_no % 25 == 14) {
