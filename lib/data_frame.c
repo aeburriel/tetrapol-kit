@@ -216,6 +216,33 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
     return data_frame_push_data_block(data_fr, data_blk);
 }
 
+/**
+  Pack bites from one bit per byte into 8 bites per byte (TETRAPOL ite order).
+
+  Data are ORed, so do not forrget to initialise output buffer with zeres.
+
+  @param bytes Output byte array.
+  @param bits Input array of bits.
+  @param offs Number of bites already used in output.
+  @param nbits Number of bites to be used;
+  */
+static void pack_bits(uint8_t *bytes, const uint8_t *bits, int offs, int nbits)
+{
+    bytes += offs / 8;
+    offs %= 8;
+
+    while (nbits > 0) {
+        while (offs < 8 && nbits) {
+            *bytes |= (*bits) << offs;
+            ++offs;
+            --nbits;
+            ++bits;
+        }
+        offs = 0;
+        ++bytes;
+    }
+}
+
 int data_frame_get_data(data_frame_t *data_fr, uint8_t *bits)
 {
     const int nblks = (data_fr->nblks <= 2) ?
