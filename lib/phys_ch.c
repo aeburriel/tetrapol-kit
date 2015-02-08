@@ -9,6 +9,7 @@
 #include "data_block.h"
 #include "phys_ch.h"
 #include "bch.h"
+#include "pch.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -45,8 +46,9 @@ struct _phys_ch_t {
     uint8_t *data_end;      ///< end of unprocessed part of data
     uint8_t data[10*FRAME_LEN];
     // CCH specific data, will be union with traffich CH specicic data
-    bch_t *bch;
     int cch_mux_type;   ///< control CH multiplexing, see PAS 0001-3-3 5.1.3
+    bch_t *bch;
+    pch_t *pch;
 };
 
 /**
@@ -118,9 +120,16 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
         if (!phys_ch->bch) {
             goto err_bch;
         }
+        phys_ch->pch = pch_create();
+        if (!phys_ch->pch) {
+            goto err_pch;
+        }
     }
 
     return phys_ch;
+
+err_pch:
+    bch_destroy(phys_ch->bch);
 
 err_bch:
     free(phys_ch);
@@ -132,6 +141,7 @@ void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
 {
     if (phys_ch->radio_ch_type == RADIO_CH_TYPE_CONTROL) {
         bch_destroy(phys_ch->bch);
+        pch_destroy(phys_ch->pch);
     }
     free(phys_ch);
 }
@@ -331,6 +341,7 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
         }
         fprintf(stderr, "Frame sync found\n");
         phys_ch->frame_no = FRAME_NO_UNKNOWN;
+        pch_reset(phys_ch->pch);
         multiblock_reset();
         segmentation_reset();
     }
@@ -530,7 +541,6 @@ static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
     phys_ch->scr_guess = scr_max;
 }
 
-
 static int process_frame(phys_ch_t *phys_ch, frame_t *f)
 {
     if (phys_ch->scr == PHYS_CH_SCR_DETECT) {
@@ -606,13 +616,17 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
     }
 
     if (fn_mod == 98 || fn_mod == 99) {
-        // TODO: decode_pch(t);
-        // return
+        if (pch_push_data_block(phys_ch->pch, &data_blk)) {
+            pch_print(phys_ch->pch);
+        }
+        return 0;
     }
     if (phys_ch->cch_mux_type == CELL_CONFIG_MUX_TYPE_TYPE_2) {
         if (fn_mod == 48 || fn_mod == 49) {
-        // TODO: decode_pch(t);
-        // return
+            if (pch_push_data_block(phys_ch->pch, &data_blk)) {
+                pch_print(phys_ch->pch);
+            }
+            return 0;
         }
     }
 
