@@ -112,7 +112,7 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
         data_frame_reset(data_fr);
     }
 
-    const bool crc_ok = data_block_check_crc(data_blk);
+    const bool crc_ok = data_block_check_crc(data_blk) && !data_blk->nerrs;
     data_fr->nerrs += crc_ok ? 0 : 1;
     data_fr->crc_ok[data_fr->nblks] = crc_ok;
 

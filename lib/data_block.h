@@ -20,6 +20,7 @@ typedef enum {
 typedef struct {
     frame_type_t fr_type;
     int frame_no;
+    int nerrs;      ///< nonzero value indicate uncorrected errors in block
     // 74 bytes is required for data frame, but 2 extra bits are reqired
     // because they are used by decoding algorithm
     // 126 bits for voice frame
