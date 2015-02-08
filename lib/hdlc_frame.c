@@ -5,12 +5,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-const st_addr_t st_addr_all = {
-    .z = 0,
-    .y = 7,
-    .x = 0xfff,
-};
-
 static const command_mask_t commands[] = {
     {   .cmd = COMMAND_INFORMATION,         .mask = 0x01 },
     {   .cmd = COMMAND_SUPERVISION_RR,      .mask = 0x0f },
@@ -72,13 +66,6 @@ static bool check_fcs(const uint8_t *data, int len)
 
     return !(crc[0] | crc[1] | crc[2] | crc[3] | crc[4] | crc[5] | crc[6] | crc[7] |
             crc[8] | crc[9] | crc[10] | crc[11] | crc[12] | crc[13] | crc[14] | crc[15]);
-}
-
-static void st_addr_parse(st_addr_t *addr, uint8_t *buf)
-{
-    addr->z = get_bits(1, 0, buf);
-    addr->y = get_bits(3, 1, buf);
-    addr->x = get_bits(12, 4, buf);
 }
 
 static void command_parse(command_t *cmd, uint8_t data)
@@ -178,7 +165,7 @@ bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int len)
     uint8_t buf[3];
     pack_bits(buf, data, 3*8);
 
-    st_addr_parse(&hdlc_frame->addr, buf);
+    addr_parse(&hdlc_frame->addr, buf);
     // TODO: proper command parsing
     command_parse(&hdlc_frame->command, buf[2]);
 
@@ -189,7 +176,3 @@ bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int len)
     return true;
 }
 
-void st_addr_print(const st_addr_t *addr)
-{
-    printf("\tADDR=%d.%d.%04x\n", addr->z, addr->y, addr->x);
-}
