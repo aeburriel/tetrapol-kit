@@ -6,100 +6,6 @@
 // include, we are testing static methods
 #include "phys_ch.c"
 
-
-// the goal is just to make sure the function provides the same results
-// after refactorization
-static void test_frame_decode_data(void **state)
-{
-    {
-        const frame_t f = {
-            .data = {
-                1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0,
-                1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0,
-                1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1,
-                1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
-                1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1,
-                1, 0, 1, 0, 0, 1, 1, 1,
-            }
-        };
-        const uint8_t res_exp[] = {
-            1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
-            0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0
-        };
-
-        data_block_t res;
-        memset(&res, 3, sizeof(res));
-        frame_decode_data(&res, &f, FRAME_TYPE_DATA);
-        assert_memory_equal(res_exp, res.data, sizeof(res_exp));
-        assert_int_equal(res.nerrs, 0);
-    }
-    {
-        const frame_t f = {
-            .data = {
-                1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
-                0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1,
-                1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-                1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0,
-                1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0,
-                1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0,
-                1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0,
-                1, 0, 0, 0, 1, 0, 1, 1,
-            }
-        };
-        const uint8_t res_exp[] = {
-            1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,
-            1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0,
-            0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0,
-            1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0,
-        };
-
-        data_block_t res;
-        memset(&res, 3, sizeof(res));
-        frame_decode_data(&res, &f, FRAME_TYPE_DATA);
-        assert_memory_equal(res_exp, res.data, sizeof(res_exp));
-        assert_int_equal(res.nerrs, 0);
-    }
-    {
-        const frame_t f = {
-            .data = {
-                1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-                0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0,
-                0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1,
-                1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0,
-                1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0,
-                0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1,
-                0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0,
-                1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0,
-                0, 1, 1, 0, 0, 1, 1, 1,
-            }
-        };
-        const uint8_t res_exp[] = {
-            1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1,
-            1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1,
-            1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1,
-            0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1,
-            1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0,
-        };
-
-        data_block_t res;
-        memset(&res, 3, sizeof(res));
-        frame_decode_data(&res, &f, FRAME_TYPE_DATA);
-        assert_memory_equal(res_exp, res.data, sizeof(res_exp));
-        assert_int_equal(res.nerrs, 0);
-    }
-}
-
 // the goal is just to make sure the function provides the same results
 // after refactorization
 static void test_frame_deinterleave(void **state)
@@ -165,7 +71,6 @@ static void test_frame_diff_dec(void **state)
 int main(void)
 {
     const UnitTest tests[] = {
-        unit_test(test_frame_decode_data),
         unit_test(test_frame_deinterleave),
         unit_test(test_frame_diff_dec),
     };

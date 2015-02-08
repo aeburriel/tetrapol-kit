@@ -37,3 +37,10 @@ typedef struct {
 
 bool data_block_check_crc(data_block_t *data_blk);
 
+/**
+  Decode data from frame.
+
+  @param data Should contains frame data (withought synchronization block).
+  */
+void data_block_decode_frame(data_block_t *data_blk, const uint8_t *data,
+        int frame_no, frame_type_t fr_type);
