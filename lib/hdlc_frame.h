@@ -1,12 +1,10 @@
 #pragma once
 
 #include "addr.h"
+#include "system_config.h"
 
 #include <stdbool.h>
 #include <stdint.h>
-
-// 92 bits in high rate data frame, up-to 8 frames create data frame
-#define HDLC_INFO_LEN_MAX   92
 
 /// PAS 0001-3-3 7.5.4.2
 
@@ -67,8 +65,8 @@ typedef struct {
 typedef struct {
     addr_t addr;
     command_t command;
-    int info_nbits;                     ///< lenght is in bits
-    uint8_t info[HDLC_INFO_LEN_MAX];    ///< data are stored packed in bytes
+    int info_nbits;                             ///< lenght is in bits
+    uint8_t info[SYS_PAR_N200_BYTES_MAX - 3];   ///< data are stored packed in bytes
 } hdlc_frame_t;
 
 extern const addr_t addr_all;

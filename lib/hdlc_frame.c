@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 static const command_mask_t commands[] = {
     {   .cmd = COMMAND_INFORMATION,         .mask = 0x01 },
@@ -28,44 +29,40 @@ static const command_mask_t commands[] = {
 };
 
 /// PAS 0001-3-3 7.4.1.1
-static bool check_fcs(const uint8_t *data, int len)
+static bool check_fcs(const uint8_t *data, int nbits)
 {
-    uint8_t crc[16];
-
-    // invert first 16 bits of data
-    for (int i = 0; i < 16; ++i) {
-        crc[i] = data[i] ^ 1;
+    // roll in firts 16 bites of data
+    uint32_t crc = 0;
+    uint8_t b = data[0];
+    for (int i = 0; i < 8; ++i) {
+        crc = (crc << 1) | (b & 1);
+        b = b >> 1;
+    }
+    b = data[1];
+    for (int i = 0; i < 8; ++i) {
+        crc = (crc << 1) | (b & 1);
+        b = b >> 1;
     }
 
-    // CRC with poly: x^16 + x^12 + x^5 + 1
-    for (int i = 16; i < len; ++i) {
-        int xor = crc[0];
+    // invert first 16 bits of data
+    crc ^= 0xffff;
 
-        crc[0] = crc[1];
-        crc[1] = crc[2];
-        crc[2] = crc[3];
-        crc[3] = crc[4] ^ xor;
-        crc[4] = crc[5];
-        crc[5] = crc[6];
-        crc[6] = crc[7];
-        crc[7] = crc[8];
-        crc[8] = crc[9];
-        crc[9] = crc[10];
-        crc[10] = crc[11] ^ xor;
-        crc[11] = crc[12];
-        crc[12] = crc[13];
-        crc[13] = crc[14];
-        crc[14] = crc[15];
-        // CRC at the end of frame is inverted, invert it again
-        if (i >= len - 16) {
-            crc[15] = data[i] ^ xor ^ 1;
-        } else {
-            crc[15] = data[i] ^ xor;
+    nbits -= 16;
+    data += 2;
+    for ( ; nbits > 0; ++data) {
+        b = *data;
+        for (int offs = 0; offs < 8 && nbits; ++offs, --nbits) {
+            // shift data bits into CRC
+            crc = (crc << 1) | (b & 1);
+            b = b >> 1;
+            if (crc & 0x10000) {
+                // CRC with poly: x^16 + x^12 + x^5 + 1
+                crc ^= 0x11021;
+            }
         }
     }
 
-    return !(crc[0] | crc[1] | crc[2] | crc[3] | crc[4] | crc[5] | crc[6] | crc[7] |
-            crc[8] | crc[9] | crc[10] | crc[11] | crc[12] | crc[13] | crc[14] | crc[15]);
+    return !(crc ^ 0xffff);
 }
 
 static void command_parse(command_t *cmd, uint8_t data)
@@ -132,46 +129,17 @@ static void command_parse(command_t *cmd, uint8_t data)
     };
 }
 
-// converts array of bits into bytes, uses TETRAPOL bite order
-static void pack_bits(uint8_t *bytes, const uint8_t *bits, int nbits)
+bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int nbits)
 {
-    int nbytes = nbits / 8;
-    for (int i = 0; i < nbytes; ++i) {
-        bytes[i] =
-            (bits[8*i + 0] << 0) |
-            (bits[8*i + 1] << 1) |
-            (bits[8*i + 2] << 2) |
-            (bits[8*i + 3] << 3) |
-            (bits[8*i + 4] << 4) |
-            (bits[8*i + 5] << 5) |
-            (bits[8*i + 6] << 6) |
-            (bits[8*i + 7] << 7);
-    }
-    nbits %= 8;
-    if (nbits) {
-        bytes[nbytes] = 0;
-        for (int i = 0; i < nbits; ++i) {
-            bytes[nbytes] |= (bits[8*nbytes + i] << i);
-        }
-    }
-}
-
-bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int len)
-{
-    if (!check_fcs(data, len)) {
+    if (!check_fcs(data, nbits)) {
         return false;
     }
 
-    uint8_t buf[3];
-    pack_bits(buf, data, 3*8);
-
-    addr_parse(&hdlc_frame->addr, buf);
-    // TODO: proper command parsing
-    command_parse(&hdlc_frame->command, buf[2]);
-
-    pack_bits(hdlc_frame->info, data + 3*8, len - 3*8 - 2*8);
-    // len - HDLC_header_len - FCS_len
-    hdlc_frame->info_nbits = len - 3*8 - 2*8;
+    addr_parse(&hdlc_frame->addr, data);
+    command_parse(&hdlc_frame->command, data[2]);
+    memcpy(hdlc_frame->info, data + 3, (nbits - 3*8 - 2*8 + 7) / 8);
+    // nbits - HDLC_header_nbits - FCS_len
+    hdlc_frame->info_nbits = nbits - 3*8 - 2*8;
 
     return true;
 }
