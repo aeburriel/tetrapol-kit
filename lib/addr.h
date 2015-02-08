@@ -44,7 +44,7 @@ inline bool addr_is_coi_all_st(const addr_t *addr)
     // x=0 for all stations? it is not a bug in specification?
 };
 
-inline void addr_parse(addr_t *addr, uint8_t *buf)
+inline void addr_parse(addr_t *addr, const uint8_t *buf)
 {
     addr->z = get_bits(1, 0, buf);
     addr->y = get_bits(3, 1, buf);
