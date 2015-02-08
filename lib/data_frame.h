@@ -36,6 +36,14 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk);
 int data_frame_get_data(data_frame_t *data_fr, uint8_t *bits);
 
 /**
+  Get data from data_frame, data are packe into bytes.
+  Unused bites in last byte are set to zero.
+
+  @return number of bites writen into output array
+  */
+int data_frame_get_bytes(data_frame_t *data_fr, uint8_t *data);
+
+/**
   Destroy data frame instance
   */
 void data_frame_destroy(data_frame_t *data_fr);
