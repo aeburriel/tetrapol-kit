@@ -609,7 +609,7 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
         // TODO: decode_pch(t);
         // return
     }
-    if (phys_ch->cch_mux_type != CELL_CONFIG_MUX_TYPE_TYPE_2) {
+    if (phys_ch->cch_mux_type == CELL_CONFIG_MUX_TYPE_TYPE_2) {
         if (fn_mod == 48 || fn_mod == 49) {
         // TODO: decode_pch(t);
         // return
