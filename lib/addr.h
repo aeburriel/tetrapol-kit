@@ -11,9 +11,9 @@ typedef struct {
 } addr_t;
 
 extern const addr_t addr_cgi_all_st;
-extern const addr_t addr_coi_all_st;
-extern const addr_t addr_tti_no_st;
 extern const addr_t addr_tti_all_st;
+extern const addr_t addr_tti_no_st;
+extern const addr_t addr_coi_all_st;
 
 inline void addr_parse(addr_t *addr, uint8_t *buf)
 {
