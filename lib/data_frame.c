@@ -257,19 +257,3 @@ int data_frame_get_bytes(data_frame_t *data_fr, uint8_t *data)
 
     return nblks * 64;
 }
-
-int data_frame_get_data(data_frame_t *data_fr, uint8_t *bits)
-{
-    const int nblks = (data_fr->nblks <= 2) ?
-        data_fr->nblks : data_fr->nblks - 1;
-
-    for (int blk_no = 0; blk_no < nblks; ++blk_no) {
-        memcpy(bits, data_fr->data_blks[blk_no].data + 3, 64);
-        bits += 64;
-    }
-
-    data_frame_reset(data_fr);
-
-    return nblks * 64;
-}
-

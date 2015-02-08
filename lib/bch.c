@@ -46,9 +46,9 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
         return false;
     }
 
-    uint8_t tpdu_data[SYS_PAR_N200_BITS_MAX];
+    uint8_t tpdu_data[SYS_PAR_N200_BYTES_MAX];
     const int nblocks = data_frame_blocks(bch->data_fr);
-    const int size = data_frame_get_data(bch->data_fr, tpdu_data);
+    const int size = data_frame_get_bytes(bch->data_fr, tpdu_data);
 
     hdlc_frame_t hdlc_fr;
     if (!hdlc_frame_parse(&hdlc_fr, tpdu_data, size)) {

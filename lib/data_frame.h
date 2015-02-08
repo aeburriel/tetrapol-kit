@@ -29,13 +29,6 @@ int data_frame_blocks(data_frame_t *data_fr);
 bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk);
 
 /**
-  Copy data from data frame into output buffer.
-
-  @return size of result.
-  */
-int data_frame_get_data(data_frame_t *data_fr, uint8_t *bits);
-
-/**
   Get data from data_frame, data are packe into bytes.
   Unused bites in last byte are set to zero.
 
