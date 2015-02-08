@@ -1,10 +1,9 @@
 #include "hdlc_frame.h"
+#include "bit_utils.h"
 #include "misc.h"
 
 #include <stdbool.h>
 #include <stdio.h>
-
-#include "bit_utils.c"
 
 const st_addr_t st_addr_all = {
     .z = 0,

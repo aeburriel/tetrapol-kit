@@ -1,5 +1,6 @@
-#include "misc.h"
 #include "tsdu.h"
+#include "misc.h"
+#include "bit_utils.h"
 #include "phys_ch.h"
 #include "misc.h"
 
@@ -7,8 +8,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "bit_utils.c"
 
 #define CHECK_LEN(len, min_exp_len, tsdu) \
     if ((len) < (min_exp_len)) { \

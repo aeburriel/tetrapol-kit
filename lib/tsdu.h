@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 // PAS 0001-3-2 4.4
 enum {
     D_REJECT                    = 0x08,

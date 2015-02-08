@@ -1,3 +1,5 @@
+#pragma once
+
 // this file should be directly included into another .c file
 
 #include <stdint.h>
