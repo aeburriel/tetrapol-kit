@@ -4,7 +4,7 @@
 #include <cmocka.h>
 
 // include, we are testing static methods
-#include "hdlc_frame.c"
+#include "bit_utils.c"
 
 
 /// test few results known as good

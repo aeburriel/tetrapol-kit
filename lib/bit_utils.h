@@ -2,7 +2,18 @@
 
 // this file should be directly included into another .c file
 
+#include <stdbool.h>
 #include <stdint.h>
+
+/// PAS 0001-3-3 7.4.1.1
+/**
+ * Check TETRAPOL style FCS of the data block.
+ *
+ * @param data Data packed into bytes.
+ * @param nbits Lenght of data in bites, not necesary multiple of 8
+ * @return true if FCS at the end of block is correct, false otherwise.
+ */
+bool check_fcs(const uint8_t *data, int nbits);
 
 #define GET_BITS(n, offs, src, dst) \
     dst = get_bits((n), (offs), src)
