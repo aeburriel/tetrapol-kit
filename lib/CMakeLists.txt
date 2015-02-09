@@ -10,7 +10,6 @@ add_library (tetrapol
     data_frame.c
     hdlc_frame.c
     misc.c
-    multiblock.c
     pch.c
     phys_ch.c
     rch.c
@@ -38,7 +37,6 @@ add_executable (test_phys_ch
     data_frame.c
     hdlc_frame.c
     misc.c
-    multiblock.c
     pch.c
     rch.c
     test_phys_ch.c
