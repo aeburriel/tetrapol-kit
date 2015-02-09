@@ -68,6 +68,12 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
         return false;
     }
 
+    if (hdlc_fr.info[0] != 0x00 || hdlc_fr.info[1] != 0x11) {
+        printf("BCH: FIXME, invalid TPDU header 0x%02x 0x%02x\n",
+               hdlc_fr.info[0], hdlc_fr.info[1]);
+        return false;
+    }
+
     tsdu_destroy(&bch->tsdu->base);
     bch->tsdu = (tsdu_system_info_t *)tsdu_decode(
             hdlc_fr.info+2, hdlc_fr.info_nbits - 16);
