@@ -10,6 +10,7 @@
 #include "phys_ch.h"
 #include "bch.h"
 #include "pch.h"
+#include "rch.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -49,6 +50,7 @@ struct _phys_ch_t {
     int cch_mux_type;   ///< control CH multiplexing, see PAS 0001-3-3 5.1.3
     bch_t *bch;
     pch_t *pch;
+    rch_t *rch;
 };
 
 /**
@@ -124,9 +126,16 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
         if (!phys_ch->pch) {
             goto err_pch;
         }
+        phys_ch->rch = rch_create();
+        if (!phys_ch->rch) {
+            goto err_rch;
+        }
     }
 
     return phys_ch;
+
+err_rch:
+    pch_destroy(phys_ch->pch);
 
 err_pch:
     bch_destroy(phys_ch->bch);
@@ -142,6 +151,7 @@ void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
     if (phys_ch->radio_ch_type == RADIO_CH_TYPE_CONTROL) {
         bch_destroy(phys_ch->bch);
         pch_destroy(phys_ch->pch);
+        rch_destroy(phys_ch->rch);
     }
     free(phys_ch);
 }
@@ -631,8 +641,10 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
     }
 
     if (f->frame_no % 25 == 14) {
-        // TODO: decode_rch(t);
-        // return
+        if (rch_push_data_block(phys_ch->rch, &data_blk)) {
+            rch_print(phys_ch->rch);
+        }
+        return 0;
     }
 
     // TODO:
