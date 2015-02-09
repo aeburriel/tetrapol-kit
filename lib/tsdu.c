@@ -654,36 +654,6 @@ static void d_data_authentication(const uint8_t *t) {
     printf("\tCODOP=0x63 (D_DATA_AUTHENTICATION)\n");
 }
 
-static void decode_rch_address(const uint8_t *t) {
-
-    int a, y;
-
-    a = t[0];
-    y=bits_to_int(t+1, 3);
-
-    if (a==0) {
-        printf("ACK ");
-        decode_addr(t);
-    } else {
-        printf("NACK ");
-        if (y==4)
-            printf("Noise\n");
-        if (y==5)
-            printf("Collision\n");
-    }
-}
-
-void decode_rch(const uint8_t *t) {
-
-    printf("\tRCH\n");
-    printf("\t\tTERMINAL ADDRES 1: ");
-    decode_rch_address(t);
-    printf("\t\tTERMINAL ADDRES 2: ");
-    decode_rch_address(t+16);
-    printf("\t\tTERMINAL ADDRES 3: ");
-    decode_rch_address(t+32);
-}
-
 void tsdu_process(const uint8_t *t, int data_length, int mod) {
 
     int codop;

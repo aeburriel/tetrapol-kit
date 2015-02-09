@@ -197,11 +197,6 @@ void tpdu_process(const uint8_t* t, int length, int *frame_no) {
     printf("\tADDR=");
     decode_addr(t);
 
-    if (*frame_no % 25 == 14) {
-        decode_rch(t);
-        return;
-    }
-
     hdlc_process(t+16,length-2, *frame_no);
 }
 

@@ -45,11 +45,6 @@ void multiblock_process(data_block_t *data_blk, int fn)
     uint8_t frame_bord[FRAME_BITORDER_LEN];
     bitorder_frame(data_blk->data + 3, frame_bord);
 
-    if (data_blk->frame_no % 25 == 14) {			// FIXME: RCH, PCH ??
-        decode_rch(frame_bord);
-        return;
-    }
-
     switch(state) {
         case 0:
             numblocks=0;
