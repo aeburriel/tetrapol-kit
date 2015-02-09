@@ -51,7 +51,7 @@ void data_frame_reset(data_frame_t *data_fr)
 
 static bool check_parity(data_frame_t *data_fr)
 {
-    for (int i = 1; i < 1 + 64 + 2; ++i) {
+    for (int i = 2; i < 3 + 64; ++i) {
         int parity = 0;
         for (int blk_no = 0; blk_no < data_fr->nblks; ++blk_no) {
             parity ^= data_fr->data_blks[blk_no].data[i];
