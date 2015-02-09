@@ -66,6 +66,7 @@ bool rch_push_data_block(rch_t *rch, data_block_t *data_blk)
         return false;
     }
 
+    rch->rch_data.naddrs = 0;
     for (int i = 0; i < ARRAY_LEN(rch->rch_data.addrs); ++i) {
         addr_parse(&rch->rch_data.addrs[rch->rch_data.naddrs], data + 2*i);
         if (!addr_is_tti_no_st(&rch->rch_data.addrs[rch->rch_data.naddrs], true)) {
@@ -79,7 +80,7 @@ bool rch_push_data_block(rch_t *rch, data_block_t *data_blk)
 void rch_print(const rch_t *rch)
 {
     printf("RCH ACKs (%d):\n", rch->rch_data.naddrs);
-    for (int i = 0; i < ARRAY_LEN(rch->rch_data.addrs); ++i) {
+    for (int i = 0; i < rch->rch_data.naddrs; ++i) {
         const addr_t *addr = &rch->rch_data.addrs[i];
         if (!addr->z) {
             printf("\tADDR ACK: ");
