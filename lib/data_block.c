@@ -73,6 +73,10 @@ void data_block_decode_frame(data_block_t *data_blk, const uint8_t *data,
         // decode remaining part of frame
         data_blk->nerrs += decode_data_frame(
                 data_blk->data + 26, data_blk->err + 26, data + 2*26, 50);
+        if (!data_blk->nerrs && ( data_blk->data[74] || data_blk->data[75] )) {
+            printf("nonzero padding in frame %d: %d %d\n", frame_no,
+                    data_blk->data[74], data_blk->data[75]);
+        }
     } else if (fr_type == FRAME_TYPE_HR_DATA) {
         // TODO
         printf("decoding frame type %d not implemented\n", fr_type);
