@@ -673,22 +673,6 @@ static void decode_rch_address(const uint8_t *t) {
     }
 }
 
-void decode_pch(const uint8_t *t) {
-
-    printf("\tPCH\n");
-
-    // TODO: activation bitmap
-
-    printf("\t\t");
-    decode_addr(t+64);
-    printf("\t\t");
-    decode_addr(t+80);
-    printf("\t\t");
-    decode_addr(t+96);
-    printf("\t\t");
-    decode_addr(t+112);
-}
-
 void decode_rch(const uint8_t *t) {
 
     printf("\tRCH\n");
