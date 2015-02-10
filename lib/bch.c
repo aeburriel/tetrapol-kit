@@ -76,7 +76,7 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
 
     tsdu_destroy(&bch->tsdu->base);
     bch->tsdu = (tsdu_system_info_t *)tsdu_decode(
-            hdlc_fr.info+2, hdlc_fr.info_nbits - 16);
+            hdlc_fr.info+2, hdlc_fr.info_nbits - 16, 0, 0);
     if (bch->tsdu == NULL) {
         return false;
     }

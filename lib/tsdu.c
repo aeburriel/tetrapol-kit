@@ -38,10 +38,9 @@ void tsdu_destroy(tsdu_base_t *tsdu)
     free(tsdu);
 }
 
-static void tsdu_base_init(tsdu_base_t *tsdu, codop_t codop, int noptionals)
+static void tsdu_base_set_nopts(tsdu_base_t *tsdu, int noptionals)
 {
     tsdu->noptionals = noptionals;
-    tsdu->codop = codop;
     memset(tsdu->optionals, 0, noptionals * sizeof(void *));
 }
 
@@ -52,7 +51,7 @@ static tsdu_system_info_t *decode_system_info(const uint8_t *data, int nbits)
         return NULL;
     }
 
-    tsdu_base_init(&tsdu->base, D_SYSTEM_INFO, 0);
+    tsdu_base_set_nopts(&tsdu->base, 0);
 
     // minimal size of disconnected mode
     CHECK_LEN(nbits, 9*8, tsdu);
@@ -102,22 +101,30 @@ static tsdu_system_info_t *decode_system_info(const uint8_t *data, int nbits)
     return tsdu;
 }
 
-tsdu_t *tsdu_decode(const uint8_t *data, int nbits)
+tsdu_t *tsdu_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 {
     CHECK_LEN(nbits, 8, NULL);
 
     codop_t codop;
     GET_BITS(8, 0, data, codop);
 
+    tsdu_t *tsdu = NULL;
     switch (codop) {
         case D_SYSTEM_INFO:
-            return (tsdu_t *)decode_system_info(data, nbits);
+            tsdu = (tsdu_t *)decode_system_info(data, nbits);
+            break;
 
         default:
             printf("unsupported TSDU codop %d\n", codop);
     }
 
-    return NULL;
+    if (tsdu) {
+        tsdu->codop = codop;
+        tsdu->prio = prio;
+        tsdu->id_tsap = id_tsap;
+    }
+
+    return tsdu;
 }
 
 static void tsdu_system_info_print(tsdu_system_info_t *tsdu)

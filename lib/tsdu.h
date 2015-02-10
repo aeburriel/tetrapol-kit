@@ -125,6 +125,8 @@ typedef uint8_t iei_t;
 // do not use directly, this struct must be first member of each TSDU structure
 typedef struct {
     codop_t codop;
+    uint8_t prio;
+    uint8_t id_tsap;
     int noptionals;     ///< number of optionals
     /**
       In subclassed TSDU structure, noptionals pointers should be present.
@@ -304,13 +306,18 @@ typedef struct {
 typedef tsdu_base_t tsdu_t;
 
 void tsdu_destroy(tsdu_base_t *tsdu);
-tsdu_t *tsdu_decode(const uint8_t *data, int nbits);
+
+/**
+ * @brief tsdu_decode Decode TSDU structure.
+ * @param data Data packed into bytes.
+ * @param nbits Number of bits used in 'data'
+ * @param prio Priority from TPDU
+ * @param id_tsap TSAP-id
+ * @return TSDU or NULL
+ */
+tsdu_t *tsdu_decode(const uint8_t *data, int nbits, int prio, int id_tsap);
+
 void tsdu_print(tsdu_t *tsdu);
 
+// old method, remove
 void tsdu_process(const uint8_t* t, int data_length, int mod);
-
-void decode_pch(const uint8_t *t);
-void decode_rch(const uint8_t *t);
-// TODO
-void decode_rch_addressconst (uint8_t *t);
-
