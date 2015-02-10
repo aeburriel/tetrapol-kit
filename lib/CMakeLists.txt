@@ -4,18 +4,32 @@ find_library(CMOCKA_LIBRARY
 
 add_library (tetrapol
     addr.c
+    addr.h
     bch.c
+    bch.h
     bit_utils.c
+    bit_utils.h
     data_block.c
+    data_block.h
     data_frame.c
+    data_frame.h
     hdlc_frame.c
+    hdlc_frame.h
     misc.c
+    misc.h
     pch.c
+    pch.h
     phys_ch.c
+    phys_ch.h
     sdch.c
+    sdch.h
+    system_config.h
     rch.c
+    rch.h
     tpdu.c
-    tsdu.c)
+    tpdu.h
+    tsdu.c
+    tsdu.h)
 
 add_executable (test_data_block
     test_data_block.c)
