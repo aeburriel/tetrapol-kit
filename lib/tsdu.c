@@ -356,35 +356,6 @@ static void d_group_composition(const uint8_t *t) {
     }
 }
 
-static void d_group_activation(const uint8_t *t) {
-
-    int activation_mode, group_id, coverage_id, channel_id, u_ch_scrambling;
-    int d_ch_scrambling, key_reference;
-
-    activation_mode=bits_to_int(t+8,4);
-    group_id=bits_to_int(t+12, 12);
-    coverage_id=bits_to_int(t+24, 8);
-    channel_id=bits_to_int(t+36,12);
-    u_ch_scrambling=bits_to_int(t+48,8);
-    u_ch_scrambling=bits_to_int(t+56,8);
-    key_reference=bits_to_int(t+64,8);
-    // TODO
-    d_ch_scrambling = 0;
-
-    // TODO TTI
-
-    printf("\tCODOP=0x55 (D_GROUP_ACTIVATION)\n");
-    printf("\t\tACTIVATION_MODE=%i\n", activation_mode);
-    printf("\t\tGROUP_ID=%i\n", group_id);
-    printf("\t\tCOVERAGE_ID=%i\n", coverage_id);
-    printf("\t\tCHANNEL_ID=%i\n", channel_id);
-    printf("\t\tU_CH_SCRAMBLING=%i\n", u_ch_scrambling);
-    printf("\t\tD_CH_SCRAMBLING=%i\n", d_ch_scrambling);
-    printf("\t\t");
-    decode_key_reference(key_reference);
-    printf("\n");
-}
-
 static void d_group_list(const uint8_t *t) {
 
     int i;
@@ -767,9 +738,6 @@ void tsdu_process(const uint8_t *t, int data_length, int mod) {
     switch (codop) {
         case D_GROUP_COMPOSITION:
             d_group_composition(t);
-            break;
-        case D_GROUP_ACTIVATION:
-            d_group_activation(t);
             break;
         case D_GROUP_LIST:
             d_group_list(t);
