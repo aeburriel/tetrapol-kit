@@ -18,7 +18,13 @@ bool check_fcs(const uint8_t *data, int nbits);
 #define GET_BITS(n, offs, src, dst) \
     dst = get_bits((n), (offs), src)
 
-// get int from byte array (bytes of TETRAPOL data frame)
+/**
+ * @brief get_bits Get int from byte array (bytes of TETRAPOL data frame).
+ * @param len Bites used for extraction.
+ * @param offs Bites skipped from beginning of data (counts from MSB, MSB = bit0)
+ * @param data
+ * @return Integer value.
+ */
 inline uint32_t get_bits(int len, int offs, const uint8_t *data)
 {
     uint64_t r = 0;
