@@ -95,6 +95,7 @@ static void command_parse(command_t *cmd, uint8_t data)
 bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int nbits)
 {
     if (!check_fcs(data, nbits)) {
+        // TODO: check for stuffing frames, detect other broken frames
         return false;
     }
 
