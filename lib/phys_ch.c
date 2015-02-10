@@ -653,7 +653,9 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 
     if (sdch_dl_push_data_frame(phys_ch->sdch, &data_blk)) {
         tsdu_t *tsdu = sdch_get_tsdu(phys_ch->sdch);
-        //tsdu_print(tsdu);
+        if (tsdu) {
+            tsdu_print(tsdu);
+        }
         tsdu_destroy(tsdu);
         return 0;
     }
