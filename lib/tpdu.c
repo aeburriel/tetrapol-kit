@@ -1,9 +1,46 @@
-#include <stdio.h>
-#include <string.h>
 #include "misc.h"
 #include "tsdu.h"
 #include "tpdu.h"
 #include "misc.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+struct _tpdu_ui_t {
+
+};
+
+tpdu_ui_t *tpdu_ui_create(void)
+{
+    tpdu_ui_t *tpdu = malloc(sizeof(tpdu_ui_t));
+    if (!tpdu) {
+        return NULL;
+    }
+    memset(tpdu, 0, sizeof(tpdu_ui_t));
+
+    return tpdu;
+}
+
+void tpdu_ui_destroy(tpdu_ui_t *tpdu)
+{
+    free(tpdu);
+}
+
+bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
+{
+    // TODO
+
+    return false;
+}
+
+tsdu_t *tpdu_ui_get_tsdu(tpdu_ui_t *tpdu)
+{
+    // TODO
+    return NULL;
+}
+
 
 
 const static uint8_t stuff[] = {
