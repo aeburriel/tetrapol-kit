@@ -1,5 +1,6 @@
 #include "sdch.h"
 #include "data_frame.h"
+#include "hdlc_frame.h"
 #include "misc.h"
 #include "tpdu.h"
 #include "system_config.h"
@@ -9,6 +10,7 @@
 
 struct _sdch_t {
     data_frame_t *data_fr;
+    tpdu_ui_t *tpdu_ui;
 };
 
 sdch_t *sdch_create(void)
@@ -17,19 +19,33 @@ sdch_t *sdch_create(void)
     if (!sdch) {
         return NULL;
     }
+
     sdch->data_fr = data_frame_create();
     if (!sdch->data_fr) {
-        free(sdch);
-        return NULL;
+        goto err_data_fr;
+    }
+
+    sdch->tpdu_ui = tpdu_ui_create();
+    if (!sdch->tpdu_ui) {
+        goto err_tpdu_ui;
     }
 
     return sdch;
+
+err_tpdu_ui:
+    data_frame_destroy(sdch->data_fr);
+
+err_data_fr:
+    free(sdch);
+
+    return NULL;
 }
 
 void sdch_destroy(sdch_t *sdch)
 {
     if (sdch) {
         data_frame_destroy(sdch->data_fr);
+        tpdu_ui_destroy(sdch->tpdu_ui);
     }
     free(sdch);
 }
@@ -43,6 +59,22 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
     uint8_t data[SYS_PAR_N200_BYTES_MAX];
     int nblks = data_frame_blocks(sdch->data_fr);
     const int size = data_frame_get_bytes(sdch->data_fr, data);
+
+    hdlc_frame_t hdlc_fr;
+    if (!hdlc_frame_parse(&hdlc_fr, data, size)) {
+        // PAS 0001-3-3 7.4.1.9 stuffing frames are dropped, FCS does not match
+        return false;
+    }
+
+    if (hdlc_fr.command.cmd == COMMAND_UNNUMBERED_UI) {
+        printf("HDLC info=");
+        print_hex(hdlc_fr.info, hdlc_fr.info_nbits / 8);
+        printf("\t");
+        addr_print(&hdlc_fr.addr);
+        printf("\n");
+        return tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, &hdlc_fr);
+    }
+    printf("CMD 0x%02x\n", hdlc_fr.command.cmd);
 
     // TODO ...
 

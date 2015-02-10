@@ -10,6 +10,8 @@
 
 struct _tpdu_ui_t {
 
+struct _tpdu_ui_t {
+    tsdu_t *tsdu;   ///< contains last decoded TSDU
 };
 
 tpdu_ui_t *tpdu_ui_create(void)
@@ -37,8 +39,9 @@ bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
 
 tsdu_t *tpdu_ui_get_tsdu(tpdu_ui_t *tpdu)
 {
-    // TODO
-    return NULL;
+    tsdu_t *tsdu = tpdu->tsdu;
+    tpdu->tsdu = NULL;
+    return tsdu;
 }
 
 
