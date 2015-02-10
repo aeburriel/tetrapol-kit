@@ -12,7 +12,7 @@
 
 struct _bch_t {
     data_frame_t *data_fr;
-    tsdu_system_info_t *tsdu;
+    tsdu_d_system_info_t *tsdu;
 };
 
 bch_t *bch_create(void)
@@ -75,7 +75,7 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
     }
 
     tsdu_destroy(&bch->tsdu->base);
-    bch->tsdu = (tsdu_system_info_t *)tsdu_decode(
+    bch->tsdu = (tsdu_d_system_info_t *)tsdu_d_decode(
             hdlc_fr.info+2, hdlc_fr.info_nbits - 16, 0, 0);
     if (bch->tsdu == NULL) {
         return false;
@@ -108,9 +108,9 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
     return true;
 }
 
-tsdu_system_info_t *bch_get_tsdu(bch_t *bch)
+tsdu_d_system_info_t *bch_get_tsdu(bch_t *bch)
 {
-    tsdu_system_info_t *tsdu = bch->tsdu;
+    tsdu_d_system_info_t *tsdu = bch->tsdu;
     bch->tsdu = NULL;
 
     return tsdu;

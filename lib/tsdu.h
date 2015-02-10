@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // PAS 0001-3-2 4.4
@@ -127,6 +128,7 @@ typedef struct {
     codop_t codop;
     uint8_t prio;
     uint8_t id_tsap;
+    bool downlink;      ///< set to true for downlink TSDU, false  otherwise
     int noptionals;     ///< number of optionals
     /**
       In subclassed TSDU structure, noptionals pointers should be present.
@@ -300,7 +302,7 @@ typedef struct {
 // used only when cell_state == disconnected
     uint8_t band;
     uint16_t channel_id;
-} tsdu_system_info_t;
+} tsdu_d_system_info_t;
 
 // this might change in future
 typedef tsdu_base_t tsdu_t;
@@ -308,14 +310,14 @@ typedef tsdu_base_t tsdu_t;
 void tsdu_destroy(tsdu_base_t *tsdu);
 
 /**
- * @brief tsdu_decode Decode TSDU structure.
+ * @brief tsdu_d_decode Decode TSDU structure.
  * @param data Data packed into bytes.
  * @param nbits Number of bits used in 'data'
  * @param prio Priority from TPDU
  * @param id_tsap TSAP-id
  * @return TSDU or NULL
  */
-tsdu_t *tsdu_decode(const uint8_t *data, int nbits, int prio, int id_tsap);
+tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap);
 
 void tsdu_print(tsdu_t *tsdu);
 

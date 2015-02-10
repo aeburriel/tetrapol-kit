@@ -52,10 +52,10 @@ bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
         // thus data frame and high rate data can be distinguished by size
         if (hdlc_fr->info_nbits > (7 * 8 + 4)) {
             const int nbits = get_bits(8, 8, hdlc_fr->info) * 8;
-            tpdu->tsdu = tsdu_decode(hdlc_fr->info + 2, nbits, prio, id_tsap);
+            tpdu->tsdu = tsdu_d_decode(hdlc_fr->info + 2, nbits, prio, id_tsap);
         } else {
             const int nbits = hdlc_fr->info_nbits - 8;
-            tpdu->tsdu = tsdu_decode(hdlc_fr->info + 1, nbits, prio, id_tsap);
+            tpdu->tsdu = tsdu_d_decode(hdlc_fr->info + 1, nbits, prio, id_tsap);
         }
         return true;
     }

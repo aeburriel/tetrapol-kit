@@ -604,7 +604,7 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
     // Firs of all for detection BCH (frame 0/100 in superblock).
     // The second reason is just to check frame synchronization.
     if (bch_push_data_block(phys_ch->bch, &data_blk)) {
-        tsdu_system_info_t *tsdu = bch_get_tsdu(phys_ch->bch);
+        tsdu_d_system_info_t *tsdu = bch_get_tsdu(phys_ch->bch);
         if (tsdu) {
             phys_ch->cch_mux_type = tsdu->cell_config.mux_type;
             if (phys_ch->cch_mux_type != CELL_CONFIG_MUX_TYPE_DEFAULT &&
