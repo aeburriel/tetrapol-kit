@@ -1,5 +1,7 @@
 #pragma once
 
+#include "addr.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -137,6 +139,26 @@ typedef struct {
     void *optionals[];
 } tsdu_base_t;
 
+/// PAS 0001-3-2 5.3.2
+enum {
+    ACTIVATION_MODE_HOOK_OPEN = 0,
+    ACTIVATION_MODE_HOOK_INTERNAL = 1,
+    ACTIVATION_MODE_HOOK_BROADCAST = 2,
+    ACTIVATION_MODE_HOOK_EXTERNAL = 3,
+};
+
+enum {
+    ACTIVATION_MODE_TYPE_WITHOUT_TONE = 0,
+    ACTIVATION_MODE_TYPE_WITH_TONE = 1,
+    ACTIVATION_MODE_TYPE_RING = 2,
+    ACTIVATION_MODE_TYPE_RESERVER = 3,
+};
+
+typedef struct {
+    uint8_t hook;
+    uint8_t type;
+} activation_mode_t;
+
 /// PAS 0001-3-2 5.3.9
 enum {
     BN_ID_UNDEFINED = 0,
@@ -244,6 +266,41 @@ typedef union {
     };
 } cell_config_t;
 
+/// PAS 0001-3-2 5.3.27
+enum {
+    COVERAGE_ID_NA = 0,
+    COVERAGE_ID_RESERVER = 1,
+    // 254 unused values
+};
+
+/// PAS 0001-3-2 5.3.39
+enum {
+    KEY_TYPE_RNK = 0,
+    KEY_TYPE_RNK_PLUS = 1,
+    KEY_TYPE_FRNK = 2,
+    KEY_TYPE_NNK = 3,
+    KEY_TYPE_FNNK = 4,
+    KEY_TYPE_FAK = 5,
+    // 9 values reserved
+    KEY_TYPE_ESC = 15,
+};
+
+enum {
+    KEY_INDEX_CLEAR_CALL = 0,
+    KEY_INDEX_TKK = 14,
+    // 15, ciphering key is in TSDU/mode shall be chosen by SwMI
+};
+
+typedef struct {
+    union {
+        uint8_t _data;
+        struct {
+            unsigned int key_index : 4;
+            unsigned int key_type : 4;
+        };
+    };
+} key_reference_t;
+
 /// PAS 0001-3-2 5.3.40
 enum {
     LOCAL_AREA_ID_MODE_RSW_BS   = 0,
@@ -281,6 +338,21 @@ typedef struct {
     uint8_t pwr_tx_adjust;
     uint8_t rx_lev_access;
 } cell_radio_param_t;
+
+/// PAS 0001-3-2 4.4.43
+typedef struct {
+    tsdu_base_t base;
+    // pointers must be right after base
+    activation_mode_t activation_mode;
+    uint16_t group_id;
+    uint8_t coverage_id;
+    uint16_t channel_id;
+    uint8_t u_ch_scrambling;
+    uint8_t d_ch_scrambling;
+    key_reference_t key_reference;
+    bool has_addr_tti;
+    addr_t addr_tti;
+} tsdu_d_group_activation_t;
 
 /// PAS 0001-3-2 4.4.71
 typedef struct {

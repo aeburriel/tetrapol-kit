@@ -44,6 +44,75 @@ static void tsdu_base_set_nopts(tsdu_base_t *tsdu, int noptionals)
     memset(tsdu->optionals, 0, noptionals * sizeof(void *));
 }
 
+static void activation_mode_decode(activation_mode_t *am, uint8_t data)
+{
+    GET_BITS(4, 0, &data, am->hook);
+    GET_BITS(4, 2, &data, am->type);
+}
+
+static tsdu_d_group_activation_t *
+d_group_activation_decode(const uint8_t *data, int nbits)
+{
+    tsdu_d_group_activation_t *tsdu = malloc(sizeof(tsdu_d_group_activation_t));
+    if (!tsdu) {
+        return NULL;
+    }
+
+    tsdu_base_set_nopts(&tsdu->base, 0);
+    CHECK_LEN(nbits, 9 * 8, tsdu);
+
+    int _zero0;
+    activation_mode_decode(&tsdu->activation_mode, data[1]);
+    GET_BITS(12, 1*8 + 4, data, tsdu->group_id);
+    GET_BITS(8,  3*8,     data, tsdu->coverage_id);
+    GET_BITS(4,  4*8,     data, _zero0);
+    GET_BITS(12, 4*8 + 4, data, tsdu->channel_id);
+    GET_BITS(8,  6*8,     data, tsdu->u_ch_scrambling);
+    GET_BITS(8,  7*8,     data, tsdu->d_ch_scrambling);
+    GET_BITS(8,  8*8,     data, tsdu->key_reference._data);
+
+    if (_zero0 != 0) {
+        printf("TSDU: WTF in specifiacion are 0000, not 0x%02x\n", _zero0);
+    }
+
+    tsdu->has_addr_tti = false;
+    if (nbits >= 12 * 8) {
+        // FIXME: proper IEI handling
+        uint8_t iei = get_bits(8, 9*8, data);
+        if (iei != IEI_TTI) {
+            printf("TSDU: WTF FIXME - expected IEI_TTI");
+        } else {
+            tsdu->has_addr_tti = true;
+            addr_parse(&tsdu->addr_tti, &data[10]);
+        }
+    }
+
+    if (nbits > 12*8) {
+        printf("TSDU: WTF unused bits\n");
+    }
+
+    return tsdu;
+}
+
+static void d_group_activation_print(tsdu_d_group_activation_t *tsdu)
+{
+    printf("\tCODOP=0x%02x (D_GROUP_ACTIVATION)\n", D_GROUP_ACTIVATION);
+    printf("\t\tACTIVATION_MODE: HOOK=%d TYPE=%d\n",
+           tsdu->activation_mode.hook, tsdu->activation_mode.type);
+    printf("\t\tGROUP_ID=%d\n", tsdu->group_id);
+    printf("\t\tCOVERAGE_ID=%d\n", tsdu->coverage_id);
+    printf("\t\tCHANNEL_ID=%d\n", tsdu->channel_id);
+    printf("\t\tU_CH_SCRAMBLING=%d\n", tsdu->u_ch_scrambling);
+    printf("\t\tD_CH_SCRAMBLING=%d\n", tsdu->d_ch_scrambling);
+    printf("\t\tKEY_REFERENCE: KEY_TYPE=%i KEY_INDEX=%i\n",
+           tsdu->key_reference.key_type, tsdu->key_reference.key_index);
+    if (tsdu->has_addr_tti) {
+        printf("\t\tADDR_TTI=");
+        addr_print(&tsdu->addr_tti);
+        printf("\n");
+    }
+}
+
 static tsdu_d_system_info_t *decode_d_system_info(const uint8_t *data, int nbits)
 {
     tsdu_d_system_info_t *tsdu = malloc(sizeof(tsdu_d_system_info_t));
@@ -110,6 +179,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 
     tsdu_t *tsdu = NULL;
     switch (codop) {
+        case D_GROUP_ACTIVATION:
+            tsdu = (tsdu_t *)d_group_activation_decode(data, nbits);
+            break;
+
         case D_SYSTEM_INFO:
             tsdu = (tsdu_t *)decode_d_system_info(data, nbits);
             break;
@@ -196,6 +269,10 @@ static void tsdu_d_system_info_print(tsdu_d_system_info_t *tsdu)
 static void tsdu_d_print(const tsdu_t *tsdu)
 {
     switch (tsdu->codop) {
+        case D_GROUP_ACTIVATION:
+            d_group_activation_print((tsdu_d_group_activation_t *)tsdu);
+            break;
+
         case D_SYSTEM_INFO:
             tsdu_d_system_info_print((tsdu_d_system_info_t *)tsdu);
             break;

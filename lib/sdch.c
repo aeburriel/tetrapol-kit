@@ -105,6 +105,9 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
 
 tsdu_t *sdch_get_tsdu(sdch_t *sdch)
 {
-    // TODO ...
-    return NULL;
+    tsdu_t *tsdu = tpdu_ui_get_tsdu(sdch->tpdu_ui);
+
+    // TODO: multiplexing for other TPDU types
+
+    return tsdu;
 }
