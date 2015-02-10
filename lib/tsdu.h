@@ -135,6 +135,54 @@ typedef struct {
     void *optionals[];
 } tsdu_base_t;
 
+/// PAS 0001-3-2 5.3.9
+enum {
+    BN_ID_UNDEFINED = 0,
+};
+
+/// PAS 0001-3-2 5.3.18
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int min_service_class : 4;
+        unsigned int min_reg_class : 4;
+    };
+} cell_access_t;
+
+/// PAS 0001-3-2 5.3.20
+enum {
+    CELL_CONFIG_DC_SINGLE           = 0,
+    CELL_CONFIG_DC_DOUBLE_COVERAGE  = 1,
+};
+
+enum {
+    CELL_CONFIG_SIM_SINGLE      = 0,
+    CELL_CONFIG_SIM_SIMULCAST   = 1,
+};
+
+/// PAS 0001-3-2 5.3.21
+enum {
+    CELL_ID_FORMAT_0    = 0,
+    CELL_ID_FORMAT_1    = 1,
+    // 2 values reserved
+};
+
+typedef struct {
+    uint8_t bs_id;
+    uint8_t rws_id;
+} cell_id_t;
+
+/// PAS 0001-3-2 5.3.22
+enum {
+    CELL_RADIO_PARAM_TX_MAX_UNLIMITED   = 0,
+    // 7 values reserved
+};
+
+enum {
+    CELL_RADIO_PARAM_RADIO_LINK_TIMEOUT_INTERNAL,
+    // 31 values reserved
+};
+
 /// PAS 0001-3-2 5.3.23
 enum {
     CELL_STATE_EXP_NORMAL = 0,
@@ -166,17 +214,6 @@ typedef union {
     };
 } cell_state_t;
 
-/// PAS 0001-3-2 5.3.20
-enum {
-    CELL_CONFIG_DC_SINGLE           = 0,
-    CELL_CONFIG_DC_DOUBLE_COVERAGE  = 1,
-};
-
-enum {
-    CELL_CONFIG_SIM_SINGLE      = 0,
-    CELL_CONFIG_SIM_SIMULCAST   = 1,
-};
-
 enum {
     CELL_CONFIG_MUX_TYPE_DEFAULT    = 0,
     CELL_CONFIG_MUX_TYPE_TYPE_2     = 1,
@@ -205,15 +242,6 @@ typedef union {
     };
 } cell_config_t;
 
-/// PAS 0001-3-2 5.3.65
-typedef union {
-    uint8_t _data;
-    struct {
-        unsigned int version : 4;
-        unsigned int network : 4;
-    };
-} system_id_t;
-
 /// PAS 0001-3-2 5.3.40
 enum {
     LOCAL_AREA_ID_MODE_RSW_BS   = 0,
@@ -230,39 +258,20 @@ typedef union {
     };
 } loc_area_id_t;
 
-/// PAS 0001-3-2 5.3.9
-enum {
-    BN_ID_UNDEFINED = 0,
-};
-
-/// PAS 0001-3-2 5.3.21
-enum {
-    CELL_ID_FORMAT_0    = 0,
-    CELL_ID_FORMAT_1    = 1,
-    // 2 values reserved
-};
-
-typedef struct {
-    uint8_t bs_id;
-    uint8_t rws_id;
-} cell_id_t;
-
-/// PAS 0001-3-2 5.3.22
-enum {
-    CELL_RADIO_PARAM_TX_MAX_UNLIMITED   = 0,
-    // 7 values reserved
-};
-
-enum {
-    CELL_RADIO_PARAM_RADIO_LINK_TIMEOUT_INTERNAL,
-    // 31 values reserved
-};
-
-/// convert pwr_tx_adjust to TX power adjustment in dBm
-extern const int CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[16];
+/// PAS 0001-3-2 5.3.65
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int version : 4;
+        unsigned int network : 4;
+    };
+} system_id_t;
 
 /// shall by used by RT to estimate radio conditions for one cell
 extern const int CELL_RADIO_PARAM_RX_LEV_ACCESS_TO_DBM[16];
+
+/// convert pwr_tx_adjust to TX power adjustment in dBm
+extern const int CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[16];
 
 typedef struct {
     uint8_t tx_max;
@@ -270,15 +279,6 @@ typedef struct {
     uint8_t pwr_tx_adjust;
     uint8_t rx_lev_access;
 } cell_radio_param_t;
-
-/// PAS 0001-3-2 5.3.18
-typedef union {
-    uint8_t _data;
-    struct {
-        unsigned int min_service_class : 4;
-        unsigned int min_reg_class : 4;
-    };
-} cell_access_t;
 
 /// PAS 0001-3-2 4.4.71
 typedef struct {
