@@ -113,7 +113,7 @@ static void d_group_activation_print(tsdu_d_group_activation_t *tsdu)
     }
 }
 
-static tsdu_d_system_info_t *decode_d_system_info(const uint8_t *data, int nbits)
+static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits)
 {
     tsdu_d_system_info_t *tsdu = malloc(sizeof(tsdu_d_system_info_t));
     if (!tsdu) {
@@ -170,38 +170,7 @@ static tsdu_d_system_info_t *decode_d_system_info(const uint8_t *data, int nbits
     return tsdu;
 }
 
-tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
-{
-    CHECK_LEN(nbits, 8, NULL);
-
-    codop_t codop;
-    GET_BITS(8, 0, data, codop);
-
-    tsdu_t *tsdu = NULL;
-    switch (codop) {
-        case D_GROUP_ACTIVATION:
-            tsdu = (tsdu_t *)d_group_activation_decode(data, nbits);
-            break;
-
-        case D_SYSTEM_INFO:
-            tsdu = (tsdu_t *)decode_d_system_info(data, nbits);
-            break;
-
-        default:
-            printf("unsupported TSDU codop %d\n", codop);
-    }
-
-    if (tsdu) {
-        tsdu->codop = codop;
-        tsdu->downlink = true;
-        tsdu->prio = prio;
-        tsdu->id_tsap = id_tsap;
-    }
-
-    return tsdu;
-}
-
-static void tsdu_d_system_info_print(tsdu_d_system_info_t *tsdu)
+static void d_system_info_print(tsdu_d_system_info_t *tsdu)
 {
     printf("\tCODOP=0x%0x (D_SYSTEM_INFO)\n", tsdu->base.codop);
     printf("\t\tCELL_STATE\n");
@@ -266,6 +235,37 @@ static void tsdu_d_system_info_print(tsdu_d_system_info_t *tsdu)
     }
 }
 
+tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
+{
+    CHECK_LEN(nbits, 8, NULL);
+
+    codop_t codop;
+    GET_BITS(8, 0, data, codop);
+
+    tsdu_t *tsdu = NULL;
+    switch (codop) {
+        case D_GROUP_ACTIVATION:
+            tsdu = (tsdu_t *)d_group_activation_decode(data, nbits);
+            break;
+
+        case D_SYSTEM_INFO:
+            tsdu = (tsdu_t *)d_system_info_decode(data, nbits);
+            break;
+
+        default:
+            printf("unsupported TSDU codop %d\n", codop);
+    }
+
+    if (tsdu) {
+        tsdu->codop = codop;
+        tsdu->downlink = true;
+        tsdu->prio = prio;
+        tsdu->id_tsap = id_tsap;
+    }
+
+    return tsdu;
+}
+
 static void tsdu_d_print(const tsdu_t *tsdu)
 {
     switch (tsdu->codop) {
@@ -274,7 +274,7 @@ static void tsdu_d_print(const tsdu_t *tsdu)
             break;
 
         case D_SYSTEM_INFO:
-            tsdu_d_system_info_print((tsdu_d_system_info_t *)tsdu);
+            d_system_info_print((tsdu_d_system_info_t *)tsdu);
             break;
         default:
             printf("    CODOP=%0x\n", tsdu->codop);
@@ -299,6 +299,9 @@ void tsdu_print(tsdu_t *tsdu)
         tsdu_u_print(tsdu);
     }
 }
+
+// ---- old methods
+
 
 static void decode_cell_id(int cell_id) {
 
