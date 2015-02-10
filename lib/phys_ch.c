@@ -10,6 +10,7 @@
 #include "bch.h"
 #include "pch.h"
 #include "rch.h"
+#include "sdch.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -50,6 +51,7 @@ struct _phys_ch_t {
     bch_t *bch;
     pch_t *pch;
     rch_t *rch;
+    sdch_t *sdch;
 
     // FIXME: hack to use old methods
     data_frame_t *sdch_data_fr;
@@ -136,9 +138,16 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
         if (!phys_ch->sdch_data_fr) {
             goto err_sdch_data_fr;
         }
+        phys_ch->sdch = sdch_create();
+        if (!phys_ch->sdch) {
+            goto err_sdch;
+        }
     }
 
     return phys_ch;
+
+err_sdch:
+    data_frame_destroy(phys_ch->sdch_data_fr);
 
 err_sdch_data_fr:
     rch_destroy(phys_ch->rch);
@@ -162,6 +171,7 @@ void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
         pch_destroy(phys_ch->pch);
         rch_destroy(phys_ch->rch);
         data_frame_destroy(phys_ch->sdch_data_fr);
+        sdch_destroy(phys_ch->sdch);
     }
     free(phys_ch);
 }
@@ -656,6 +666,14 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
         return 0;
     }
 
+    if (sdch_dl_push_data_frame(phys_ch->sdch, &data_blk)) {
+        tsdu_t *tsdu = sdch_get_tsdu(phys_ch->sdch);
+        //tsdu_print(tsdu);
+        tsdu_destroy(tsdu);
+        return 0;
+    }
+
+    return 0;
     // TODO:
     // hdlc_process(t+16,length-2, *frame_no);
     // return

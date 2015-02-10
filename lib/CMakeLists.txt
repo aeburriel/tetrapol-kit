@@ -12,6 +12,7 @@ add_library (tetrapol
     misc.c
     pch.c
     phys_ch.c
+    sdch.c
     rch.c
     tpdu.c
     tsdu.c)
@@ -39,6 +40,7 @@ add_executable (test_phys_ch
     misc.c
     pch.c
     rch.c
+    sdch.c
     test_phys_ch.c
     tpdu.c
     tsdu.c)
