@@ -1,6 +1,5 @@
 #include "tetrapol.h"
 #include "system_config.h"
-#include "tpdu.h"
 #include "tsdu.h"
 #include "misc.h"
 #include "data_frame.h"
@@ -52,9 +51,6 @@ struct _phys_ch_t {
     pch_t *pch;
     rch_t *rch;
     sdch_t *sdch;
-
-    // FIXME: hack to use old methods
-    data_frame_t *sdch_data_fr;
 };
 
 /**
@@ -134,10 +130,6 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
         if (!phys_ch->rch) {
             goto err_rch;
         }
-        phys_ch->sdch_data_fr = data_frame_create();
-        if (!phys_ch->sdch_data_fr) {
-            goto err_sdch_data_fr;
-        }
         phys_ch->sdch = sdch_create();
         if (!phys_ch->sdch) {
             goto err_sdch;
@@ -147,9 +139,6 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
     return phys_ch;
 
 err_sdch:
-    data_frame_destroy(phys_ch->sdch_data_fr);
-
-err_sdch_data_fr:
     rch_destroy(phys_ch->rch);
 
 err_rch:
@@ -170,7 +159,6 @@ void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
         bch_destroy(phys_ch->bch);
         pch_destroy(phys_ch->pch);
         rch_destroy(phys_ch->rch);
-        data_frame_destroy(phys_ch->sdch_data_fr);
         sdch_destroy(phys_ch->sdch);
     }
     free(phys_ch);
@@ -372,8 +360,6 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
         fprintf(stderr, "Frame sync found\n");
         phys_ch->frame_no = FRAME_NO_UNKNOWN;
         pch_reset(phys_ch->pch);
-        data_frame_reset(phys_ch->sdch_data_fr);
-        segmentation_reset();
     }
 
     int r = 1;
@@ -610,7 +596,6 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
         printf("OK frame_no=%03i fn=%i%i asb=%i%i data=",
                 data_blk.frame_no, fn1, fn0, asbx, asby);
     } else {
-        segmentation_reset();
         printf("ERR frame_no=%03i ", data_blk.frame_no);
     }
     print_buf(data_blk.data + 3, 64);
@@ -671,51 +656,6 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
         //tsdu_print(tsdu);
         tsdu_destroy(tsdu);
         return 0;
-    }
-
-    return 0;
-    // TODO:
-    // hdlc_process(t+16,length-2, *frame_no);
-    // return
-
-    if(data_blk.data[0] != FRAME_TYPE_DATA) {
-        printf("ERR type frame_no=%03i\n", f->frame_no);
-        //segmentation_reset();
-        //			printf("not data frame!\n");
-        //return 0;
-    }
-
-    if(!data_block_check_crc(&data_blk)) {
-        //			printf("crc mismatch!\n");
-        printf("ERR crc frame_no=%03i\n", f->frame_no);
-        //segmentation_reset();
-
-        //return 0;
-    }
-
-    // TODO: replace - this is just hack for old decoding methods
-    if (data_frame_push_data_block(phys_ch->sdch_data_fr, &data_blk)) {
-        uint8_t data[SYS_PAR_N200_BYTES_MAX * 8];
-        int nblks = data_frame_blocks(phys_ch->sdch_data_fr);
-        const int size = data_frame_get_bytes(phys_ch->sdch_data_fr, data);
-        // unpack into old format with swapped bite order
-        for (int i = size - 1; i > 0; ) {
-            data[i - 0] = (data[i / 8] >> 0) & 1;
-            data[i - 1] = (data[i / 8] >> 1) & 1;
-            data[i - 2] = (data[i / 8] >> 2) & 1;
-            data[i - 3] = (data[i / 8] >> 3) & 1;
-            data[i - 4] = (data[i / 8] >> 4) & 1;
-            data[i - 5] = (data[i / 8] >> 5) & 1;
-            data[i - 6] = (data[i / 8] >> 6) & 1;
-            data[i - 7] = (data[i / 8] >> 7) & 1;
-            i -= 8;
-        }
-
-        int frame_no = data_blk.frame_no - nblks + 1;
-        nblks = nblks > 2 ? nblks - 1 : nblks;
-        printf("MB%d frame_no=%03d ", nblks, frame_no);
-        print_buf(data, size);
-        tpdu_process(data, size / 8, &frame_no);
     }
 
     return 0;
