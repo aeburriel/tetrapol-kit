@@ -46,8 +46,8 @@ static void tsdu_base_set_nopts(tsdu_base_t *tsdu, int noptionals)
 
 static void activation_mode_decode(activation_mode_t *am, uint8_t data)
 {
-    GET_BITS(4, 0, &data, am->hook);
-    GET_BITS(4, 2, &data, am->type);
+    am->hook = get_bits(2, &data, 0);
+    am->type = get_bits(2, &data, 2);
 }
 
 static tsdu_d_group_activation_t *
@@ -63,13 +63,13 @@ d_group_activation_decode(const uint8_t *data, int nbits)
 
     int _zero0;
     activation_mode_decode(&tsdu->activation_mode, data[1]);
-    GET_BITS(12, 1*8 + 4, data, tsdu->group_id);
-    GET_BITS(8,  3*8,     data, tsdu->coverage_id);
-    GET_BITS(4,  4*8,     data, _zero0);
-    GET_BITS(12, 4*8 + 4, data, tsdu->channel_id);
-    GET_BITS(8,  6*8,     data, tsdu->u_ch_scrambling);
-    GET_BITS(8,  7*8,     data, tsdu->d_ch_scrambling);
-    GET_BITS(8,  8*8,     data, tsdu->key_reference._data);
+    tsdu->group_id              = get_bits(12, data + 1, 4);
+    tsdu->coverage_id           = get_bits(8,  data + 3, 0);
+    _zero0                      = get_bits(4,  data + 4, 0);
+    tsdu->channel_id            = get_bits(12, data + 4, 4);
+    tsdu->u_ch_scrambling       = get_bits(8,  data + 6, 0);
+    tsdu->d_ch_scrambling       = get_bits(8,  data + 7, 0);
+    tsdu->key_reference._data   = get_bits(8,  data + 8, 0);
 
     if (_zero0 != 0) {
         printf("TSDU: WTF in specifiacion are 0000, not 0x%02x\n", _zero0);
@@ -78,7 +78,7 @@ d_group_activation_decode(const uint8_t *data, int nbits)
     tsdu->has_addr_tti = false;
     if (nbits >= 12 * 8) {
         // FIXME: proper IEI handling
-        uint8_t iei = get_bits(8, 9*8, data);
+        uint8_t iei = get_bits(8, data + 9, 0);
         if (iei != IEI_TTI) {
             printf("TSDU: WTF FIXME - expected IEI_TTI");
         } else {
@@ -125,26 +125,26 @@ static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits
     // minimal size of disconnected mode
     CHECK_LEN(nbits, 9*8, tsdu);
 
-    GET_BITS(8, 1*8, data, tsdu->cell_state._data);
+    tsdu->cell_state._data = get_bits(8, data + 1, 0);
     switch (tsdu->cell_state.mode) {
         case CELL_STATE_MODE_NORMAL:
             CHECK_LEN(nbits, (17 * 8), tsdu);
-            GET_BITS( 8,  2*8,    data, tsdu->cell_config._data);
-            GET_BITS( 8,  3*8,    data, tsdu->country_code);
-            GET_BITS( 8,  4*8,    data, tsdu->system_id._data);
-            GET_BITS( 8,  5*8,    data, tsdu->loc_area_id._data);
-            GET_BITS( 8,  6*8,    data, tsdu->bn_id);
-            GET_BITS(12,  7*8,    data, tsdu->cell_id);
-            GET_BITS(12,  7*8+12, data, tsdu->cell_bn);
-            GET_BITS( 8, 10*8,    data, tsdu->u_ch_scrambling);
-            GET_BITS( 3, 11*8,    data, tsdu->cell_radio_param.tx_max);
-            GET_BITS( 5, 11*8+3,  data, tsdu->cell_radio_param.radio_link_timeout);
-            GET_BITS( 4, 12*8,    data, tsdu->cell_radio_param.pwr_tx_adjust);
-            GET_BITS( 4, 12*8+4,  data, tsdu->cell_radio_param.rx_lev_access);
-            GET_BITS( 8, 13*8,    data, tsdu->system_time);
-            GET_BITS( 8, 14*8,    data, tsdu->cell_access._data);
-            GET_BITS( 4, 15*8,    data, tsdu->_unused_1);
-            GET_BITS(12, 15*8+4,  data, tsdu->superframe_cpt);
+            tsdu->cell_config._data                     = get_bits( 8, data + 2, 0);
+            tsdu->country_code                          = get_bits( 8, data + 3, 0);
+            tsdu->system_id._data                       = get_bits( 8, data + 4, 0);
+            tsdu->loc_area_id._data                     = get_bits( 8, data + 5, 0);
+            tsdu->bn_id                                 = get_bits( 8, data + 6, 0);
+            tsdu->cell_id                               = get_bits(12, data + 7, 0);
+            tsdu->cell_bn                               = get_bits(12, data + 7, 12);
+            tsdu->u_ch_scrambling                       = get_bits( 8, data + 10, 0);
+            tsdu->cell_radio_param.tx_max               = get_bits( 3, data + 11, 0);
+            tsdu->cell_radio_param.radio_link_timeout   = get_bits( 5, data + 11, 3);
+            tsdu->cell_radio_param.pwr_tx_adjust        = get_bits( 4, data + 12, 0);
+            tsdu->cell_radio_param.rx_lev_access        = get_bits( 4, data + 12, 4);
+            tsdu->system_time                           = get_bits( 8, data + 13, 0);
+            tsdu->cell_access._data                     = get_bits( 8, data + 14, 0);
+            tsdu->_unused_1                             = get_bits( 4, data + 15, 0);
+            tsdu->superframe_cpt                        = get_bits(12, data + 15, 4);
             break;
 
         default:
@@ -155,15 +155,15 @@ static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits
         case CELL_STATE_MODE_DISC_RADIOSWITCH:
         case CELL_STATE_MODE_DISC_BSC:
             tsdu->cell_state._data &= 0xf0;
-            GET_BITS(12, 1*8+4, data, tsdu->cell_id);
-            GET_BITS( 8, 3*8,   data, tsdu->bn_id);
-            GET_BITS( 8, 4*8,   data, tsdu->u_ch_scrambling);
-            GET_BITS( 3, 5*8,   data, tsdu->cell_radio_param.tx_max);
-            GET_BITS( 5, 5*8+3, data, tsdu->cell_radio_param.radio_link_timeout);
-            GET_BITS( 4, 6*8,   data, tsdu->cell_radio_param.pwr_tx_adjust);
-            GET_BITS( 4, 6*8+4, data, tsdu->cell_radio_param.rx_lev_access);
-            GET_BITS( 4, 7*8,   data, tsdu->band);
-            GET_BITS(12, 7*8+4, data, tsdu->channel_id);
+            tsdu->cell_id                               = get_bits(12, data + 1, 4);
+            tsdu->bn_id                                 = get_bits( 8, data + 3, 0);
+            tsdu->u_ch_scrambling                       = get_bits( 8, data + 4, 0);
+            tsdu->cell_radio_param.tx_max               = get_bits( 3, data + 5, 0);
+            tsdu->cell_radio_param.radio_link_timeout   = get_bits( 5, data + 5, 3);
+            tsdu->cell_radio_param.pwr_tx_adjust        = get_bits( 4, data + 6, 0);
+            tsdu->cell_radio_param.rx_lev_access        = get_bits( 4, data + 6, 4);
+            tsdu->band                                  = get_bits( 4, data + 7, 0);
+            tsdu->channel_id                            = get_bits(12, data + 7, 4);
             break;
     }
 
@@ -239,8 +239,7 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 {
     CHECK_LEN(nbits, 8, NULL);
 
-    codop_t codop;
-    GET_BITS(8, 0, data, codop);
+    const codop_t codop = get_bits(8, data, 0);
 
     tsdu_t *tsdu = NULL;
     switch (codop) {

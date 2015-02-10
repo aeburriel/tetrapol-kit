@@ -35,10 +35,10 @@ bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
         return false;
     }
 
-    bool ext = get_bits(1, 0, hdlc_fr->info);
-    const bool seg = get_bits(1, 1, hdlc_fr->info);
-    const uint8_t prio = get_bits(2, 2, hdlc_fr->info);
-    const uint8_t id_tsap = get_bits(4, 4, hdlc_fr->info);
+    bool ext                = get_bits(1, hdlc_fr->info, 0);
+    const bool seg          = get_bits(1, hdlc_fr->info, 1);
+    const uint8_t prio      = get_bits(2, hdlc_fr->info, 2);
+    const uint8_t id_tsap   = get_bits(4, hdlc_fr->info, 4);
 
     printf("\tDU EXT=%d SEG=%d PRIO=%d ID_TSAP=%d", ext, seg, prio, id_tsap);
     if (ext == 0 && seg == 0) {
@@ -51,7 +51,7 @@ bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
         // but for 2 block lenght data frame nbist = (16 - ADDR - CMD - FCS)
         // thus data frame and high rate data can be distinguished by size
         if (hdlc_fr->info_nbits > (7 * 8 + 4)) {
-            const int nbits = get_bits(8, 8, hdlc_fr->info) * 8;
+            const int nbits = get_bits(8, hdlc_fr->info + 1, 0) * 8;
             tpdu->tsdu = tsdu_d_decode(hdlc_fr->info + 2, nbits, prio, id_tsap);
         } else {
             const int nbits = hdlc_fr->info_nbits - 8;
@@ -65,21 +65,21 @@ bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
         return false;
     }
 
-    ext = get_bits(1, 8, hdlc_fr->info);
+    ext = get_bits(1, hdlc_fr->info + 1, 0);
     if (!ext) {
         printf("\nWTF unsupported short ext\n");
         return false;
     }
 
-    uint8_t seg_ref = get_bits(7, 9, hdlc_fr->info);
-    ext = get_bits(1, 16, hdlc_fr->info);
+    uint8_t seg_ref     = get_bits(7, hdlc_fr->info + 1, 1);
+    ext                 = get_bits(1, hdlc_fr->info + 2, 0);
     if (ext != 0) {
         printf("\nWTF unsupported long ext\n");
         return false;
     }
 
-    const bool res = get_bits(1, 17, hdlc_fr->info);
-    const uint8_t packet_num = get_bits(6, 18, hdlc_fr->info);
+    const bool res              = get_bits(1, hdlc_fr->info + 2, 1);
+    const uint8_t packet_num    = get_bits(6, hdlc_fr->info + 2, 2);
     if (res) {
         printf("WTF res != 0\n");
     }

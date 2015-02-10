@@ -15,26 +15,23 @@
  */
 bool check_fcs(const uint8_t *data, int nbits);
 
-#define GET_BITS(n, offs, src, dst) \
-    dst = get_bits((n), (offs), src)
-
 /**
  * @brief get_bits Get int from byte array (bytes of TETRAPOL data frame).
  * @param len Bites used for extraction.
- * @param offs Bites skipped from beginning of data (counts from MSB, MSB = bit0)
  * @param data
+ * @param skip Bites skipped from beginning of data (counts from MSB, MSB = bit0)
  * @return Integer value.
  */
-inline uint32_t get_bits(int len, int offs, const uint8_t *data)
+inline uint32_t get_bits(int len, const uint8_t *data, int skip)
 {
     uint64_t r = 0;
 
     // collect all bits including those extra at begin/end
-    for (int i = offs / 8; i < (offs + len + 7) / 8; ++i) {
+    for (int i = skip / 8; i < (skip + len + 7) / 8; ++i) {
         r = (r << 8) | data[i];
     }
     // drop extra bits at end
-    r >>= 7 - ((len + offs - 1) % 8);
+    r >>= 7 - ((len + skip - 1) % 8);
     // mask extra bits at begining
     r &= ((uint32_t)(~0L)) >> (32 - len);
 

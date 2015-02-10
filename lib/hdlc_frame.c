@@ -44,25 +44,25 @@ static void command_parse(command_t *cmd, uint8_t data)
 
     switch (cmd->cmd) {
         case COMMAND_INFORMATION:
-            GET_BITS(3, 1, &data, cmd->information.send_seq_no);
+            cmd->information.send_seq_no    = get_bits(3, &data, 1);
 
         case COMMAND_SUPERVISION_RR:
         case COMMAND_SUPERVISION_RNR:
         case COMMAND_SUPERVISION_REJ:
-            GET_BITS(1, 4, &data, cmd->information.p_e);
-            GET_BITS(3, 5, &data, cmd->information.recv_seq_no);
+            cmd->information.p_e            = get_bits(1, &data, 4);
+            cmd->information.recv_seq_no    = get_bits(3, &data, 5);
             break;
 
         case COMMAND_DACH:
-            GET_BITS(1, 4, &data, cmd->dach_access.retry);
-            GET_BITS(3, 5, &data, cmd->dach_access.seq_no);
+            cmd->dach_access.retry          = get_bits(1, &data, 4);
+            cmd->dach_access.seq_no         = get_bits(3, &data, 5);
             break;
 
         case COMMAND_UNNUMBERED_UI:
         case COMMAND_UNNUMBERED_DISC:
         case COMMAND_UNNUMBERED_UA:
         case COMMAND_UNNUMBERED_SNRM:
-            GET_BITS(1, 4, &data, cmd->dach_access.retry);
+            cmd->dach_access.retry          = get_bits(1, &data, 4);
             break;
 
         case COMMAND_UNNUMBERED_UI_CD:
@@ -70,17 +70,17 @@ static void command_parse(command_t *cmd, uint8_t data)
             break;
 
         case COMMAND_UNNUMBERED_UI_P0:
-            GET_BITS(1, 4, &data, cmd->unnumbered.ra);
+            cmd->unnumbered.ra              = get_bits(1, &data, 4);
             break;
 
         case COMMAND_UNNUMBERED_U_RR:
-            GET_BITS(1, 4, &data, cmd->unnumbered.p_e);
-            GET_BITS(2, 6, &data, cmd->unnumbered.response_format);
+            cmd->unnumbered.p_e             = get_bits(1, &data, 4);
+            cmd->unnumbered.response_format = get_bits(2, &data, 6);
             break;
 
         case COMMAND_UNNUMBERED_FRMR:
         case COMMAND_UNNUMBERED_DM:
-            GET_BITS(1, 4, &data, cmd->unnumbered.p_e);
+            cmd->unnumbered.p_e             = get_bits(1, &data, 4);
             break;
 
         case COMMAND_UNNUMBERED__BLANK1:
@@ -88,7 +88,7 @@ static void command_parse(command_t *cmd, uint8_t data)
         case COMMAND_UNNUMBERED__BLANK3:
         default:
             printf("Unknown command %02x\n", data);
-            cmd->_reserved= data;
+            cmd->_reserved = data;
     };
 }
 

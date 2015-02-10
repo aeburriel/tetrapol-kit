@@ -46,9 +46,9 @@ inline bool addr_is_coi_all_st(const addr_t *addr)
 
 inline void addr_parse(addr_t *addr, const uint8_t *buf)
 {
-    addr->z = get_bits(1, 0, buf);
-    addr->y = get_bits(3, 1, buf);
-    addr->x = get_bits(12, 4, buf);
+    addr->z = get_bits(1,  buf, 0);
+    addr->y = get_bits(3,  buf, 1);
+    addr->x = get_bits(12, buf, 4);
 }
 
 void addr_print(const addr_t *addr);
