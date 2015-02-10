@@ -142,6 +142,130 @@ static void d_group_activation_print(tsdu_d_group_activation_t *tsdu)
     }
 }
 
+static tsdu_d_group_list_t *d_group_list_decode(const uint8_t *data, int nbits)
+{
+    tsdu_d_group_list_t *tsdu = malloc(sizeof(tsdu_d_group_list_t));
+    if (!tsdu) {
+        return NULL;
+    }
+
+    tsdu_base_set_nopts(&tsdu->base, 3);
+    tsdu->nemergency = 0;
+    tsdu->ngroup = 0;
+    tsdu->nopen = 0;
+
+    int rlen = 2*8; ///< required data length
+    CHECK_LEN(nbits, rlen, tsdu);
+    tsdu->reference_list._data = get_bits(8, data + 1, 0);
+    if (tsdu->reference_list.revision == 0) {
+        return tsdu;
+    }
+
+    rlen += 1*8;
+    CHECK_LEN(nbits, rlen, tsdu);
+    tsdu->index_list._data = get_bits(8, data + 2, 0);
+    data += 2;
+    do {
+        rlen += 1*8;
+        CHECK_LEN(nbits, rlen, tsdu);
+        const type_nb_t type_nb = {
+            ._data = get_bits(8, data, 0),
+        };
+        if (type_nb.type == TYPE_NB_TYPE_END) {
+            break;
+        }
+        data += 1;
+
+        if (type_nb.type == TYPE_NB_TYPE_EMERGENCY) {
+            const int n = tsdu->nemergency + type_nb.number;
+            const int l = sizeof(tsdu_d_group_list_emergency_t) * n;
+            tsdu_d_group_list_emergency_t *p = realloc(tsdu->emergency, l);
+            if (!p) {
+                tsdu_destroy(&tsdu->base);
+                return NULL;
+            }
+            tsdu->emergency = p;
+            for ( ; tsdu->nemergency < n; ++tsdu->nemergency) {
+                const int i = tsdu->nemergency;
+                cell_id_decode1(&tsdu->emergency[i].cell_id, data);
+                int zero = get_bits(4, data + 1, 4);
+                if (zero != 0) {
+                    printf("TSDU WTF nonzero padding\n");
+                }
+                data += 2;
+                rlen += 2*8;
+            }
+        }
+
+        if (type_nb.type == TYPE_NB_TYPE_OPEN) {
+            const int n = tsdu->nopen + type_nb.number;
+            const int l = sizeof(tsdu_d_group_list_open_t) * n;
+            tsdu_d_group_list_open_t *p = realloc(tsdu->open,l);
+            if (!p) {
+                tsdu_destroy(&tsdu->base);
+                return NULL;
+            }
+            tsdu->open = p;
+            for ( ; tsdu->nopen < n; ++tsdu->nopen) {
+                const int i = tsdu->nopen;
+                tsdu->open[i].coverage_id           = get_bits(8, data, 0);
+                tsdu->open[i].call_priority         = get_bits(4, data + 1, 0);
+                tsdu->open[i].group_id              = get_bits(12, data + 1, 4);
+                uint8_t padding                     = get_bits(2, data + 3, 0);
+                if (padding != 0) {
+                    printf("TSDU: WTF open nonzero padding\n");
+                }
+                tsdu->open[i].och_parameters.add    = get_bits(1, data + 3, 2);
+                tsdu->open[i].och_parameters.mbn    = get_bits(1, data + 3, 3);
+                tsdu->open[i].neighbouring_cell     = get_bits(12, data + 3, 4);
+                data += 5;
+                rlen +=  5*8;
+            }
+        }
+        if (type_nb.type == TYPE_NB_TYPE_TALK_GROUP) {
+            const int n = tsdu->ngroup + type_nb.number;
+            const int l = sizeof(tsdu_d_group_list_talk_group_t) * n;
+            tsdu_d_group_list_talk_group_t *p = realloc(tsdu->group, l);
+            if (!p) {
+                tsdu_destroy(&tsdu->base);
+                return NULL;
+            }
+            tsdu->group = p;
+            for ( ; tsdu->ngroup < n; ++tsdu->ngroup) {
+                const int i = tsdu->ngroup;
+                tsdu->group[i].coverage_id          = get_bits(8, data, 0);
+                uint8_t zero                        = get_bits(8, data + 1, 0);
+                if (zero != 0) {
+                    printf("TSDU: nonzero 'zero' in talk group\n");
+                }
+                uint8_t padding                     = get_bits(4, data + 2, 0);
+                if (padding != 0) {
+                    printf("TSDU: nonzero padding in talk group\n");
+                }
+                tsdu->group[i].neighbouring_cell    = get_bits(12, data + 2, 4);
+                data += 4;
+                rlen += 4*8;
+            }
+        }
+    } while(true);
+
+    return tsdu;
+}
+
+static void d_group_list_print(tsdu_d_group_list_t *tsdu)
+{
+    printf("\tCODOP=0x%02x (D_GROUP_LIST)\n", D_GROUP_LIST);
+    printf("\t\tREFERENCE_LIST REVISION=%d CSG=%d CSO=%d DC=%d\n",
+           tsdu->reference_list.revision, tsdu->reference_list.csg,
+           tsdu->reference_list.cso, tsdu->reference_list.dc);
+    if (tsdu->reference_list.revision == 0) {
+        return;
+    }
+    printf("\t\tINDEX_LIST MODE=%d INDEX=%d\n",
+           tsdu->index_list.mode, tsdu->index_list.index);
+    printf("TODO\n");
+}
+
 static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits)
 {
     tsdu_d_system_info_t *tsdu = malloc(sizeof(tsdu_d_system_info_t));
@@ -278,6 +402,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
             tsdu = (tsdu_t *)d_group_activation_decode(data, nbits);
             break;
 
+        case D_GROUP_LIST:
+            tsdu = (tsdu_t *)d_group_list_decode(data, nbits);
+            break;
+
         case D_SYSTEM_INFO:
             tsdu = (tsdu_t *)d_system_info_decode(data, nbits);
             break;
@@ -301,6 +429,10 @@ static void tsdu_d_print(const tsdu_t *tsdu)
     switch (tsdu->codop) {
         case D_GROUP_ACTIVATION:
             d_group_activation_print((tsdu_d_group_activation_t *)tsdu);
+            break;
+
+        case D_GROUP_LIST:
+            d_group_list_print((tsdu_d_group_list_t *)tsdu);
             break;
 
         case D_SYSTEM_INFO:

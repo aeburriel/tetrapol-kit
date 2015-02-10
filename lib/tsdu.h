@@ -164,6 +164,18 @@ enum {
     BN_ID_UNDEFINED = 0,
 };
 
+/// PAS 0001-3-2 5.3.14
+enum {
+    CALL_PRIORITY_NOT_SIGNIFICANT = 0,
+    CALL_PRIORITY_ROUTINE = 2,
+    CALL_PRIORITY_URGENT = 4,
+    CALL_PRIORITY_FLASH = 6,
+    CALL_PRIORITY_BROADCAST = 8,
+    CALL_PRIORITY_CRISIS = 10,
+    CALL_PRIORITY_EMERGENCY = 12,
+    CALL_PRIORITY_TOWER_COMMUNICATION = 13,
+};
+
 /// PAS 0001-3-2 5.3.18
 typedef union {
     uint8_t _data;
@@ -203,9 +215,22 @@ enum {
 };
 
 enum {
-    CELL_RADIO_PARAM_RADIO_LINK_TIMEOUT_INTERNAL,
+    CELL_RADIO_PARAM_RADIO_LINK_TIMEOUT_INTERNAL = 0,
     // 31 values reserved
 };
+
+/// shall by used by RT to estimate radio conditions for one cell
+extern const int CELL_RADIO_PARAM_RX_LEV_ACCESS_TO_DBM[16];
+
+/// convert pwr_tx_adjust to TX power adjustment in dBm
+extern const int CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[16];
+
+typedef struct {
+    uint8_t tx_max;
+    uint8_t radio_link_timeout;
+    uint8_t pwr_tx_adjust;
+    uint8_t rx_lev_access;
+} cell_radio_param_t;
 
 /// PAS 0001-3-2 5.3.23
 enum {
@@ -273,6 +298,25 @@ enum {
     // 254 unused values
 };
 
+/// PAS 0001-3-2 5.3.36
+
+enum {
+    INDEX_LIST_MODE_NOT_SIGNIFICANT = 0,
+    INDEX_LIST_MODE_PCH_ONLY = 1,
+    INDEX_LIST_MODE_ACT_BITMAP_ONLY = 2,
+    INDEX_LIST_MODE_PCH_BITMAP = 3,
+};
+
+typedef struct {
+    union {
+        uint8_t _data;
+        struct {
+            unsigned int index : 6;
+            unsigned int mode : 2;
+        };
+    };
+} index_list_t;
+
 /// PAS 0001-3-2 5.3.39
 enum {
     KEY_TYPE_RNK = 0,
@@ -317,6 +361,51 @@ typedef union {
     };
 } loc_area_id_t;
 
+/// PAS 0001-3-2 5.3.45
+enum {
+    OCH_PARAMETERS_ADD_NOT_ALLOWED = 0,
+    OCH_PARAMETERS_ADD_ALLOWED = 1,
+};
+
+enum {
+    OCH_PARAMETERS_MBN_CLASIC = 0,
+    OCH_PARAMETERS_MBN_MULTI_BN = 1,
+};
+
+typedef struct {
+    uint8_t add;
+    uint8_t mbn;
+} och_parameters_t;
+
+/// PAS 0001-3-2 5.3.49
+enum {
+    REFERENCE_LIST_DC_COVERED = 0,
+    REFERENCE_LIST_DC_UMBRELLA = 1,
+};
+
+enum {
+    REFERENCE_LIST_CSO_NOT_ADVISE = 0,
+    REFERENCE_LIST_CSO_ADVISE = 1,
+};
+
+enum {
+    REFERENCE_LIST_CSG_NOT_ADVISE = 0,
+    REFERENCE_LIST_CSG_ADVISE = 1,
+};
+
+typedef struct {
+    union {
+        uint8_t _data;
+        struct {
+            unsigned int dc : 1;
+            unsigned int cso : 1;
+            unsigned int csg : 1;
+            unsigned int _unused : 2;
+            unsigned int revision : 3;
+        };
+    };
+} reference_list_t;
+
 /// PAS 0001-3-2 5.3.65
 typedef union {
     uint8_t _data;
@@ -326,18 +415,22 @@ typedef union {
     };
 } system_id_t;
 
-/// shall by used by RT to estimate radio conditions for one cell
-extern const int CELL_RADIO_PARAM_RX_LEV_ACCESS_TO_DBM[16];
+/// PAS 0001-3-2 5.3.75
 
-/// convert pwr_tx_adjust to TX power adjustment in dBm
-extern const int CELL_RADIO_PARAM_PWR_TX_ADJUST_TO_DBM[16];
+enum {
+    TYPE_NB_TYPE_END = 0,
+    TYPE_NB_TYPE_TALK_GROUP = 1,
+    TYPE_NB_TYPE_EMERGENCY = 2,
+    TYPE_NB_TYPE_OPEN = 3,
+};
 
-typedef struct {
-    uint8_t tx_max;
-    uint8_t radio_link_timeout;
-    uint8_t pwr_tx_adjust;
-    uint8_t rx_lev_access;
-} cell_radio_param_t;
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int number : 6;
+        unsigned int type : 2;
+    };
+} type_nb_t;
 
 /// PAS 0001-3-2 4.4.43
 typedef struct {
@@ -353,6 +446,39 @@ typedef struct {
     bool has_addr_tti;
     addr_t addr_tti;
 } tsdu_d_group_activation_t;
+
+/// PAS 0001-3-2 4.4.47
+
+typedef struct {
+    uint8_t coverage_id;
+    uint8_t call_priority;
+    uint16_t group_id;
+    och_parameters_t och_parameters;
+    uint16_t neighbouring_cell;
+} tsdu_d_group_list_open_t;
+
+typedef struct {
+    uint8_t coverage_id;
+    uint16_t neighbouring_cell;
+} tsdu_d_group_list_talk_group_t;
+
+typedef struct {
+    cell_id_t cell_id;
+} tsdu_d_group_list_emergency_t;
+
+typedef struct {
+    tsdu_base_t base;
+    // see variable-lenght array in base
+    tsdu_d_group_list_emergency_t *emergency;
+    tsdu_d_group_list_talk_group_t *group;
+    tsdu_d_group_list_open_t *open;
+    uint8_t nemergency;
+    uint8_t ngroup;
+    uint8_t nopen;
+
+    reference_list_t reference_list;
+    index_list_t index_list;
+} tsdu_d_group_list_t;
 
 /// PAS 0001-3-2 4.4.71
 typedef struct {
