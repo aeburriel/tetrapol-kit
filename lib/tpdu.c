@@ -7,9 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-struct _tpdu_ui_t {
-
 struct _tpdu_ui_t {
     tsdu_t *tsdu;   ///< contains last decoded TSDU
 };
@@ -27,11 +24,67 @@ tpdu_ui_t *tpdu_ui_create(void)
 
 void tpdu_ui_destroy(tpdu_ui_t *tpdu)
 {
+    tsdu_destroy(tpdu->tsdu);
     free(tpdu);
 }
 
 bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
 {
+    if (hdlc_fr->info_nbits < 8) {
+        printf("WTF too short HDLC (%d)\n", hdlc_fr->info_nbits);
+        return false;
+    }
+
+    bool ext = get_bits(1, 0, hdlc_fr->info);
+    const bool seg = get_bits(1, 1, hdlc_fr->info);
+    const uint8_t prio = get_bits(2, 2, hdlc_fr->info);
+    const uint8_t id_tsap = get_bits(4, 4, hdlc_fr->info);
+
+    printf("\tDU EXT=%d SEG=%d PRIO=%d ID_TSAP=%d", ext, seg, prio, id_tsap);
+    if (ext == 0 && seg == 0) {
+        tsdu_destroy(tpdu->tsdu);
+
+        printf("\n");
+        // PAS 0001-3-3 9.5.1.2
+        // nbits > (3 * 8) for data frames (8 - ADDR - CMD - FCS) * 8
+        // nbits > (7 * 8 + 4) for high rate data (11.5 - ADDR - CMD - FCS) * 8
+        // but for 2 block lenght data frame nbist = (16 - ADDR - CMD - FCS)
+        // thus data frame and high rate data can be distinguished by size
+        if (hdlc_fr->info_nbits > (7 * 8 + 4)) {
+            const int nbits = get_bits(8, 8, hdlc_fr->info) * 8;
+            tpdu->tsdu = tsdu_decode(hdlc_fr->info + 2, nbits, prio, id_tsap);
+        } else {
+            const int nbits = hdlc_fr->info_nbits - 8;
+            tpdu->tsdu = tsdu_decode(hdlc_fr->info + 1, nbits, prio, id_tsap);
+        }
+        return true;
+    }
+
+    if (ext != 1) {
+        printf("\nWTF, unsupported ext and seg combination\n");
+        return false;
+    }
+
+    ext = get_bits(1, 8, hdlc_fr->info);
+    if (!ext) {
+        printf("\nWTF unsupported short ext\n");
+        return false;
+    }
+
+    uint8_t seg_ref = get_bits(7, 9, hdlc_fr->info);
+    ext = get_bits(1, 16, hdlc_fr->info);
+    if (ext != 0) {
+        printf("\nWTF unsupported long ext\n");
+        return false;
+    }
+
+    const bool res = get_bits(1, 17, hdlc_fr->info);
+    const uint8_t packet_num = get_bits(6, 18, hdlc_fr->info);
+    if (res) {
+        printf("WTF res != 0\n");
+    }
+    printf(" SEGM_REF=%d, PACKET_NUM=%d\n", seg_ref, packet_num);
+
     // TODO
 
     return false;
