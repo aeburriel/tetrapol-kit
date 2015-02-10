@@ -45,24 +45,6 @@ tsdu_t *tpdu_ui_get_tsdu(tpdu_ui_t *tpdu)
 }
 
 
-
-const static uint8_t stuff[] = {
-    1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1
-};
-
-static int detect_stuff(const uint8_t *bits) {
-    int i;
-
-    //	print_buf(bits,40);
-    //	print_buf(stuff,80);
-    for (i=0; i<40; i++)
-        if (memcmp(bits, stuff+i, 40) == 0)
-            return 1;
-    return 0;
-
-}
-
-
 uint8_t segbuf[10000];
 int numoctets, startmod;
 
@@ -75,11 +57,6 @@ static void tpdu_du_process(const uint8_t* t, int length, int mod) {
     int ext, seg, prio, id_tsap;
     int data_length=0;
     int segmentation_reference, packet_number;
-
-    if (detect_stuff(t)) {
-        printf("\tSTUFFED\n");
-        return;
-    }
 
     ext=bits_to_int(t, 1);
     seg=bits_to_int(t+1, 1);
