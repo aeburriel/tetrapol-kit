@@ -30,7 +30,7 @@ void tpdu_ui_destroy(tpdu_ui_t *tpdu)
     free(tpdu);
 }
 
-bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
+hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
 {
     if (hdlc_fr->nbits < 8) {
         printf("WTF too short HDLC (%d)\n", hdlc_fr->nbits);
@@ -59,25 +59,25 @@ bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
             const int nbits = hdlc_fr->nbits - 8;
             tpdu->tsdu = tsdu_d_decode(hdlc_fr->data + 1, nbits, prio, id_tsap);
         }
-        return true;
+        return hdlc_fr;
     }
 
     if (ext != 1) {
         printf("\nWTF, unsupported ext and seg combination\n");
-        return false;
+        return hdlc_fr;
     }
 
     ext = get_bits(1, hdlc_fr->data + 1, 0);
     if (!ext) {
         printf("\nWTF unsupported short ext\n");
-        return false;
+        return hdlc_fr;
     }
 
     uint8_t seg_ref     = get_bits(7, hdlc_fr->data + 1, 1);
     ext                 = get_bits(1, hdlc_fr->data + 2, 0);
     if (ext != 0) {
         printf("\nWTF unsupported long ext\n");
-        return false;
+        return hdlc_fr;
     }
 
     const bool res              = get_bits(1, hdlc_fr->data + 2, 1);
@@ -87,9 +87,9 @@ bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
     }
     printf(" SEGM_REF=%d, PACKET_NUM=%d\n", seg_ref, packet_num);
 
-    // TODO
+    // TODO segmentation
 
-    return false;
+    return hdlc_fr;
 }
 
 tsdu_t *tpdu_ui_get_tsdu(tpdu_ui_t *tpdu)
@@ -99,6 +99,13 @@ tsdu_t *tpdu_ui_get_tsdu(tpdu_ui_t *tpdu)
     return tsdu;
 }
 
+bool tpdu_ui_has_tsdu(tpdu_ui_t *tpdu)
+{
+    return tpdu->tsdu != NULL;
+}
+
+
+// ------- old methods
 
 uint8_t segbuf[10000];
 int numoctets, startmod;

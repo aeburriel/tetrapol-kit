@@ -69,6 +69,14 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
     int nblks = data_frame_blocks(sdch->data_fr);
     const int size = data_frame_get_bytes(sdch->data_fr, data);
 
+    if (!sdch->hdlc_fr) {
+        sdch->hdlc_fr = malloc(sizeof(hdlc_frame_t));
+        if (!sdch->hdlc_fr) {
+            printf("HDLC: malloc fail\n");
+            return false;
+        }
+    }
+
     if (!hdlc_frame_parse(sdch->hdlc_fr, data, size)) {
         // PAS 0001-3-3 7.4.1.9 stuffing frames are dropped, FCS does not match
         return false;
@@ -80,7 +88,8 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
         printf("\t");
         addr_print(&sdch->hdlc_fr->addr);
         printf("\n");
-        return tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, sdch->hdlc_fr);
+        sdch->hdlc_fr = tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, sdch->hdlc_fr);
+        return tpdu_ui_has_tsdu(sdch->tpdu_ui);
     }
     printf("CMD 0x%02x\n", sdch->hdlc_fr->command.cmd);
 
