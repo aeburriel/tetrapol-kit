@@ -68,7 +68,7 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
 
     if (hdlc_fr.command.cmd == COMMAND_UNNUMBERED_UI) {
         printf("HDLC info=");
-        print_hex(hdlc_fr.info, hdlc_fr.info_nbits / 8);
+        print_hex(hdlc_fr.data, hdlc_fr.nbits / 8);
         printf("\t");
         addr_print(&hdlc_fr.addr);
         printf("\n");

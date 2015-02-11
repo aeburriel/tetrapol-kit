@@ -43,14 +43,17 @@ typedef struct {
             uint8_t send_seq_no;    ///< N(S)
             uint8_t p_e;            ///< P/E
         } information;
+
         struct {
             uint8_t recv_seq_no;    ///< N(R)
             uint8_t p_e;            ///< P/E
         } supervision;
+
         struct {
             uint8_t seq_no;         ///< N'(R) or N'(S)
             uint8_t retry;          ///< R
         } dach_access;
+
         struct {
             union {
                 bool p_e;           ///< P, P/E, E
@@ -64,8 +67,10 @@ typedef struct {
 typedef struct {
     addr_t addr;
     command_t command;
-    int info_nbits;                             ///< lenght is in bits
-    uint8_t info[SYS_PAR_N200_BYTES_MAX - 3];   ///< data are stored packed in bytes
+    int nbits;          ///< lenght is in bits
+    /// data packed into bytes
+    /// [max_block_size * max_blocks_per_frame - addr - command - FCS]
+    uint8_t data[SYS_PAR_N200_BYTES_MAX - 2 - 1 - 2];
 } hdlc_frame_t;
 
 extern const addr_t addr_all;
