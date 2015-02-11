@@ -30,16 +30,14 @@ static const command_mask_t commands[] = {
 
 static void command_parse(command_t *cmd, uint8_t data)
 {
+    cmd->cmd = data;
+
     int cmd_idx = 0;
     for ( ; cmd_idx < ARRAY_LEN(commands); ++cmd_idx) {
         if ((data & commands[cmd_idx].mask) == commands[cmd_idx].cmd) {
             cmd->cmd = commands[cmd_idx].cmd;
             break;
         }
-    }
-    if (cmd_idx >= ARRAY_LEN(commands)) {
-        cmd->cmd = data;
-        return;
     }
 
     switch (cmd->cmd) {
@@ -87,8 +85,7 @@ static void command_parse(command_t *cmd, uint8_t data)
         case COMMAND_UNNUMBERED__BLANK2:
         case COMMAND_UNNUMBERED__BLANK3:
         default:
-            printf("Unknown command %02x\n", data);
-            cmd->_reserved = data;
+            printf("HDLC: Unknown command 0x%02x\n", data);
     };
 }
 

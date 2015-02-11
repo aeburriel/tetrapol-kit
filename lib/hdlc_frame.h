@@ -37,7 +37,6 @@ enum {
 
 typedef struct {
     uint8_t cmd;
-    uint8_t _reserved;      ///< used to store value if cmd is not known
     union {
         struct {
             uint8_t recv_seq_no;    ///< N(R)
