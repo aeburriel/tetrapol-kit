@@ -7,13 +7,27 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+    /// time_ref_t - FIXME clean old incomplete messages after T454
+    uint8_t id_tsap;
+    uint8_t prio;
+    uint8_t nsegments;  ///< total amount of segments in DU
+    hdlc_frame_t *hdlc_frs[SYS_PAR_N452];
+} segmented_du_t;
+
 struct _tpdu_ui_t {
     frame_type_t fr_type;
-    tsdu_t *tsdu;   ///< contains last decoded TSDU
+    segmented_du_t *seg_du[128];
+    tsdu_t *tsdu;           ///< contains last decoded TSDU
 };
 
 tpdu_ui_t *tpdu_ui_create(frame_type_t fr_type)
 {
+    if (fr_type != FRAME_TYPE_DATA && fr_type != FRAME_TYPE_HR_DATA) {
+        printf("TSDU DU: usnupported frame type %d\n", fr_type);
+        return NULL;
+    }
+
     tpdu_ui_t *tpdu = malloc(sizeof(tpdu_ui_t));
     if (!tpdu) {
         return NULL;
@@ -27,6 +41,15 @@ tpdu_ui_t *tpdu_ui_create(frame_type_t fr_type)
 void tpdu_ui_destroy(tpdu_ui_t *tpdu)
 {
     tsdu_destroy(tpdu->tsdu);
+    for (int i = 0; i < ARRAY_LEN(tpdu->seg_du); ++i) {
+        if (!tpdu->seg_du[i]) {
+            continue;
+        }
+        for (int j = 0; j < SYS_PAR_N452; ++j) {
+            free(tpdu->seg_du[i]->hdlc_frs[j]);
+        }
+        free(tpdu->seg_du[i]);
+    }
     free(tpdu);
 }
 
@@ -37,10 +60,10 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
         return false;
     }
 
-    bool ext                = get_bits(1, hdlc_fr->data, 0);
-    const bool seg          = get_bits(1, hdlc_fr->data, 1);
-    const uint8_t prio      = get_bits(2, hdlc_fr->data, 2);
-    const uint8_t id_tsap   = get_bits(4, hdlc_fr->data, 4);
+    bool ext                    = get_bits(1, hdlc_fr->data, 0);
+    const bool seg              = get_bits(1, hdlc_fr->data, 1);
+    const uint8_t prio          = get_bits(2, hdlc_fr->data, 2);
+    const uint8_t id_tsap       = get_bits(4, hdlc_fr->data, 4);
 
     printf("\tDU EXT=%d SEG=%d PRIO=%d ID_TSAP=%d", ext, seg, prio, id_tsap);
     if (ext == 0 && seg == 0) {
@@ -48,12 +71,9 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
 
         printf("\n");
         // PAS 0001-3-3 9.5.1.2
-        // nbits > (3 * 8) for data frames (8 - ADDR - CMD - FCS) * 8
-        // nbits > (7 * 8 + 4) for high rate data (11.5 - ADDR - CMD - FCS) * 8
-        // but for 2 block lenght data frame nbist = (16 - ADDR - CMD - FCS)
-        // thus data frame and high rate data can be distinguished by size
-        if (hdlc_fr->nbits > (7 * 8 + 4)) {
-            const int nbits = get_bits(8, hdlc_fr->data + 1, 0) * 8;
+        if ((tpdu->fr_type == FRAME_TYPE_DATA && hdlc_fr->nbits > (3*8)) ||
+                (tpdu->fr_type == FRAME_TYPE_DATA && hdlc_fr->nbits > (6*8))) {
+            const int nbits     = get_bits(8, hdlc_fr->data + 1, 0) * 8;
             tpdu->tsdu = tsdu_d_decode(hdlc_fr->data + 2, nbits, prio, id_tsap);
         } else {
             const int nbits = hdlc_fr->nbits - 8;
@@ -63,31 +83,105 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
     }
 
     if (ext != 1) {
-        printf("\nWTF, unsupported ext and seg combination\n");
+        printf("\nTPDU UI: WTF, unsupported ext and seg combination\n");
         return hdlc_fr;
     }
 
-    ext = get_bits(1, hdlc_fr->data + 1, 0);
+    ext                         = get_bits(1, hdlc_fr->data + 1, 0);
+    uint8_t seg_ref             = get_bits(7, hdlc_fr->data + 1, 1);
     if (!ext) {
-        printf("\nWTF unsupported short ext\n");
+        printf("\nTPDU UI: WTF unsupported short ext\n");
         return hdlc_fr;
     }
 
-    uint8_t seg_ref     = get_bits(7, hdlc_fr->data + 1, 1);
-    ext                 = get_bits(1, hdlc_fr->data + 2, 0);
-    if (ext != 0) {
-        printf("\nWTF unsupported long ext\n");
-        return hdlc_fr;
-    }
-
+    ext                         = get_bits(1, hdlc_fr->data + 2, 0);
     const bool res              = get_bits(1, hdlc_fr->data + 2, 1);
     const uint8_t packet_num    = get_bits(6, hdlc_fr->data + 2, 2);
+    if (ext) {
+        printf("\nTPDU UI: WTF unsupported long ext\n");
+        return hdlc_fr;
+    }
+
     if (res) {
-        printf("WTF res != 0\n");
+        printf("TPDU UI: WTF res != 0\n");
     }
     printf(" SEGM_REF=%d, PACKET_NUM=%d\n", seg_ref, packet_num);
 
-    // TODO segmentation
+    segmented_du_t *seg_du = tpdu->seg_du[seg_ref];
+    if (seg_du == NULL) {
+        seg_du = malloc(sizeof(segmented_du_t));
+        if (!seg_du) {
+            return hdlc_fr;
+        }
+        memset(seg_du, 0 , sizeof(segmented_du_t));
+        tpdu->seg_du[seg_ref] = seg_du;
+        seg_du->id_tsap = id_tsap;
+        seg_du->prio = prio;
+    }
+
+    if (seg_du->hdlc_frs[packet_num]) {
+        // segment already recieved
+        return hdlc_fr;
+    }
+    seg_du->hdlc_frs[packet_num] = hdlc_fr;
+
+    if (seg == 0) {
+        seg_du->nsegments = packet_num + 1;
+    }
+
+    // last segment is still missing
+    if (!seg_du->nsegments) {
+        return NULL;
+    }
+
+    // check if we have all segments
+    for (int i = 0; i < seg_du->nsegments; ++i) {
+        if (!seg_du->hdlc_frs[i]) {
+            return NULL;
+        }
+    }
+
+    // max_segments * (sizeof(hdlc_frame_t->data) - TPDU_DU_header)
+    uint8_t data[SYS_PAR_N452 * (sizeof(((hdlc_frame_t*)NULL)->data) - 3)];
+    int nbits = 0;
+    // collect data from all segments
+    if (tpdu->fr_type == FRAME_TYPE_DATA) {
+        uint8_t *d = data;
+        for (int i = 0; i < seg_du->nsegments; ++i) {
+            hdlc_fr = seg_du->hdlc_frs[i];
+            int n_ext = 1;
+            // skip ext headers
+            while (get_bits(1, hdlc_fr->data + n_ext - 1, 0)) {
+                ++n_ext;
+            }
+            int n;
+            if (i == (seg_du->nsegments - 1)) {
+                n = hdlc_fr->data[n_ext++] * 8;
+            } else {
+                n = hdlc_fr->nbits - 8 * n_ext;
+            }
+            nbits += n;
+            memcpy(d, &hdlc_fr->data[n_ext], n / 8);
+            d += n / 8;
+        }
+    } else {    // FRAME_TYPE_HR_DATA
+        // TODO
+    }
+
+    // free segments
+    for (int i = 0; i < seg_du->nsegments; ++i) {
+        if (seg_du->hdlc_frs[i] == hdlc_fr) {
+            continue;
+        }
+        free(seg_du->hdlc_frs[i]);
+    }
+
+    free(seg_du);
+    tpdu->seg_du[seg_ref] = NULL;
+
+    printf("XXXXX\n");
+
+    tpdu->tsdu = tsdu_d_decode(data, nbits, prio, id_tsap);
 
     return hdlc_fr;
 }
