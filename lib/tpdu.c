@@ -8,16 +8,18 @@
 #include <string.h>
 
 struct _tpdu_ui_t {
+    frame_type_t fr_type;
     tsdu_t *tsdu;   ///< contains last decoded TSDU
 };
 
-tpdu_ui_t *tpdu_ui_create(void)
+tpdu_ui_t *tpdu_ui_create(frame_type_t fr_type)
 {
     tpdu_ui_t *tpdu = malloc(sizeof(tpdu_ui_t));
     if (!tpdu) {
         return NULL;
     }
     memset(tpdu, 0, sizeof(tpdu_ui_t));
+    tpdu->fr_type = fr_type;
 
     return tpdu;
 }

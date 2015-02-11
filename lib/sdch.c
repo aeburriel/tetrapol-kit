@@ -25,7 +25,7 @@ sdch_t *sdch_create(void)
         goto err_data_fr;
     }
 
-    sdch->tpdu_ui = tpdu_ui_create();
+    sdch->tpdu_ui = tpdu_ui_create(FRAME_TYPE_DATA);
     if (!sdch->tpdu_ui) {
         goto err_tpdu_ui;
     }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hdlc_frame.h"
+#include "data_frame.h"
 #include "tsdu.h"
 
 #include <stdbool.h>
@@ -8,7 +9,7 @@
 
 typedef struct _tpdu_ui_t tpdu_ui_t;
 
-tpdu_ui_t *tpdu_ui_create(void);
+tpdu_ui_t *tpdu_ui_create(frame_type_t fr_type);
 void tpdu_ui_destroy(tpdu_ui_t *tpdu);
 bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr);
 
