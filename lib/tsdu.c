@@ -536,32 +536,6 @@ static void decode_key_reference(int key_reference) {
     // TODO: Decode key_type
 }
 
-static void d_group_composition(const uint8_t *t) {
-
-    int og_nb;
-    int i;
-    int group_id[10];
-
-    og_nb=bits_to_int(t+20, 4);
-    group_id[0]=bits_to_int(t+8, 12);
-    for (i=1; i<=og_nb; i++)
-        group_id[i]=bits_to_int(t+i*12+12, 12);
-
-
-    printf("\tCODOP=0x93 (D_GROUP_COMPOSITION)\n");
-    printf("\t\tOG_NB=%i\n", og_nb);
-    for (i=0; i<=og_nb; i++) {
-        printf("\t\tGROUP_ID=%04i ", group_id[i]);
-        if (group_id[i] < 3500)
-            printf("simple OG");
-        if ((group_id[i] >= 3500) && (group_id[i] <=3755))
-            printf("multi OG");
-        if (group_id[i] == 4095)
-            printf("all OG");
-        printf("\n");
-    }
-}
-
 static void d_group_list(const uint8_t *t) {
 
     int i;
@@ -942,9 +916,6 @@ void tsdu_process(const uint8_t *t, int data_length, int mod) {
 
     codop=bits_to_int(t, 8);
     switch (codop) {
-        case D_GROUP_COMPOSITION:
-            d_group_composition(t);
-            break;
         case D_GROUP_LIST:
             d_group_list(t);
             break;
