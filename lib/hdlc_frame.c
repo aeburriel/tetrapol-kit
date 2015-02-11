@@ -98,9 +98,9 @@ bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int nbits)
 
     addr_parse(&hdlc_frame->addr, data);
     command_parse(&hdlc_frame->command, data[2]);
-    memcpy(hdlc_frame->info, data + 3, (nbits - 3*8 - 2*8 + 7) / 8);
     // nbits - HDLC_header_nbits - FCS_len
     hdlc_frame->info_nbits = nbits - 3*8 - 2*8;
+    memcpy(hdlc_frame->info, data + 3, (hdlc_frame->info_nbits + 7) / 8);
 
     return true;
 }
