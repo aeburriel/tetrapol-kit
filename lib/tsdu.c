@@ -266,6 +266,39 @@ static void d_group_list_print(tsdu_d_group_list_t *tsdu)
     printf("TODO\n");
 }
 
+static tsdu_d_group_composition_t *d_group_composition_decode(const uint8_t *data, int nbits)
+{
+    tsdu_d_group_composition_t *tsdu = malloc(sizeof(tsdu_d_group_composition_t));
+    if (!tsdu) {
+        return NULL;
+    }
+
+    tsdu_base_set_nopts(&tsdu->base, 0);
+    CHECK_LEN(nbits, 3*8, tsdu);
+
+    tsdu->group_id = get_bits(12, data + 1, 0);
+    tsdu->og_nb = get_bits(4, data + 2, 4);
+
+    CHECK_LEN(nbits, 3*8 + 12*tsdu->og_nb, tsdu);
+
+    int skip = 0;
+    for (int i = 0; i < tsdu->og_nb; ++i) {
+        tsdu->group_ids[i] = get_bits(12, data + 3, skip);
+        skip += 12;
+    }
+
+    return tsdu;
+}
+
+static void d_group_composition_print(tsdu_d_group_composition_t *tsdu)
+{
+    printf("\tCODOP=0x%02x (D_GROUP_COMPOSITION)\n", D_GROUP_COMPOSITION);
+    printf("\t\tGROUP_ID=%d\n", tsdu->group_id);
+    for (int i = 0; i < tsdu->og_nb; ++i) {
+        printf("\t\tGROUP_ID=%d\n", tsdu->group_ids[i]);
+    }
+}
+
 static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits)
 {
     tsdu_d_system_info_t *tsdu = malloc(sizeof(tsdu_d_system_info_t));
@@ -402,6 +435,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
             tsdu = (tsdu_t *)d_group_activation_decode(data, nbits);
             break;
 
+        case D_GROUP_COMPOSITION:
+            tsdu = (tsdu_t *)d_group_composition_decode(data, nbits);
+            break;
+
         case D_GROUP_LIST:
             tsdu = (tsdu_t *)d_group_list_decode(data, nbits);
             break;
@@ -429,6 +466,10 @@ static void tsdu_d_print(const tsdu_t *tsdu)
     switch (tsdu->codop) {
         case D_GROUP_ACTIVATION:
             d_group_activation_print((tsdu_d_group_activation_t *)tsdu);
+            break;
+
+        case D_GROUP_COMPOSITION:
+            d_group_composition_print((tsdu_d_group_composition_t *)tsdu);
             break;
 
         case D_GROUP_LIST:
