@@ -50,6 +50,35 @@ static void activation_mode_decode(activation_mode_t *am, uint8_t data)
     am->type = get_bits(2, &data, 2);
 }
 
+static void cell_id_decode1(cell_id_t *cell_id, const uint8_t *data)
+{
+    int type = get_bits(2, data, 0);
+    if (type == CELL_ID_FORMAT_0) {
+        cell_id->bs_id = get_bits(6, data, 2);
+        cell_id->rws_id = get_bits(4, data, 8);;
+    } else if (type == CELL_ID_FORMAT_1) {
+        cell_id->bs_id = get_bits(4, data, 8);;
+        cell_id->rws_id = get_bits(6, data, 2);;
+    } else {
+        printf("TSDU: unknown cell_id_type (%d)\n", type);
+    }
+}
+
+// specific for d_system_info - cell in offline mode
+static void cell_id_decode2(cell_id_t *cell_id, const uint8_t *data)
+{
+    int type = get_bits(2, data, 8);
+    if (type == CELL_ID_FORMAT_0) {
+        cell_id->bs_id = get_bits(6, data, 10);
+        cell_id->rws_id = get_bits(4, data, 4);;
+    } else if (type == CELL_ID_FORMAT_1) {
+        cell_id->bs_id = get_bits(4, data, 4);;
+        cell_id->rws_id = get_bits(6, data, 10);;
+    } else {
+        printf("TSDU: unknown cell_id_type (%d)\n", type);
+    }
+}
+
 static tsdu_d_group_activation_t *
 d_group_activation_decode(const uint8_t *data, int nbits)
 {
@@ -134,7 +163,7 @@ static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits
             tsdu->system_id._data                       = get_bits( 8, data + 4, 0);
             tsdu->loc_area_id._data                     = get_bits( 8, data + 5, 0);
             tsdu->bn_id                                 = get_bits( 8, data + 6, 0);
-            tsdu->cell_id                               = get_bits(12, data + 7, 0);
+            cell_id_decode1(&tsdu->cell_id, data + 7);
             tsdu->cell_bn                               = get_bits(12, data + 7, 12);
             tsdu->u_ch_scrambling                       = get_bits( 8, data + 10, 0);
             tsdu->cell_radio_param.tx_max               = get_bits( 3, data + 11, 0);
@@ -155,7 +184,7 @@ static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits
         case CELL_STATE_MODE_DISC_RADIOSWITCH:
         case CELL_STATE_MODE_DISC_BSC:
             tsdu->cell_state._data &= 0xf0;
-            tsdu->cell_id                               = get_bits(12, data + 1, 4);
+            cell_id_decode2(&tsdu->cell_id, data + 1);
             tsdu->bn_id                                 = get_bits( 8, data + 3, 0);
             tsdu->u_ch_scrambling                       = get_bits( 8, data + 4, 0);
             tsdu->cell_radio_param.tx_max               = get_bits( 3, data + 5, 0);
@@ -196,7 +225,8 @@ static void d_system_info_print(tsdu_d_system_info_t *tsdu)
         printf("\t\t\tLOC_ID=%d\n", tsdu->loc_area_id.loc_id);
         printf("\t\t\tMODE=%d\n", tsdu->loc_area_id.mode);
         printf("\t\tBN_ID=%d\n", tsdu->bn_id);
-        printf("\t\tCELL_ID=%d\n", tsdu->cell_id);
+        printf("\t\tCELL_ID: BS_ID=%d RWS_ID=%d\n",
+               tsdu->cell_id.bs_id, tsdu->cell_id.rws_id);
         printf("\t\tCELL_BN=%d\n", tsdu->cell_bn);
         printf("\t\tU_CH_SCRAMBLING=%d\n", tsdu->u_ch_scrambling);
         printf("\t\tCELL_RADIO_PARAM\n");
@@ -217,7 +247,8 @@ static void d_system_info_print(tsdu_d_system_info_t *tsdu)
                 tsdu->cell_access.min_reg_class);
         printf("\t\tSUPERFRAME_CPT=%d\n", tsdu->superframe_cpt);
     } else {
-        printf("\t\tCELL_ID=%d\n", tsdu->cell_id);
+        printf("\t\tCELL_ID BS_ID=%d RWS_ID=%d\n",
+               tsdu->cell_id.bs_id, tsdu->cell_id.rws_id);
         printf("\t\tCELL_BN=%d\n", tsdu->cell_bn);
         printf("\t\tU_CH_SCRAMBLING=%d\n", tsdu->u_ch_scrambling);
         printf("\t\tCELL_RADIO_PARAM\n");
