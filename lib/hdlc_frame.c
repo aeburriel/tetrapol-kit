@@ -96,7 +96,7 @@ bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int nbits)
         return false;
     }
 
-    addr_parse(&hdlc_frame->addr, data);
+    addr_parse(&hdlc_frame->addr, data, 0);
     command_parse(&hdlc_frame->command, data[2]);
     // nbits - HDLC_header_nbits - FCS_len
     hdlc_frame->nbits = nbits - 3*8 - 2*8;

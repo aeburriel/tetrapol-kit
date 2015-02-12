@@ -179,8 +179,6 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
     free(seg_du);
     tpdu->seg_du[seg_ref] = NULL;
 
-    printf("XXXXX\n");
-
     tpdu->tsdu = tsdu_d_decode(data, nbits, prio, id_tsap);
 
     return hdlc_fr;

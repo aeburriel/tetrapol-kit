@@ -74,7 +74,7 @@ bool pch_push_data_block(pch_t *pch, data_block_t* data_blk)
     pch->pch_data.naddrs = 0;
     for (int i = 0; i < ARRAY_LEN(pch->pch_data.addrs); ++i) {
         addr_t *addr = &pch->pch_data.addrs[pch->pch_data.naddrs];
-        addr_parse(addr, data + 8 + 2*i);
+        addr_parse(addr, data + 8 + 2*i, 0);
         if (!addr_is_tti_no_st(addr, false)) {
             ++pch->pch_data.naddrs;
         }

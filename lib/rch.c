@@ -68,7 +68,7 @@ bool rch_push_data_block(rch_t *rch, data_block_t *data_blk)
 
     rch->rch_data.naddrs = 0;
     for (int i = 0; i < ARRAY_LEN(rch->rch_data.addrs); ++i) {
-        addr_parse(&rch->rch_data.addrs[rch->rch_data.naddrs], data + 2*i);
+        addr_parse(&rch->rch_data.addrs[rch->rch_data.naddrs], data + 2*i, 0);
         if (!addr_is_tti_no_st(&rch->rch_data.addrs[rch->rch_data.naddrs], true)) {
             ++rch->rch_data.naddrs;
         }

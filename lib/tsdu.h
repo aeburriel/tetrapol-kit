@@ -159,6 +159,33 @@ typedef struct {
     uint8_t type;
 } activation_mode_t;
 
+/// PAS 0001-3-2 5.3.5
+enum {
+    ADJACENT_PARAM_BN_DIFFERENT = 0,
+    ADJACENT_PARAM_BN_SAME = 1,
+};
+
+enum {
+    ADJACENT_PARAM_LOC_DIFFERENT = 0,
+    ADJACENT_PARAM_LOC_SAME = 1,
+};
+
+enum {
+    ADJACENT_PARAM_EXP_NORMAL = 0,
+    ADJACENT_PARAM_EXP_EXPERIMENTAL = 1,
+};
+
+typedef union {
+    uint8_t _data;
+    struct {
+        unsigned int rxlev_access : 4;
+        unsigned int exp : 1;
+        unsigned int _reserved : 1;
+        unsigned int loc : 1;
+        unsigned int bn : 1;
+    };
+} adjacent_param_t;
+
 /// PAS 0001-3-2 5.3.9
 enum {
     BN_ID_UNDEFINED = 0,
@@ -175,6 +202,11 @@ enum {
     CALL_PRIORITY_EMERGENCY = 12,
     CALL_PRIORITY_TOWER_COMMUNICATION = 13,
 };
+
+/// PAS 0001-3-2 5.3.16
+typedef struct {
+    uint8_t number;
+} ccr_config_t;
 
 /// PAS 0001-3-2 5.3.18
 typedef union {
@@ -207,6 +239,11 @@ typedef struct {
     uint8_t bs_id;
     uint8_t rws_id;
 } cell_id_t;
+
+typedef struct {
+    int len;
+    cell_id_t cell_ids[];
+} cell_id_list_t;
 
 /// PAS 0001-3-2 5.3.22
 enum {
@@ -486,6 +523,22 @@ typedef struct {
     reference_list_t reference_list;
     index_list_t index_list;
 } tsdu_d_group_list_t;
+
+/// PAS 0001-3-2 4.4.57
+typedef struct {
+    tsdu_base_t base;
+    cell_id_list_t *cell_ids;    // iei=cell_id_list;
+    addr_list_t *cell_bns;       // iei=adjecent_bn_list;
+
+    ccr_config_t ccr_config;
+    uint8_t ccr_param;
+
+    struct {
+        uint8_t bn_nb;
+        uint16_t channel_id;
+        adjacent_param_t adjacent_param;
+    } adj_cells[16];
+} tsdu_d_neighbouring_cell_t;
 
 /// PAS 0001-3-2 4.4.71
 typedef struct {

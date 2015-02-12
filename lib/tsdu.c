@@ -55,10 +55,10 @@ static void cell_id_decode1(cell_id_t *cell_id, const uint8_t *data)
     int type = get_bits(2, data, 0);
     if (type == CELL_ID_FORMAT_0) {
         cell_id->bs_id = get_bits(6, data, 2);
-        cell_id->rws_id = get_bits(4, data, 8);;
+        cell_id->rws_id = get_bits(4, data, 8);
     } else if (type == CELL_ID_FORMAT_1) {
-        cell_id->bs_id = get_bits(4, data, 8);;
-        cell_id->rws_id = get_bits(6, data, 2);;
+        cell_id->bs_id = get_bits(4, data, 8);
+        cell_id->rws_id = get_bits(6, data, 2);
     } else {
         printf("TSDU: unknown cell_id_type (%d)\n", type);
     }
@@ -112,7 +112,7 @@ d_group_activation_decode(const uint8_t *data, int nbits)
             printf("TSDU: WTF FIXME - expected IEI_TTI");
         } else {
             tsdu->has_addr_tti = true;
-            addr_parse(&tsdu->addr_tti, &data[10]);
+            addr_parse(&tsdu->addr_tti, &data[10], 0);
         }
     }
 
@@ -329,6 +329,168 @@ static void d_group_composition_print(tsdu_d_group_composition_t *tsdu)
     }
 }
 
+static cell_id_list_t *iei_cell_id_list_decode(
+        cell_id_list_t *cell_ids, const uint8_t *data, int len)
+{
+    int n = 0;
+    if (cell_ids) {
+        n = cell_ids->len;
+    }
+    n += len / 2;
+    const int l = sizeof(cell_id_list_t) + n * sizeof(cell_id_t);
+    cell_id_list_t *p = realloc(cell_ids, l);
+    if (!p) {
+        printf("ERR OOM\n");
+        return NULL;
+    }
+    if (!cell_ids) {
+        p->len = 0;
+    }
+    cell_ids = p;
+
+    for ( ; cell_ids->len < n; ++cell_ids->len) {
+        cell_id_decode1(&cell_ids->cell_ids[cell_ids->len], data);
+        data += 2;
+    }
+
+    return cell_ids;
+}
+
+addr_list_t *iei_adjacent_bn_list_decode(
+        addr_list_t *adj_cells, const uint8_t *data, int len)
+{
+    int n = 0;
+    if (adj_cells) {
+        n = adj_cells->len;
+    }
+    n +=  len * 2 / 3;
+    const int l = sizeof(addr_list_t) + n * sizeof(addr_t);
+    addr_list_t *p = realloc(adj_cells, l);
+    if (!p) {
+        printf("ERR OOM\n");
+        return NULL;
+    }
+    if (!adj_cells) {
+        p->len = 0;
+    }
+    adj_cells = p;
+
+    for (int skip = 0; adj_cells->len < n; ++adj_cells->len) {
+        addr_parse(&adj_cells->addrs[adj_cells->len], data, skip);
+        skip += 12;
+    }
+
+    return adj_cells;
+}
+
+static tsdu_d_neighbouring_cell_t *d_neighbouring_cell_decode(const uint8_t *data, int nbits)
+{
+    tsdu_d_neighbouring_cell_t *tsdu = malloc(sizeof(tsdu_d_neighbouring_cell_t));
+    if (!tsdu) {
+        return NULL;
+    }
+    tsdu_base_set_nopts(&tsdu->base, 2);
+    CHECK_LEN(nbits, 2*8, tsdu);
+
+    uint8_t _zero                               = get_bits(4, data + 1, 0);
+    tsdu->ccr_config.number                     = get_bits(4, data + 1, 4);
+    if (_zero != 0) {
+        printf("TSDU DU: WTF d_neighbouring_cell padding != 0 (%d)\n", _zero);
+    }
+
+    if (!tsdu->ccr_config.number) {
+        return tsdu;
+    }
+
+    tsdu->ccr_param = data[2];
+    if (tsdu->ccr_param) {
+        printf("TSDU DU: WTF d_neighbouring_cell ccr_param != 0 (%d)",
+               tsdu->ccr_param);
+    }
+
+    data += 3;
+    nbits -= 3 * 8;
+    CHECK_LEN(nbits, 3 * 8 * tsdu->ccr_config.number, tsdu);
+    for (int i = 0; i < tsdu->ccr_config.number; ++i) {
+        tsdu->adj_cells[i].bn_nb                = get_bits(4,  data, 0);
+        tsdu->adj_cells[i].channel_id           = get_bits(12, data, 4);
+        tsdu->adj_cells[i].adjacent_param._data = get_bits(8,  data + 2, 0);
+        if (tsdu->adj_cells[i].adjacent_param._reserved) {
+            printf("TSDU DU: WTF adjacent_param._reserved != 0\n");
+        }
+        data += 3;
+        nbits -= 3 * 8;
+    }
+
+    while (nbits > 7) {
+        CHECK_LEN(nbits, 2 * 8, tsdu);
+        const uint8_t iei                       = get_bits(8, data, 0);
+        const uint8_t len                       = get_bits(8, data + 1, 0);
+        data += 2;
+        nbits -= 2 * 8;
+        CHECK_LEN(nbits, len * 8, tsdu);
+        if (iei == IEI_CELL_ID_LIST && len) {
+            cell_id_list_t *p = iei_cell_id_list_decode(
+                        tsdu->cell_ids, data, len);
+            if (!p) {
+                break;
+            }
+            tsdu->cell_ids = p;
+        } else if (iei == IEI_ADJACENT_BN_LIST && len) {
+            addr_list_t *p = iei_adjacent_bn_list_decode(
+                        tsdu->cell_bns, data, len);
+            if (!p) {
+                break;
+            }
+            tsdu->cell_bns = p;
+        } else {
+            if (len) {
+                printf("TSDU DU: WTF d_neighbouring_cell unknown iei (0x%x)\n", iei);
+            }
+        }
+        data += len;
+        nbits -= len * 8;
+    }
+
+    return tsdu;
+}
+
+static void d_neighbouring_cell_print(tsdu_d_neighbouring_cell_t *tsdu)
+{
+    printf("\tCODOP=0x%x (D_NEIGHBOURING_CELL)\n", D_NEIGHBOURING_CELL);
+    printf("\t\tCCR_CONFIG=%d\n", tsdu->ccr_config.number);
+    if (!tsdu->ccr_config.number) {
+        return;
+    }
+    printf("\t\tCCR_PARAM=%d\n", tsdu->ccr_param);
+    for (int i = 0; i < tsdu->ccr_config.number; ++i) {
+        printf("\t\t\tBN_NB=%d CHANNEL_ID=%d ADJACENT_PARAM=%d BN=%d LOC=%d EXP=%d RXLEV_ACCESS=%d\n",
+               tsdu->adj_cells[i].bn_nb,
+               tsdu->adj_cells[i].channel_id,
+               tsdu->adj_cells[i].adjacent_param._data,
+               tsdu->adj_cells[i].adjacent_param.bn,
+               tsdu->adj_cells[i].adjacent_param.loc,
+               tsdu->adj_cells[i].adjacent_param.exp,
+               tsdu->adj_cells[i].adjacent_param.rxlev_access);
+    }
+    if (tsdu->cell_ids) {
+        printf("\t\tCELL_IDs\n");
+        for (int i = 0; i < tsdu->cell_ids->len; ++i) {
+            printf("\t\t\tCELL_ID BS_ID=%d RSW_ID=%d\n",
+                   tsdu->cell_ids->cell_ids[i].bs_id,
+                   tsdu->cell_ids->cell_ids[i].rws_id);
+        }
+    }
+    if (tsdu->cell_bns) {
+        printf("\t\tCELL_BNs\n");
+        for (int i = 0; i < tsdu->cell_bns->len; ++i) {
+            printf("\t\t\tCELL_BN=");
+            addr_print(&tsdu->cell_bns->addrs[i]);
+            printf("\n");
+        }
+    }
+}
+
 static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits)
 {
     tsdu_d_system_info_t *tsdu = malloc(sizeof(tsdu_d_system_info_t));
@@ -473,6 +635,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
             tsdu = (tsdu_t *)d_group_list_decode(data, nbits);
             break;
 
+        case D_NEIGHBOURING_CELL:
+            tsdu = (tsdu_t *)d_neighbouring_cell_decode(data, nbits);
+            break;
+
         case D_SYSTEM_INFO:
             tsdu = (tsdu_t *)d_system_info_decode(data, nbits);
             break;
@@ -504,6 +670,10 @@ static void tsdu_d_print(const tsdu_t *tsdu)
 
         case D_GROUP_LIST:
             d_group_list_print((tsdu_d_group_list_t *)tsdu);
+            break;
+
+        case D_NEIGHBOURING_CELL:
+            d_neighbouring_cell_print((tsdu_d_neighbouring_cell_t *)tsdu);
             break;
 
         case D_SYSTEM_INFO:
