@@ -706,24 +706,6 @@ void tsdu_print(tsdu_t *tsdu)
 // ---- old methods
 
 
-static void decode_cell_id(int cell_id) {
-
-    int cell_id_format, cell_id_bs_id, cell_id_rsw_id;
-
-    cell_id_format=(cell_id & 0xc00) >> 10;
-    if (cell_id_format==0) {
-        cell_id_bs_id=(cell_id & 0x3f0) >> 4;
-        cell_id_rsw_id=(cell_id & 0x0f);
-    } else if (cell_id_format==1) {
-        cell_id_rsw_id=(cell_id & 0x3f0) >> 4;
-        cell_id_bs_id=(cell_id & 0x0f);
-    } else
-        printf("Bad CELL_ID\n");
-
-    printf("\t\tCELL_ID FORMAT=%i BS_ID=%i RSW_ID=%i\n", cell_id_format, cell_id_bs_id, cell_id_rsw_id);
-
-}
-
 static void decode_key_reference(int key_reference) {
     int key_type, key_index;
 
@@ -734,75 +716,6 @@ static void decode_key_reference(int key_reference) {
     if (key_index==0)
         printf("CLEAR CALL!!! ");
     // TODO: Decode key_type
-}
-
-static void d_neighbouring_cell(const uint8_t *t) {
-
-    int i;
-    int ccr_config, ccr_param;
-    int bn_nb[16], channel_id[16], adjacent_param[16];
-    int bn[16], loc[16], exp[16], rxlev_access[16];
-    const uint8_t *cell_id_list_start;
-    int cell_id_list, cell_id_list_length;
-    int cell_id[256];
-    const uint8_t *adjacent_bn_list_start;
-    int adjacent_bn_list, adjacent_bn_list_length;
-    int adjacent_bn[256];
-
-    ccr_config=bits_to_int(t+12,4);
-    ccr_param=bits_to_int(t+16,8);
-
-    for (i=0; i<ccr_config; i++) {
-        bn_nb[i]=bits_to_int(t+24+24*i,4);
-        channel_id[i]=bits_to_int(t+28+24*i,12);
-        adjacent_param[i]=bits_to_int(t+40+24*i,8);
-        bn[i]=bits_to_int(t+40+24*i,1);
-        loc[i]=bits_to_int(t+41+24*i,1);
-        exp[i]=bits_to_int(t+43+24*i,1);
-        rxlev_access[i]=bits_to_int(t+44+24*i,4);
-    }
-
-    cell_id_list=bits_to_int(t+24+24*ccr_config, 8);
-    cell_id_list_length=bits_to_int(t+32+24*ccr_config, 8) / 2;	// 16-bit entries
-    cell_id_list_start=t+40+24*ccr_config;
-
-    cell_id_list_length = cell_id_list_length + 1; 			// FIXME: Why +1 ???
-
-    for (i=0; i<cell_id_list_length; i++) {
-        cell_id[i]=bits_to_int(cell_id_list_start+16*i,12);
-    }
-
-    adjacent_bn_list=bits_to_int(cell_id_list_start+16*cell_id_list_length, 8);
-    adjacent_bn_list_length=bits_to_int(cell_id_list_start+8+16*cell_id_list_length, 8);
-    adjacent_bn_list_start=cell_id_list_start+16+16*cell_id_list_length;
-
-    adjacent_bn_list_length=adjacent_bn_list_length*8/12;		//12-bit entries
-
-    for (i=0; i<adjacent_bn_list_length; i++) {
-        adjacent_bn[i] = bits_to_int(adjacent_bn_list_start+12*i,12);
-    }
-
-
-    printf("\tCODOP=0x94 (D_NEIGHBOURING_CELL)\n");
-    printf("\t\tCCR_CONFIG=%i\n", ccr_config);
-    printf("\t\tCCR_PARAM=%i\n", ccr_param);
-
-    for (i=0; i<ccr_config; i++) {
-        printf("\t\t\tBN_NB=%i ", bn_nb[i]);
-        printf("CHANNEL_ID=%i ", channel_id[i]);
-        printf("ADJACENT_PARAM=%i BN=%i LOC=%i EXP=%i RXLEV_ACCESS=%i\n", adjacent_param[i], bn[i], loc[i], exp[i], rxlev_access[i]);
-    }
-    printf("\t\tCELL_ID_LIST=%i CELL_ID_LIST_LENGTH=%i\n", cell_id_list, cell_id_list_length);
-    for (i=0; i<cell_id_list_length; i++) {
-        printf("\t");
-        decode_cell_id(cell_id[i]);
-    }
-    printf("\t\tADJACENT_BN_ID_LIST=%i ADJACENT_BN_ID_LIST_LENGTH=%i\n", adjacent_bn_list, adjacent_bn_list_length);
-    for (i=0; i<adjacent_bn_list_length; i++) {
-        printf("\t\t\tADJACENT_BN_ID=%x\n", adjacent_bn[i]);
-    }
-
-
 }
 
 static void d_tti_assignment(const uint8_t *t) {
@@ -1065,9 +978,6 @@ void tsdu_process(const uint8_t *t, int data_length, int mod) {
 
     codop=bits_to_int(t, 8);
     switch (codop) {
-        case D_NEIGHBOURING_CELL:
-            d_neighbouring_cell(t);
-            break;
         case D_CALL_WAITING:
             d_call_waiting(t);
             break;
