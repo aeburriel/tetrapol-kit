@@ -566,57 +566,6 @@ static void decode_key_reference(int key_reference) {
     // TODO: Decode key_type
 }
 
-static void d_group_list(const uint8_t *t) {
-
-    int i;
-    int reference_list, revision, csg, cso, dc;
-    int index_list, index_list_mode, index_list_index;
-    int type_nb, type_nb_type, type_nb_number;
-    const uint8_t *type_nb_start;
-    int type_nb2, type_nb_type2, type_nb_number2;
-    const uint8_t *type_nb_start2;
-    int och_coverage_id[64], och_call_priority[64], och_group_id[64], och_och_parameters[64], och_neghbouring_cell[64];
-
-    reference_list=bits_to_int(t+8,8);
-    revision=bits_to_int(t+8,3);
-    csg=bits_to_int(t+13,1);
-    cso=bits_to_int(t+14,1);
-    dc=bits_to_int(t+15,1);
-
-    index_list=bits_to_int(t+16,8);
-    index_list_mode=bits_to_int(t+16,2);
-    index_list_index=bits_to_int(t+18,6);
-
-    type_nb_start=t+24;
-    type_nb=bits_to_int(type_nb_start,8);
-    type_nb_type=bits_to_int(type_nb_start,2);
-    type_nb_number=bits_to_int(type_nb_start+2,6);
-    for (i=0; i<type_nb_number; i++) {
-        och_coverage_id[i]=bits_to_int(type_nb_start+8+i*40,8);
-        och_call_priority[i]=bits_to_int(type_nb_start+16+i*40,4);
-        och_group_id[i]=bits_to_int(type_nb_start+20+i*40,12);
-        och_och_parameters[i]=bits_to_int(type_nb_start+32+i*40,4);
-        och_neghbouring_cell[i]=bits_to_int(type_nb_start+36+i*40,12);
-    }
-    type_nb_start2=type_nb_start+8+type_nb_number*40;
-    type_nb2=bits_to_int(type_nb_start2,8);
-    type_nb_type2=bits_to_int(type_nb_start2,2);
-    type_nb_number2=bits_to_int(type_nb_start2+2,6);
-
-    //TODO: TKG, EOG
-
-    printf("\tCODOP=0x92 (D_GROUP_LIST)\n");
-    printf("\t\tREFERENCE_LIST=%i REVISION=%i CSG=%i CSO=%i DC=%i\n", reference_list, revision, csg, cso, dc);
-    printf("\t\tINDEX_LIST=%i MODE=%i INDEX=%i\n", index_list, index_list_mode, index_list_index);
-    printf("\t\tTYPE_NB=%i TYPE=%i NUMBER=%i\n", type_nb, type_nb_type, type_nb_number);
-    printf("\t\tOCH\n");
-    for (i=0; i<type_nb_number; i++) {
-        printf("\t\t\tCOVERAGE_ID=%i CALL_PRIORITY=%i GROUP_ID=%i OCH_PARAMETERS=%i NEIGBOURING_CELL=%i\n", och_coverage_id[i], och_call_priority[i], och_group_id[i], och_och_parameters[i], och_neghbouring_cell[i]);
-    }
-    printf("\t\tTYPE_NB=%i TYPE=%i NUMBER=%i\n", type_nb2, type_nb_type2, type_nb_number2);
-
-}
-
 static void d_neighbouring_cell(const uint8_t *t) {
 
     int i;
@@ -946,9 +895,6 @@ void tsdu_process(const uint8_t *t, int data_length, int mod) {
 
     codop=bits_to_int(t, 8);
     switch (codop) {
-        case D_GROUP_LIST:
-            d_group_list(t);
-            break;
         case D_NEIGHBOURING_CELL:
             d_neighbouring_cell(t);
             break;
