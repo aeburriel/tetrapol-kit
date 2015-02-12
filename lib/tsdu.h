@@ -456,7 +456,6 @@ typedef struct {
 } tsdu_d_group_composition_t;
 
 /// PAS 0001-3-2 4.4.47
-
 typedef struct {
     uint8_t coverage_id;
     uint8_t call_priority;

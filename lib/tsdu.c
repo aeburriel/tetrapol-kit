@@ -164,7 +164,7 @@ static tsdu_d_group_list_t *d_group_list_decode(const uint8_t *data, int nbits)
     rlen += 1*8;
     CHECK_LEN(nbits, rlen, tsdu);
     tsdu->index_list._data = get_bits(8, data + 2, 0);
-    data += 2;
+    data += 3;
     do {
         rlen += 1*8;
         CHECK_LEN(nbits, rlen, tsdu);
@@ -263,7 +263,37 @@ static void d_group_list_print(tsdu_d_group_list_t *tsdu)
     }
     printf("\t\tINDEX_LIST MODE=%d INDEX=%d\n",
            tsdu->index_list.mode, tsdu->index_list.index);
-    printf("TODO\n");
+
+    if (tsdu->nopen) {
+        printf("\t\tOCH\n");
+        for (int i = 0; i < tsdu->nopen; ++i) {
+            printf("\t\t\tCOVERAGE_ID=%d CALL_PRIORITY=%d GROUP_ID=%d "
+                   "OCH_PARAMETERS.ADD=%d OCH_PARAMETERS.MBN=%d "
+                   "NEIGBOURING_CELL=%d\n",
+                   tsdu->open[i].coverage_id,
+                   tsdu->open[i].call_priority,
+                   tsdu->open[i].group_id,
+                   tsdu->open[i].och_parameters.add,
+                   tsdu->open[i].och_parameters.mbn,
+                   tsdu->open[i].neighbouring_cell);
+        }
+    }
+
+    if (tsdu->ngroup) {
+        printf("\t\tGROUP\n");
+        for (int i = 0; i < tsdu->ngroup; ++i) {
+            printf("\t\t\tCOVERAGE_ID=%d NEIGHBOURING_CALL=%d\n",
+                   tsdu->group[i].coverage_id, tsdu->group[i].neighbouring_cell);
+        }
+    }
+
+    if (tsdu->nemergency) {
+        printf("\t\t\tEMERGENCY\n");
+        for (int i = 0; i < tsdu->nemergency; ++i) {
+            printf("\t\t\tCELL_ID.BS_ID=%d CELL_ID.RWS_ID=%d\n",
+                   tsdu->emergency[i].cell_id.bs_id, tsdu->emergency[i].cell_id.rws_id);
+        }
+    }
 }
 
 static tsdu_d_group_composition_t *d_group_composition_decode(const uint8_t *data, int nbits)
