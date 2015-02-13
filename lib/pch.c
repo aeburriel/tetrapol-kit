@@ -1,3 +1,5 @@
+#define LOG_PREFIX "pch"
+#include "log.h"
 #include "pch.h"
 #include "addr.h"
 #include "misc.h"
@@ -50,14 +52,14 @@ bool pch_push_data_block(pch_t *pch, data_block_t* data_blk)
 {
     if (!data_frame_push_data_block(pch->data_fr, data_blk)) {
         if (data_blk->frame_no % 2) {
-            printf("PCH frame broken\n");
+            LOG(DBG, "PCH frame broken");
             // TODO: PCH block lost
         }
         return false;
     }
 
     if (data_frame_blocks(pch->data_fr) != 2) {
-        printf("WTF invalid number of blocks for PCH %d\n",
+        LOG(WTF, "invalid number of blocks for PCH %d\n",
                 data_frame_blocks(pch->data_fr));
         return false;
     }
@@ -65,7 +67,7 @@ bool pch_push_data_block(pch_t *pch, data_block_t* data_blk)
     uint8_t data[(2 * 92) / 8];  // (2 * 64) / 8 should be OK, but ...
     const int size = data_frame_get_bytes(pch->data_fr, data);
     if (size != 2*64) {
-        printf("PCH: WTF size: %d != 128\n", size);
+        LOG(WTF, "block size: %d != 128\n", size);
         return false;
     }
 
