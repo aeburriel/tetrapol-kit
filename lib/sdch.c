@@ -1,3 +1,5 @@
+#define LOG_PREFIX "sdch"
+#include "log.h"
 #include "sdch.h"
 #include "data_frame.h"
 #include "hdlc_frame.h"
@@ -5,7 +7,6 @@
 #include "tpdu.h"
 #include "system_config.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 struct _sdch_t {
@@ -72,7 +73,7 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
     if (!sdch->hdlc_fr) {
         sdch->hdlc_fr = malloc(sizeof(hdlc_frame_t));
         if (!sdch->hdlc_fr) {
-            printf("HDLC: malloc fail\n");
+            LOG(ERR, "ERR OOM");
             return false;
         }
     }
@@ -83,15 +84,17 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
     }
 
     if (sdch->hdlc_fr->command.cmd == COMMAND_UNNUMBERED_UI) {
-        printf("HDLC info=");
-        print_hex(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8);
-        printf("\t");
-        addr_print(&sdch->hdlc_fr->addr);
-        printf("\n");
+        IF_LOG(DBG) {
+            LOG_("HDLC info=");
+            print_hex(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8);
+            printf("\t");
+            addr_print(&sdch->hdlc_fr->addr);
+            printf("\n");
+        }
         sdch->hdlc_fr = tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, sdch->hdlc_fr);
         return tpdu_ui_has_tsdu(sdch->tpdu_ui);
     }
-    printf("CMD 0x%02x\n", sdch->hdlc_fr->command.cmd);
+    LOG(DBG, "CMD 0x%02x", sdch->hdlc_fr->command.cmd);
 
     // TODO ...
 
@@ -113,8 +116,10 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
 
     int frame_no = data_blk->frame_no - nblks + 1;
     nblks = nblks > 2 ? nblks - 1 : nblks;
-    printf("MB%d frame_no=%03d ", nblks, frame_no);
-    print_buf(data_, size);
+    IF_LOG(DBG) {
+        LOG_("MB%d frame_no=%03d ", nblks, frame_no);
+        print_buf(data_, size);
+    }
     tpdu_process(data_, size / 8, &frame_no);
 
     return true;
