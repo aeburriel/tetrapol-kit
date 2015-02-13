@@ -38,6 +38,7 @@ add_executable (test_data_block
 target_link_libraries (test_data_block ${CMOCKA_LIBRARY})
 
 add_executable (test_data_frame
+    log.c
     data_block.c
     test_data_frame.c)
 target_link_libraries (test_data_frame ${CMOCKA_LIBRARY})

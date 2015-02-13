@@ -1,3 +1,5 @@
+#define LOG_PREFIX "data_frame"
+#include "log.h"
 #include "system_config.h"
 #include "data_frame.h"
 #include "misc.h"
@@ -97,7 +99,7 @@ static bool data_frame_check_multiblock(data_frame_t *data_fr)
         fix_by_parity(data_fr);
     } else {
         if (!check_parity(data_fr)) {
-            printf("MB parity error %d\n", data_fr->nblks);
+            LOG(ERR, "MB parity error %d", data_fr->nblks);
             data_frame_reset(data_fr);
             return false;
         }
@@ -136,7 +138,7 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
             return true;
         }
         if (fn != FN_01) {
-            printf("MB err\n");
+            LOG(DBG, "MB err");
             data_frame_reset(data_fr);
         }
         return false;
@@ -149,19 +151,21 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
     if (data_fr->nblks == 2) {
         if (!crc_ok) {
             if (fn_prev != FN_01) {
+                LOG(DBG, "MB err");
                 data_frame_reset(data_fr);
             }
             return false;
         }
         if (fn == FN_11) {
             if (!crc_ok_prev) {
+                LOG(DBG, "MB err");
                 data_frame_reset(data_fr);
                 return false;
             }
             return true;
         }
         if (fn != FN_10) {
-            printf("MB err\n");
+            LOG(DBG, "MB err");
             data_frame_reset(data_fr);
             return data_frame_push_data_block(data_fr, data_blk);
         }
@@ -174,6 +178,7 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
             return false;
         }
         if (fn != FN_10 && fn != FN_11) {
+            LOG(DBG, "MB err");
             data_frame_reset(data_fr);
             return data_frame_push_data_block(data_fr, data_blk);
         }
@@ -190,6 +195,7 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
 
     if (fn == FN_11) {
         if (fn_prev != FN_11 && crc_ok_prev) {
+            LOG(DBG, "MB err");
             data_frame_reset(data_fr);
         }
         return false;
@@ -198,6 +204,7 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
     // check multiframe, pre-end of multiframe
     if (fn == FN_10) {
         if (fn_prev != FN_11 && crc_ok_prev) {
+            LOG(DBG, "MB err");
             data_frame_reset(data_fr);
         }
         return false;
@@ -205,13 +212,14 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
 
     if (fn == FN_01) {
         if (fn_prev != FN_10 && crc_ok_prev) {
+            LOG(DBG, "MB err");
             data_frame_reset(data_fr);
             return false;
         }
         return data_frame_check_multiblock(data_fr);
     }
 
-    printf("MB err\n");
+    LOG(DBG, "MB err");
     data_frame_reset(data_fr);
     return data_frame_push_data_block(data_fr, data_blk);
 }
