@@ -1,3 +1,5 @@
+#define LOG_PREFIX "bch"
+#include "log.h"
 #include "bch.h"
 #include "data_frame.h"
 #include "hdlc_frame.h"
@@ -61,15 +63,17 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
 
     if (!addr_is_tti_all_st(&hdlc_fr.addr, true)) {
         if (data_blk->frame_no == FRAME_NO_UNKNOWN) {
-            printf("invalid address for BCH ");
-            addr_print(&hdlc_fr.addr);
-            printf("\n");
+            IF_LOG(DBG) {
+                LOG_("invalid address for BCH");
+                addr_print(&hdlc_fr.addr);
+                printf("\n");
+            }
         }
         return false;
     }
 
     if (hdlc_fr.data[0] != 0x00 || hdlc_fr.data[1] != 0x11) {
-        printf("BCH: FIXME, invalid TPDU header 0x%02x 0x%02x\n",
+        LOG(INFO, "FIXME, invalid TPDU header 0x%02x 0x%02x",
                hdlc_fr.data[0], hdlc_fr.data[1]);
         return false;
     }
@@ -83,7 +87,7 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
 
     if (bch->tsdu->base.codop != D_SYSTEM_INFO) {
         if (data_blk->frame_no == FRAME_NO_UNKNOWN) {
-            printf("Invalid codop for BCH %d\n", bch->tsdu->base.codop);
+            LOG(DBG, "Invalid codop for BCH %d\n", bch->tsdu->base.codop);
         }
         tsdu_destroy(&bch->tsdu->base);
         bch->tsdu = NULL;
@@ -91,16 +95,10 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
         return false;
     }
 
-    printf("\tBCH\n");
-    printf("\tRT_REF=TODO\n");
-    printf("\tBS_REF=TODO\n");
-    printf("\tCALL_PRIO=TODO\n");
-    // TODO: add proper TPDU layer handler
-
     const int frame_no = 100 * bch->tsdu->cell_state.bch + nblocks - 1;
     if (data_blk->frame_no != FRAME_NO_UNKNOWN &&
             frame_no != data_blk->frame_no) {
-        printf("Frame skew detected %d to %d\n",
+        LOG(ERR, "Frame skew detected %d to %d\n",
                 data_blk->frame_no, frame_no);
     }
     data_blk->frame_no = frame_no;
