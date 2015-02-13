@@ -21,9 +21,9 @@ extern int log_global_lvl;
 
 // define LOG_LVL to override log level for single file
 #ifndef LOG_LVL
-#define LOG_LOCAL_LVL true
+#define LOG_LOCAL_LVL(lvl) true
 #else
-#define LOG_LOCAL_LVL (lvl <= LOG_LVL)
+#define LOG_LOCAL_LVL(lvl) (lvl <= LOG_LVL)
 #endif
 
 #ifndef LOG_PREFIX
@@ -39,11 +39,11 @@ extern int log_global_lvl;
     LOG__(__LINE__, msg , ##__VA_ARGS__)
 
 #define IF_LOG(lvl) \
-    if (lvl <= LOG_LOCAL_LVL || lvl <= log_global_lvl)
+    if (LOG_LOCAL_LVL(lvl) || lvl <= log_global_lvl)
 
 #define LOG(lvl, msg, ...) \
     do { \
-        if (lvl <= LOG_LOCAL_LVL || lvl <= log_global_lvl) { \
+    if (LOG_LOCAL_LVL(lvl) || lvl <= log_global_lvl) { \
             LOG_(msg "\n", ##__VA_ARGS__); \
         } \
     } while(false)
