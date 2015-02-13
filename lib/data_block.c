@@ -1,3 +1,5 @@
+#define LOG_PREFIX " data_block"
+#include "log.h"
 #include "data_block.h"
 
 #include <limits.h>
@@ -60,7 +62,7 @@ void data_block_decode_frame(data_block_t *data_blk, const uint8_t *data,
 
     if (fr_type == FRAME_TYPE_VOICE) {
         // TODO (set fr_type = FRAME_TYPE_DATA) when stollen frame
-        printf("decoding frame type %d not implemented\n", fr_type);
+        LOG(ERR, "decoding frame type %d not implemented", fr_type);
         data_blk->nerrs = INT_MAX;
     }
 
@@ -74,16 +76,16 @@ void data_block_decode_frame(data_block_t *data_blk, const uint8_t *data,
         data_blk->nerrs += decode_data_frame(
                 data_blk->data + 26, data_blk->err + 26, data + 2*26, 50);
         if (!data_blk->nerrs && ( data_blk->data[74] || data_blk->data[75] )) {
-            printf("nonzero padding in frame %d: %d %d\n", frame_no,
+            LOG(WTF, "nonzero padding in frame %d: %d %d", frame_no,
                     data_blk->data[74], data_blk->data[75]);
         }
     } else if (fr_type == FRAME_TYPE_HR_DATA) {
         // TODO
-        printf("decoding frame type %d not implemented\n", fr_type);
+        LOG(ERR, "decoding frame type %d not implemented", fr_type);
         data_blk->nerrs = INT_MAX;
     } else {
         // TODO
-        printf("decoding frame type %d not implemented\n", fr_type);
+        LOG(ERR, "decoding frame type %d not implemented", fr_type);
         data_blk->nerrs = INT_MAX;
     }
 }
@@ -107,7 +109,7 @@ bool data_block_check_crc(data_block_t *data_blk)
 
     if (data_blk->fr_type == FRAME_TYPE_VOICE) {
         // TODO
-        fprintf(stderr, "CRC checking for VOICE frames not implemented");
+        LOG(ERR, "CRC checking for VOICE frames not implemented");
         return false;
     }
     return false;

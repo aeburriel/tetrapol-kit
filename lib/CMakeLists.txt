@@ -34,6 +34,7 @@ add_library (tetrapol
     tsdu.h)
 
 add_executable (test_data_block
+    log.c
     test_data_block.c)
 target_link_libraries (test_data_block ${CMOCKA_LIBRARY})
 
