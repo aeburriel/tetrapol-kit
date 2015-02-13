@@ -1,9 +1,10 @@
+#define LOG_PREFIX "tpdu"
+#include "log.h"
 #include "misc.h"
 #include "tsdu.h"
 #include "tpdu.h"
 #include "misc.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,7 +25,7 @@ struct _tpdu_ui_t {
 tpdu_ui_t *tpdu_ui_create(frame_type_t fr_type)
 {
     if (fr_type != FRAME_TYPE_DATA && fr_type != FRAME_TYPE_HR_DATA) {
-        printf("TSDU DU: usnupported frame type %d\n", fr_type);
+        LOG(ERR, "usnupported frame type %d", fr_type);
         return NULL;
     }
 
@@ -56,7 +57,7 @@ void tpdu_ui_destroy(tpdu_ui_t *tpdu)
 hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
 {
     if (hdlc_fr->nbits < 8) {
-        printf("WTF too short HDLC (%d)\n", hdlc_fr->nbits);
+        LOG(WTF, "too short HDLC (%d)", hdlc_fr->nbits);
         return false;
     }
 
@@ -65,11 +66,10 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
     const uint8_t prio          = get_bits(2, hdlc_fr->data, 2);
     const uint8_t id_tsap       = get_bits(4, hdlc_fr->data, 4);
 
-    printf("\tDU EXT=%d SEG=%d PRIO=%d ID_TSAP=%d", ext, seg, prio, id_tsap);
+    LOG(DBG, "DU EXT=%d SEG=%d PRIO=%d ID_TSAP=%d", ext, seg, prio, id_tsap);
     if (ext == 0 && seg == 0) {
         tsdu_destroy(tpdu->tsdu);
 
-        printf("\n");
         // PAS 0001-3-3 9.5.1.2
         if ((tpdu->fr_type == FRAME_TYPE_DATA && hdlc_fr->nbits > (3*8)) ||
                 (tpdu->fr_type == FRAME_TYPE_DATA && hdlc_fr->nbits > (6*8))) {
@@ -83,14 +83,14 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
     }
 
     if (ext != 1) {
-        printf("\nTPDU UI: WTF, unsupported ext and seg combination\n");
+        LOG(WTF, "unsupported ext and seg combination");
         return hdlc_fr;
     }
 
     ext                         = get_bits(1, hdlc_fr->data + 1, 0);
     uint8_t seg_ref             = get_bits(7, hdlc_fr->data + 1, 1);
     if (!ext) {
-        printf("\nTPDU UI: WTF unsupported short ext\n");
+        LOG(WTF, "unsupported short ext");
         return hdlc_fr;
     }
 
@@ -98,14 +98,14 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
     const bool res              = get_bits(1, hdlc_fr->data + 2, 1);
     const uint8_t packet_num    = get_bits(6, hdlc_fr->data + 2, 2);
     if (ext) {
-        printf("\nTPDU UI: WTF unsupported long ext\n");
+        LOG(WTF, "unsupported long ext");
         return hdlc_fr;
     }
 
     if (res) {
-        printf("TPDU UI: WTF res != 0\n");
+        LOG(WTF, "res != 0");
     }
-    printf(" SEGM_REF=%d, PACKET_NUM=%d\n", seg_ref, packet_num);
+    LOG(DBG, "UI SEGM_REF=%d, PACKET_NUM=%d", seg_ref, packet_num);
 
     segmented_du_t *seg_du = tpdu->seg_du[seg_ref];
     if (seg_du == NULL) {
