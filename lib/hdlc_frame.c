@@ -1,3 +1,5 @@
+#define LOG_EFIX "hdlc"
+#include "log.h"
 #include "hdlc_frame.h"
 #include "bit_utils.h"
 #include "misc.h"
@@ -85,7 +87,7 @@ static void command_parse(command_t *cmd, uint8_t data)
         case COMMAND_UNNUMBERED__BLANK2:
         case COMMAND_UNNUMBERED__BLANK3:
         default:
-            printf("HDLC: Unknown command 0x%02x\n", data);
+            LOG(WTF, "Unknown command 0x%02x", data);
     };
 }
 
