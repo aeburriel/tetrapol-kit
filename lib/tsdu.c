@@ -1,18 +1,18 @@
+#define LOG_PREFIX "tsdu"
+#include "log.h"
 #include "tsdu.h"
 #include "misc.h"
 #include "bit_utils.h"
 #include "phys_ch.h"
 #include "misc.h"
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define CHECK_LEN(len, min_exp_len, tsdu) \
-    if ((len) < (min_exp_len)) { \
-        printf("%s:%d TSDU data too short %d < %d\n", \
-                __func__, __LINE__, (len), (min_exp_len)); \
+#define CHECK_LEN(len, min_len, tsdu) \
+    if ((len) < (min_len)) { \
+        LOG(ERR, "%d data too short %d < %d", __LINE__, (len), (min_len)); \
         tsdu_destroy((tsdu_base_t *)tsdu); \
         return NULL; \
     }
@@ -60,7 +60,7 @@ static void cell_id_decode1(cell_id_t *cell_id, const uint8_t *data)
         cell_id->bs_id = get_bits(4, data, 8);
         cell_id->rws_id = get_bits(6, data, 2);
     } else {
-        printf("TSDU: unknown cell_id_type (%d)\n", type);
+        LOG(WTF, "unknown cell_id_type (%d)", type);
     }
 }
 
@@ -75,7 +75,7 @@ static void cell_id_decode2(cell_id_t *cell_id, const uint8_t *data)
         cell_id->bs_id = get_bits(4, data, 4);;
         cell_id->rws_id = get_bits(6, data, 10);;
     } else {
-        printf("TSDU: unknown cell_id_type (%d)\n", type);
+        LOG(WTF, "unknown cell_id_type (%d)", type);
     }
 }
 
@@ -101,7 +101,7 @@ d_group_activation_decode(const uint8_t *data, int nbits)
     tsdu->key_reference._data   = get_bits(8,  data + 8, 0);
 
     if (_zero0 != 0) {
-        printf("TSDU: WTF in specifiacion are 0000, not 0x%02x\n", _zero0);
+        LOG(WTF, "nonzero padding: 0x%02x", _zero0);
     }
 
     tsdu->has_addr_tti = false;
@@ -109,7 +109,7 @@ d_group_activation_decode(const uint8_t *data, int nbits)
         // FIXME: proper IEI handling
         uint8_t iei = get_bits(8, data + 9, 0);
         if (iei != IEI_TTI) {
-            printf("TSDU: WTF FIXME - expected IEI_TTI");
+            LOG(WTF, "expected IEI_TTI got %d", iei);
         } else {
             tsdu->has_addr_tti = true;
             addr_parse(&tsdu->addr_tti, &data[10], 0);
@@ -117,7 +117,7 @@ d_group_activation_decode(const uint8_t *data, int nbits)
     }
 
     if (nbits > 12*8) {
-        printf("TSDU: WTF unused bits\n");
+        LOG(WTF, "unused bits (%d)", nbits);
     }
 
     return tsdu;
@@ -190,7 +190,7 @@ static tsdu_d_group_list_t *d_group_list_decode(const uint8_t *data, int nbits)
                 cell_id_decode1(&tsdu->emergency[i].cell_id, data);
                 int zero = get_bits(4, data + 1, 4);
                 if (zero != 0) {
-                    printf("TSDU WTF nonzero padding\n");
+                    LOG(WTF, "nonzero padding (%d)", zero);
                 }
                 data += 2;
                 rlen += 2*8;
@@ -213,7 +213,7 @@ static tsdu_d_group_list_t *d_group_list_decode(const uint8_t *data, int nbits)
                 tsdu->open[i].group_id              = get_bits(12, data + 1, 4);
                 uint8_t padding                     = get_bits(2, data + 3, 0);
                 if (padding != 0) {
-                    printf("TSDU: WTF open nonzero padding\n");
+                    LOG(WTF, "nonzero padding (%d)", padding);
                 }
                 tsdu->open[i].och_parameters.add    = get_bits(1, data + 3, 2);
                 tsdu->open[i].och_parameters.mbn    = get_bits(1, data + 3, 3);
@@ -236,11 +236,11 @@ static tsdu_d_group_list_t *d_group_list_decode(const uint8_t *data, int nbits)
                 tsdu->group[i].coverage_id          = get_bits(8, data, 0);
                 uint8_t zero                        = get_bits(8, data + 1, 0);
                 if (zero != 0) {
-                    printf("TSDU: nonzero 'zero' in talk group\n");
+                    LOG(WTF, "nonzero padding in talk group-1 (%d)", zero);
                 }
                 uint8_t padding                     = get_bits(4, data + 2, 0);
                 if (padding != 0) {
-                    printf("TSDU: nonzero padding in talk group\n");
+                    LOG(WTF, "nonzero padding in talk group-2 (%d)", padding);
                 }
                 tsdu->group[i].neighbouring_cell    = get_bits(12, data + 2, 4);
                 data += 4;
@@ -340,7 +340,7 @@ static cell_id_list_t *iei_cell_id_list_decode(
     const int l = sizeof(cell_id_list_t) + n * sizeof(cell_id_t);
     cell_id_list_t *p = realloc(cell_ids, l);
     if (!p) {
-        printf("ERR OOM\n");
+        LOG(ERR, "ERR OOM");
         return NULL;
     }
     if (!cell_ids) {
@@ -367,7 +367,7 @@ addr_list_t *iei_adjacent_bn_list_decode(
     const int l = sizeof(addr_list_t) + n * sizeof(addr_t);
     addr_list_t *p = realloc(adj_cells, l);
     if (!p) {
-        printf("ERR OOM\n");
+        LOG(ERR, "ERR OOM");
         return NULL;
     }
     if (!adj_cells) {
@@ -395,7 +395,7 @@ static tsdu_d_neighbouring_cell_t *d_neighbouring_cell_decode(const uint8_t *dat
     uint8_t _zero                               = get_bits(4, data + 1, 0);
     tsdu->ccr_config.number                     = get_bits(4, data + 1, 4);
     if (_zero != 0) {
-        printf("TSDU DU: WTF d_neighbouring_cell padding != 0 (%d)\n", _zero);
+        LOG(WTF, "d_neighbouring_cell padding != 0 (%d)", _zero);
     }
 
     if (!tsdu->ccr_config.number) {
@@ -404,8 +404,7 @@ static tsdu_d_neighbouring_cell_t *d_neighbouring_cell_decode(const uint8_t *dat
 
     tsdu->ccr_param = data[2];
     if (tsdu->ccr_param) {
-        printf("TSDU DU: WTF d_neighbouring_cell ccr_param != 0 (%d)",
-               tsdu->ccr_param);
+        LOG(WTF, "d_neighbouring_cell ccr_param != 0 (%d)", tsdu->ccr_param);
     }
 
     data += 3;
@@ -416,7 +415,7 @@ static tsdu_d_neighbouring_cell_t *d_neighbouring_cell_decode(const uint8_t *dat
         tsdu->adj_cells[i].channel_id           = get_bits(12, data, 4);
         tsdu->adj_cells[i].adjacent_param._data = get_bits(8,  data + 2, 0);
         if (tsdu->adj_cells[i].adjacent_param._reserved) {
-            printf("TSDU DU: WTF adjacent_param._reserved != 0\n");
+            LOG(WTF, "adjacent_param._reserved != 0");
         }
         data += 3;
         nbits -= 3 * 8;
@@ -445,7 +444,7 @@ static tsdu_d_neighbouring_cell_t *d_neighbouring_cell_decode(const uint8_t *dat
             tsdu->cell_bns = p;
         } else {
             if (len) {
-                printf("TSDU DU: WTF d_neighbouring_cell unknown iei (0x%x)\n", iei);
+                LOG(WTF, "d_neighbouring_cell unknown iei (0x%x)", iei);
             }
         }
         data += len;
@@ -526,7 +525,7 @@ static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits
             break;
 
         default:
-            printf("unknown cell_state.mode value %d", tsdu->cell_state.mode);
+            LOG(WTF, "unknown cell_state.mode=%d", tsdu->cell_state.mode);
 
         case CELL_STATE_MODE_DISC_INTERN_BN:
         case CELL_STATE_MODE_DISC_MAIN_SWITCH:
@@ -644,7 +643,7 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
             break;
 
         default:
-            printf("unsupported TSDU codop %d\n", codop);
+            LOG(WTF, "unsupported codop 0x%02x", codop);
     }
 
     if (tsdu) {
@@ -680,8 +679,8 @@ static void tsdu_d_print(const tsdu_t *tsdu)
             d_system_info_print((tsdu_d_system_info_t *)tsdu);
             break;
         default:
-            printf("    CODOP=%0x\n", tsdu->codop);
-            printf("TSDU (downlink): print not implemented\n");
+            LOG(WTF, "print not implemented: downlink codop=0x%02x",
+                tsdu->codop);
     }
 }
 
@@ -689,8 +688,8 @@ static void tsdu_u_print(const tsdu_t *tsdu)
 {
     switch (tsdu->codop) {
         default:
-            printf("    CODOP=%0x\n", tsdu->codop);
-            printf("TSDU (uplink): print not implemented\n");
+            LOG(WTF, "print not implemented: uplink codop=0x%02x",
+                tsdu->codop);
     }
 }
 
