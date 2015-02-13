@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-#include "data_frame.h"
+#include <tetrapol/data_frame.h>
 
 typedef struct _pch_t pch_t;
 

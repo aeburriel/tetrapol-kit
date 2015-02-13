@@ -1,4 +1,4 @@
-#include "bit_utils.h"
+#include "tetrapol/bit_utils.h"
 
 bool check_fcs(const uint8_t *data, int nbits)
 {

@@ -2,36 +2,39 @@ find_library(CMOCKA_LIBRARY
     NAMES
     cmocka)
 
+SET(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 add_library (tetrapol
     addr.c
-    addr.h
     bch.c
-    bch.h
     bit_utils.c
-    bit_utils.h
     data_block.c
-    data_block.h
     data_frame.c
-    data_frame.h
     hdlc_frame.c
-    hdlc_frame.h
     log.c
-    log.h
     misc.c
-    misc.h
-    pch.c
-    pch.h
     phys_ch.c
-    phys_ch.h
-    sdch.c
-    sdch.h
-    system_config.h
+    pch.c
     rch.c
-    rch.h
+    sdch.c
     tpdu.c
-    tpdu.h
     tsdu.c
-    tsdu.h)
+    tetrapol/addr.h
+    tetrapol/bch.h
+    tetrapol/bit_utils.h
+    tetrapol/data_block.h
+    tetrapol/data_frame.h
+    tetrapol/hdlc_frame.h
+    tetrapol/log.h
+    tetrapol/misc.h
+    tetrapol/phys_ch.h
+    tetrapol/pch.h
+    tetrapol/rch.h
+    tetrapol/sdch.h
+    tetrapol/system_config.h
+    tetrapol/tpdu.h
+    tetrapol/tsdu.h
+)
 
 add_executable (test_data_block
     log.c

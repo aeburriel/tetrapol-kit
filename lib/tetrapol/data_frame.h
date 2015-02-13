@@ -1,6 +1,6 @@
 #pragma once
 
-#include "data_block.h"
+#include <tetrapol/data_block.h>
 
 typedef struct _data_frame_t data_frame_t;
 

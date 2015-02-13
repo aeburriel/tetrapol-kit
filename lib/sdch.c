@@ -1,11 +1,11 @@
 #define LOG_PREFIX "sdch"
-#include "log.h"
-#include "sdch.h"
-#include "data_frame.h"
-#include "hdlc_frame.h"
-#include "misc.h"
-#include "tpdu.h"
-#include "system_config.h"
+#include "tetrapol/log.h"
+#include "tetrapol/sdch.h"
+#include "tetrapol/data_frame.h"
+#include "tetrapol/hdlc_frame.h"
+#include "tetrapol/misc.h"
+#include "tetrapol/tpdu.h"
+#include "tetrapol/system_config.h"
 
 #include <stdlib.h>
 

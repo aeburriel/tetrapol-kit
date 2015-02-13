@@ -1,7 +1,7 @@
 #pragma once
 
-#include "addr.h"
-#include "system_config.h"
+#include <tetrapol/addr.h>
+#include <tetrapol/system_config.h>
 
 #include <stdbool.h>
 #include <stdint.h>

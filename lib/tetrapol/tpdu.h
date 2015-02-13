@@ -1,8 +1,8 @@
 #pragma once
 
-#include "hdlc_frame.h"
-#include "data_frame.h"
-#include "tsdu.h"
+#include <tetrapol/hdlc_frame.h>
+#include <tetrapol/data_frame.h>
+#include <tetrapol/tsdu.h>
 
 #include <stdbool.h>
 #include <stdint.h>

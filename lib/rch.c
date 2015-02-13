@@ -1,11 +1,11 @@
 #define LOG_PREFIX "rch"
-#include "log.h"
-#include "rch.h"
-#include "addr.h"
-#include "bit_utils.h"
-#include "data_frame.h"
-#include "misc.h"
-#include "system_config.h"
+#include "tetrapol/log.h"
+#include "tetrapol/rch.h"
+#include "tetrapol/addr.h"
+#include "tetrapol/bit_utils.h"
+#include "tetrapol/data_frame.h"
+#include "tetrapol/misc.h"
+#include "tetrapol/system_config.h"
 
 #include <stdlib.h>
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "data_block.h"
-#include "tsdu.h"
+#include <tetrapol/data_block.h>
+#include <tetrapol/tsdu.h>
 
 typedef struct _bch_t bch_t;
 

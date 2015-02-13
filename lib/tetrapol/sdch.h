@@ -1,7 +1,7 @@
 #pragma once
 
-#include "data_block.h"
-#include "tsdu.h"
+#include <tetrapol/data_block.h>
+#include <tetrapol/tsdu.h>
 
 #include <stdbool.h>
 

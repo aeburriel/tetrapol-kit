@@ -1,9 +1,9 @@
 #define LOG_PREFIX "tpdu"
-#include "log.h"
-#include "misc.h"
-#include "tsdu.h"
-#include "tpdu.h"
-#include "misc.h"
+#include "tetrapol/log.h"
+#include "tetrapol/misc.h"
+#include "tetrapol/tsdu.h"
+#include "tetrapol/tpdu.h"
+#include "tetrapol/misc.h"
 
 #include <stdlib.h>
 #include <string.h>

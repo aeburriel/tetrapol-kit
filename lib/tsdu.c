@@ -1,10 +1,10 @@
 #define LOG_PREFIX "tsdu"
-#include "log.h"
-#include "tsdu.h"
-#include "misc.h"
-#include "bit_utils.h"
-#include "phys_ch.h"
-#include "misc.h"
+#include "tetrapol/log.h"
+#include "tetrapol/tsdu.h"
+#include "tetrapol/misc.h"
+#include "tetrapol/bit_utils.h"
+#include "tetrapol/phys_ch.h"
+#include "tetrapol/misc.h"
 
 #include <stdint.h>
 #include <stdlib.h>

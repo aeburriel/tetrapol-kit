@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bit_utils.h"
+#include <tetrapol/bit_utils.h>
 
 #include <stdbool.h>
 #include <stdint.h>

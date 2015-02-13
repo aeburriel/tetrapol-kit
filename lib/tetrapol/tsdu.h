@@ -1,6 +1,6 @@
 #pragma once
 
-#include "addr.h"
+#include <tetrapol/addr.h>
 
 #include <stdbool.h>
 #include <stdint.h>
