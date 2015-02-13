@@ -14,12 +14,21 @@ void tpdu_ui_destroy(tpdu_ui_t *tpdu);
 
 /**
  * @brief tpdu_ui_push_hdlc_frame
- * Process HDLC frame
+ * Process HDLC frame, optionaly compose frame from segments.
  * @param tpdu
  * @param hdlc_fr
  * @return pointer to HDLC frame for reuse or NULL
  */
 hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr);
+
+/**
+ * @brief tpdu_ui_push_hdlc_frame2
+ * Process HDLC frame, does not allow segmented frames.
+ * @param tpdu
+ * @param hdlc_fr
+ * @return pointer to original HDLC frame for reuse
+ */
+hdlc_frame_t *tpdu_ui_push_hdlc_frame2(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr);
 
 bool tpdu_ui_has_tsdu(tpdu_ui_t *tpdu);
 

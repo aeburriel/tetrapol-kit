@@ -54,7 +54,8 @@ void tpdu_ui_destroy(tpdu_ui_t *tpdu)
     free(tpdu);
 }
 
-hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
+
+static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr, bool allow_seg)
 {
     if (hdlc_fr->nbits < 8) {
         LOG(WTF, "too short HDLC (%d)", hdlc_fr->nbits);
@@ -84,6 +85,10 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
 
     if (ext != 1) {
         LOG(WTF, "unsupported ext and seg combination");
+        return hdlc_fr;
+    }
+
+    if (!allow_seg) {
         return hdlc_fr;
     }
 
@@ -182,6 +187,16 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
     tpdu->tsdu = tsdu_d_decode(data, nbits, prio, id_tsap);
 
     return hdlc_fr;
+}
+
+hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
+{
+    return tpdu_ui_push_hdlc_frame_(tpdu, hdlc_fr, true);
+}
+
+hdlc_frame_t *tpdu_ui_push_hdlc_frame2(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
+{
+    return tpdu_ui_push_hdlc_frame_(tpdu, hdlc_fr, false);
 }
 
 tsdu_t *tpdu_ui_get_tsdu(tpdu_ui_t *tpdu)

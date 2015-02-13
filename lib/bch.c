@@ -4,6 +4,7 @@
 #include "data_frame.h"
 #include "hdlc_frame.h"
 #include "misc.h"
+#include "tpdu.h"
 #include "system_config.h"
 
 #include <stdbool.h>
@@ -14,6 +15,7 @@
 
 struct _bch_t {
     data_frame_t *data_fr;
+    tpdu_ui_t *tpdu;
     tsdu_d_system_info_t *tsdu;
 };
 
@@ -30,6 +32,13 @@ bch_t *bch_create(void)
         return NULL;
     }
 
+    bch->tpdu = tpdu_ui_create(FRAME_TYPE_DATA);
+    if (!bch->tpdu) {
+        free(bch);
+        data_frame_destroy(bch->data_fr);
+        return NULL;
+    }
+
     bch->tsdu = NULL;
 
     return bch;
@@ -39,6 +48,7 @@ void bch_destroy(bch_t *bch)
 {
     tsdu_destroy(&bch->tsdu->base);
     data_frame_destroy(bch->data_fr);
+    tpdu_ui_destroy(bch->tpdu);
     free(bch);
 }
 
@@ -72,28 +82,21 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
         return false;
     }
 
-    if (hdlc_fr.data[0] != 0x00 || hdlc_fr.data[1] != 0x11) {
-        LOG(INFO, "FIXME, invalid TPDU header 0x%02x 0x%02x",
-               hdlc_fr.data[0], hdlc_fr.data[1]);
+    tpdu_ui_push_hdlc_frame2(bch->tpdu, &hdlc_fr);
+    if (!tpdu_ui_has_tsdu(bch->tpdu)) {
+        return false;
+    }
+
+    tsdu_t *tsdu = tpdu_ui_get_tsdu(bch->tpdu);
+    if (tsdu->codop != D_SYSTEM_INFO) {
+        LOG(DBG, "Invalid codop for BCH 0x%02x", bch->tsdu->base.codop);
+        tsdu_destroy(tsdu);
+
         return false;
     }
 
     tsdu_destroy(&bch->tsdu->base);
-    bch->tsdu = (tsdu_d_system_info_t *)tsdu_d_decode(
-            hdlc_fr.data+2, hdlc_fr.nbits - 16, 0, 0);
-    if (bch->tsdu == NULL) {
-        return false;
-    }
-
-    if (bch->tsdu->base.codop != D_SYSTEM_INFO) {
-        if (data_blk->frame_no == FRAME_NO_UNKNOWN) {
-            LOG(DBG, "Invalid codop for BCH %d\n", bch->tsdu->base.codop);
-        }
-        tsdu_destroy(&bch->tsdu->base);
-        bch->tsdu = NULL;
-
-        return false;
-    }
+    bch->tsdu = (tsdu_d_system_info_t *)tsdu;
 
     const int frame_no = 100 * bch->tsdu->cell_state.bch + nblocks - 1;
     if (data_blk->frame_no != FRAME_NO_UNKNOWN &&
