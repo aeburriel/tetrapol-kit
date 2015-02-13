@@ -1,3 +1,5 @@
+#define LOG_PREFIX "rch"
+#include "log.h"
 #include "rch.h"
 #include "addr.h"
 #include "bit_utils.h"
@@ -5,7 +7,6 @@
 #include "misc.h"
 #include "system_config.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 typedef struct {
@@ -45,24 +46,24 @@ void rch_destroy(rch_t *rch)
 bool rch_push_data_block(rch_t *rch, data_block_t *data_blk)
 {
     if (!data_frame_push_data_block(rch->data_fr, data_blk)) {
-        printf("RCH: block fail\n");
+        LOG(DBG, "RCH: block fail");
         return false;
     }
 
     if (data_frame_blocks(rch->data_fr) != 1) {
-        printf("RCH: WTF block lenth != 1\n");
+        LOG(WTF, "block lenght != 1");
         return false;
     }
 
     uint8_t data[(92 + 7) / 8];
     const int size = data_frame_get_bytes(rch->data_fr, data);
     if (size != 64) {
-        printf("RCH: WTF invalid frame lenght\n");
+        LOG(WTF, "invalid frame lenght");
         return false;
     }
 
     if (!check_fcs(data, size)) {
-        printf("RCH: invalid FCS\n");
+        LOG(DBG, "invalid FCS");
         return false;
     }
 
