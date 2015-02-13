@@ -1,4 +1,7 @@
+#define LOG_PREFIX "phys_ch"
+
 #include "tetrapol.h"
+#include "log.h"
 #include "system_config.h"
 #include "tsdu.h"
 #include "misc.h"
@@ -92,13 +95,13 @@ static int process_traffic_radio_ch(phys_ch_t *phys_ch, frame_t *f);
 phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
 {
     if (band != TETRAPOL_BAND_VHF && band != TETRAPOL_BAND_UHF) {
-        fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'band'\n");
+        LOG(ERR, "tetrapol_phys_ch_create() invalid parametter 'band'");
         return NULL;
     }
 
     if (radio_ch_type != RADIO_CH_TYPE_CONTROL &&
             radio_ch_type != RADIO_CH_TYPE_TRAFFIC) {
-        fprintf(stderr, "tetrapol_phys_ch_create() invalid param 'radio_ch_type'\n");
+        LOG(ERR, "tetrapol_phys_ch_create() invalid param 'radio_ch_type'");
         return NULL;
     }
 
@@ -278,7 +281,7 @@ static int get_frame(phys_ch_t *phys_ch, frame_t *frame)
     }
 
     if (phys_ch->sync_errs > 6) {
-        printf("get_frame() - sync lost sync_errs=%d\n", phys_ch->sync_errs);
+        LOG(INFO, "get_frame() - sync lost sync_errs=%d", phys_ch->sync_errs);
         return -1;
     }
 
@@ -335,7 +338,7 @@ static int get_frame(phys_ch_t *phys_ch, frame_t *frame)
     }
 
     if (phys_ch->sync_errs > 10) {
-        printf("get_frame() sync lost sync_errs=%d\n", phys_ch->sync_errs);
+        LOG(INFO, "get_frame() sync lost sync_errs=%d", phys_ch->sync_errs);
         return -1;
     }
 
@@ -343,7 +346,7 @@ static int get_frame(phys_ch_t *phys_ch, frame_t *frame)
     phys_ch->data_begin = (sync_errs1 < sync_errs2) ? sync_pos1 : sync_pos2;
 
     copy_frame(phys_ch, frame);
-    printf("get_frame() sync fail sync_errs=%d\n", phys_ch->sync_errs);
+    LOG(INFO, "get_frame() sync fail sync_errs=%d", phys_ch->sync_errs);
 
     return 1;
 }
@@ -355,7 +358,7 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
         if (!phys_ch->has_frame_sync) {
             return 0;
         }
-        fprintf(stderr, "Frame sync found\n");
+        LOG(INFO, "Frame sync found");
         phys_ch->frame_no = FRAME_NO_UNKNOWN;
         pch_reset(phys_ch->pch);
     }
@@ -373,7 +376,7 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
         return 0;
     }
 
-    fprintf(stderr, "Frame sync lost\n");
+    LOG(INFO, "Frame sync lost");
     phys_ch->has_frame_sync = false;
 
     return 0;
@@ -549,7 +552,7 @@ static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
     }
     if (phys_ch->scr_stat[scr_max] - phys_ch->scr_confidence > phys_ch->scr_stat[scr_max2]) {
         phys_ch->scr = scr_max;
-        printf("SCR detected %d\n", scr_max);
+        LOG(INFO, "SCR detected %d", scr_max);
     }
 
     phys_ch->scr_guess = scr_max;
@@ -577,7 +580,7 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
     if (phys_ch->band == TETRAPOL_BAND_VHF) {
         // TODO
         // frame_deinterleave(&f_, interleave_data_VHF);
-        fprintf(stderr, "process_control_radio_ch VHF processing not implemented\n");
+        LOG(ERR, "process_control_radio_ch VHF processing not implemented");
         return -1;
     } else {
         frame_diff_dec(f);
@@ -586,17 +589,19 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 
     data_block_t data_blk;
     data_block_decode_frame(&data_blk, f->data, f->frame_no, FRAME_TYPE_DATA);
-    if (!data_blk.nerrs) {
-        int asbx = data_blk.data[67];
-        int asby = data_blk.data[68];
-        int fn0 = data_blk.data[1];
-        int fn1 = data_blk.data[2];
-        printf("OK frame_no=%03i fn=%i%i asb=%i%i data=",
-                data_blk.frame_no, fn1, fn0, asbx, asby);
-    } else {
-        printf("ERR frame_no=%03i ", data_blk.frame_no);
+    IF_LOG(DBG) {
+        if (!data_blk.nerrs) {
+            int asbx = data_blk.data[67];
+            int asby = data_blk.data[68];
+            int fn0 = data_blk.data[1];
+            int fn1 = data_blk.data[2];
+            LOG_("OK frame_no=%03i fn=%i%i asb=%i%i data=",
+                   data_blk.frame_no, fn1, fn0, asbx, asby);
+        } else {
+            LOG_("ERR frame_no=%03i ", data_blk.frame_no);
+        }
+        print_buf(data_blk.data + 3, 64);
     }
-    print_buf(data_blk.data + 3, 64);
 
     // For decoding BCH are used always all frames, not only 0-3, 100-103
     // Firs of all for detection BCH (frame 0/100 in superblock).
@@ -607,10 +612,13 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
             phys_ch->cch_mux_type = tsdu->cell_config.mux_type;
             if (phys_ch->cch_mux_type != CELL_CONFIG_MUX_TYPE_DEFAULT &&
                     phys_ch->cch_mux_type != CELL_CONFIG_MUX_TYPE_TYPE_2) {
-                printf("Unknown channel multiplexing type\n");
+                LOG(ERR, "Unknown channel multiplexing type");
                 return -1;
             }
-            tsdu_print(&tsdu->base);
+            IF_LOG(INFO) {
+                LOG_("\n");
+                tsdu_print(&tsdu->base);
+            }
             tsdu_destroy(&tsdu->base);
             f->frame_no = data_blk.frame_no;
             return 0;
@@ -629,14 +637,20 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 
     if (fn_mod == 98 || fn_mod == 99) {
         if (pch_push_data_block(phys_ch->pch, &data_blk)) {
-            pch_print(phys_ch->pch);
+            IF_LOG(INFO) {
+                LOG_("\n");
+                pch_print(phys_ch->pch);
+            }
         }
         return 0;
     }
     if (phys_ch->cch_mux_type == CELL_CONFIG_MUX_TYPE_TYPE_2) {
         if (fn_mod == 48 || fn_mod == 49) {
             if (pch_push_data_block(phys_ch->pch, &data_blk)) {
-                pch_print(phys_ch->pch);
+                IF_LOG(INFO) {
+                    LOG_("\n");
+                    pch_print(phys_ch->pch);
+                }
             }
             return 0;
         }
@@ -644,7 +658,10 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 
     if (f->frame_no % 25 == 14) {
         if (rch_push_data_block(phys_ch->rch, &data_blk)) {
-            rch_print(phys_ch->rch);
+            IF_LOG(INFO) {
+                LOG_("\n");
+                rch_print(phys_ch->rch);
+            }
         }
         return 0;
     }
@@ -652,7 +669,10 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
     if (sdch_dl_push_data_frame(phys_ch->sdch, &data_blk)) {
         tsdu_t *tsdu = sdch_get_tsdu(phys_ch->sdch);
         if (tsdu) {
-            tsdu_print(tsdu);
+            IF_LOG(INFO) {
+                LOG_("\n");
+                tsdu_print(tsdu);
+            }
         }
         tsdu_destroy(tsdu);
         return 0;
@@ -664,6 +684,6 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 static int process_traffic_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 {
     // TODO
-    fprintf(stderr, "process_traffic_radio_ch() not implemented\n");
+    LOG(ERR, "process_traffic_radio_ch() not implemented");
     return -1;
 }
