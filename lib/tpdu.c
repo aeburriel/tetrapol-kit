@@ -58,7 +58,7 @@ hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
 {
     if (hdlc_fr->nbits < 8) {
         LOG(WTF, "too short HDLC (%d)", hdlc_fr->nbits);
-        return false;
+        return hdlc_fr;
     }
 
     bool ext                    = get_bits(1, hdlc_fr->data, 0);
