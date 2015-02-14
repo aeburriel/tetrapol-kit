@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "tetrapol/misc.h"
+#include <tetrapol/misc.h>
 
 
 int bits_to_int(const uint8_t *bits, int num)

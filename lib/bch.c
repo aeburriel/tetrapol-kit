@@ -1,11 +1,11 @@
 #define LOG_PREFIX "bch"
-#include "tetrapol/log.h"
-#include "tetrapol/bch.h"
-#include "tetrapol/data_frame.h"
-#include "tetrapol/hdlc_frame.h"
-#include "tetrapol/misc.h"
-#include "tetrapol/tpdu.h"
-#include "tetrapol/system_config.h"
+#include <tetrapol/log.h>
+#include <tetrapol/bch.h>
+#include <tetrapol/data_frame.h>
+#include <tetrapol/hdlc_frame.h>
+#include <tetrapol/misc.h>
+#include <tetrapol/tpdu.h>
+#include <tetrapol/system_config.h>
 
 #include <stdbool.h>
 #include <stdio.h>

@@ -1,8 +1,8 @@
 #define LOG_EFIX "hdlc"
-#include "tetrapol/log.h"
-#include "tetrapol/hdlc_frame.h"
-#include "tetrapol/bit_utils.h"
-#include "tetrapol/misc.h"
+#include <tetrapol/log.h>
+#include <tetrapol/hdlc_frame.h>
+#include <tetrapol/bit_utils.h>
+#include <tetrapol/misc.h>
 
 #include <stdbool.h>
 #include <stdio.h>
