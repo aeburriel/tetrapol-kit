@@ -138,6 +138,7 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
         if (!phys_ch->sdch) {
             goto err_sdch;
         }
+        timer_register(phys_ch->timer, sdch_tick, phys_ch->sdch);
     }
 
     return phys_ch;

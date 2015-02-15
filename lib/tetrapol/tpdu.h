@@ -3,6 +3,7 @@
 #include <tetrapol/hdlc_frame.h>
 #include <tetrapol/data_frame.h>
 #include <tetrapol/tsdu.h>
+#include <tetrapol/timer.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -46,4 +47,5 @@ tsdu_t *tpdu_ui_get_tsdu(tpdu_ui_t *tpdu);
 // old methods
 void segmentation_reset(void);
 void tpdu_process(const uint8_t *t, int length, int *frame_no);
+void tpdu_du_tick(const timeval_t *tv, void *tpdu_du);
 

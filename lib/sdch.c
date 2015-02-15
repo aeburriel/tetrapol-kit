@@ -94,7 +94,7 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
         sdch->hdlc_fr = tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, sdch->hdlc_fr);
         return tpdu_ui_has_tsdu(sdch->tpdu_ui);
     }
-    LOG(DBG, "CMD 0x%02x", sdch->hdlc_fr->command.cmd);
+    LOG(INFO, "old CMD 0x%02x", sdch->hdlc_fr->command.cmd);
 
     // TODO ...
 
@@ -132,4 +132,9 @@ tsdu_t *sdch_get_tsdu(sdch_t *sdch)
     // TODO: multiplexing for other TPDU types
 
     return tsdu;
+}
+
+void sdch_tick(const timeval_t *tv, void *sdch)
+{
+    tpdu_du_tick(tv, ((sdch_t *)sdch)->tpdu_ui);
 }

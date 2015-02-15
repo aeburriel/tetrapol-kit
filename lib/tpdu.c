@@ -9,10 +9,10 @@
 #include <string.h>
 
 typedef struct {
-    /// time_ref_t - FIXME clean old incomplete messages after T454
+    timeval_t tv;
     uint8_t id_tsap;
     uint8_t prio;
-    uint8_t nsegments;  ///< total amount of segments in DU
+    uint8_t nsegments;  ///< total amount of segments (HDLC frames) in DU
     hdlc_frame_t *hdlc_frs[SYS_PAR_N452];
 } segmented_du_t;
 
@@ -21,6 +21,21 @@ struct _tpdu_ui_t {
     segmented_du_t *seg_du[128];
     tsdu_t *tsdu;           ///< contains last decoded TSDU
 };
+
+hdlc_frame_t *tpdu_ui_segments_destroy(segmented_du_t *du)
+{
+    hdlc_frame_t *fr = NULL;
+
+    for (int i = 0; i < SYS_PAR_N452; ++i) {
+        if (du->hdlc_frs[i]) {
+            free(fr);
+            fr = du->hdlc_frs[i];
+        }
+    }
+    free(du);
+
+    return fr;
+}
 
 tpdu_ui_t *tpdu_ui_create(frame_type_t fr_type)
 {
@@ -46,10 +61,8 @@ void tpdu_ui_destroy(tpdu_ui_t *tpdu)
         if (!tpdu->seg_du[i]) {
             continue;
         }
-        for (int j = 0; j < SYS_PAR_N452; ++j) {
-            free(tpdu->seg_du[i]->hdlc_frs[j]);
-        }
-        free(tpdu->seg_du[i]);
+        hdlc_frame_t *fr = tpdu_ui_segments_destroy(tpdu->seg_du[i]);
+        free(fr);
     }
     free(tpdu);
 }
@@ -134,6 +147,10 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
         seg_du->nsegments = packet_num + 1;
     }
 
+    // reset T454 timer
+    seg_du->tv.tv_sec = 0;
+    seg_du->tv.tv_usec = 0;
+
     // last segment is still missing
     if (!seg_du->nsegments) {
         return NULL;
@@ -173,15 +190,7 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
         // TODO
     }
 
-    // free segments
-    for (int i = 0; i < seg_du->nsegments; ++i) {
-        if (seg_du->hdlc_frs[i] == hdlc_fr) {
-            continue;
-        }
-        free(seg_du->hdlc_frs[i]);
-    }
-
-    free(seg_du);
+    hdlc_fr = tpdu_ui_segments_destroy(seg_du);
     tpdu->seg_du[seg_ref] = NULL;
 
     tpdu->tsdu = tsdu_d_decode(data, nbits, prio, id_tsap);
@@ -211,6 +220,32 @@ bool tpdu_ui_has_tsdu(tpdu_ui_t *tpdu)
     return tpdu->tsdu != NULL;
 }
 
+void tpdu_du_tick(const timeval_t *tv, void *tpdu_du)
+{
+    tpdu_ui_t *tpdu = tpdu_du;
+
+    // set/check T454 timer
+    for (int i = 0; i < ARRAY_LEN(tpdu->seg_du); ++i) {
+        if (!tpdu->seg_du[i]) {
+            continue;
+        }
+
+        if (!tpdu->seg_du[i]->tv.tv_sec && !tpdu->seg_du[i]->tv.tv_usec) {
+            tpdu->seg_du[i]->tv.tv_sec = tv->tv_sec;
+            tpdu->seg_du[i]->tv.tv_usec = tv->tv_usec;
+            continue;
+        }
+
+        if (timeval_abs_delta(&tpdu->seg_du[i]->tv, tv) < SYS_PAR_T454) {
+            continue;
+        }
+
+        // TODO: report error to application layer
+        hdlc_frame_t *fr = tpdu_ui_segments_destroy(tpdu->seg_du[i]);
+        free(fr);
+        tpdu->seg_du[i] = NULL;
+    }
+}
 
 // ------- old methods
 
@@ -384,4 +419,3 @@ void tpdu_process(const uint8_t* t, int length, int *frame_no) {
 
     hdlc_process(t+16,length-2, *frame_no);
 }
-
