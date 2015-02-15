@@ -38,3 +38,13 @@ inline uint32_t get_bits(int len, const uint8_t *data, int skip)
     return r;
 }
 
+inline int cmpzero(const void *data, int len)
+{
+    for (int i = 0; i < len; ++i) {
+        if (((uint8_t *)data)[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}

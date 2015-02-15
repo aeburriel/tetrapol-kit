@@ -8,6 +8,7 @@
 #include <tetrapol/system_config.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 struct _sdch_t {
     data_frame_t *data_fr;
@@ -94,6 +95,23 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
         sdch->hdlc_fr = tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, sdch->hdlc_fr);
         return tpdu_ui_has_tsdu(sdch->tpdu_ui);
     }
+
+    if (sdch->hdlc_fr->command.cmd == COMMAND_SUPERVISION_RR) {
+        IF_LOG(INFO) {
+            LOG_("\n\tcmd: RR\n\taddr: ");
+            addr_print(&sdch->hdlc_fr->addr);
+            printf("\n");
+        }
+        if (!cmpzero(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8)) {
+            IF_LOG(WTF) {
+                LOG_("cmd: RR, nonzero stuffing");
+                print_hex(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8);
+            }
+        }
+        // TODO: report RR to application layer
+        return false;
+    }
+
     LOG(INFO, "old CMD 0x%02x", sdch->hdlc_fr->command.cmd);
 
     // TODO ...
