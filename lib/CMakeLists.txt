@@ -71,6 +71,7 @@ add_executable (test_phys_ch
     rch.c
     sdch.c
     test_phys_ch.c
+    timer.c
     tpdu.c
     tsdu.c)
 target_link_libraries (test_phys_ch ${CMOCKA_LIBRARY})

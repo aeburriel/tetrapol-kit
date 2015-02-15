@@ -11,6 +11,7 @@
 #include <tetrapol/pch.h>
 #include <tetrapol/rch.h>
 #include <tetrapol/sdch.h>
+#include <tetrapol/timer.h>
 
 #include <limits.h>
 #include <stdlib.h>
@@ -48,6 +49,7 @@ struct _phys_ch_t {
     uint8_t data[10*FRAME_LEN];
     // CCH specific data, will be union with traffich CH specicic data
     int cch_mux_type;   ///< control CH multiplexing, see PAS 0001-3-3 5.1.3
+    timer_t *timer;
     bch_t *bch;
     pch_t *pch;
     rch_t *rch;
@@ -117,6 +119,7 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
     phys_ch->frame_no = FRAME_NO_UNKNOWN;
     phys_ch->scr = PHYS_CH_SCR_DETECT;
     phys_ch->scr_confidence = 50;
+    phys_ch->timer = timer_create();
 
     if (radio_ch_type == RADIO_CH_TYPE_CONTROL) {
         phys_ch->bch = bch_create();
@@ -149,6 +152,7 @@ err_pch:
     bch_destroy(phys_ch->bch);
 
 err_bch:
+    timer_destroy(phys_ch->timer);
     free(phys_ch);
 
     return NULL;
@@ -162,6 +166,7 @@ void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch)
         rch_destroy(phys_ch->rch);
         sdch_destroy(phys_ch->sdch);
     }
+    timer_destroy(phys_ch->timer);
     free(phys_ch);
 }
 
@@ -354,8 +359,11 @@ static int get_frame(phys_ch_t *phys_ch, frame_t *frame)
 int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
 {
     if (!phys_ch->has_frame_sync) {
+        int n = phys_ch->data_end - phys_ch->data_end;
         phys_ch->has_frame_sync = find_frame_sync(phys_ch);
+        n -= phys_ch->data_end - phys_ch->data_end;
         if (!phys_ch->has_frame_sync) {
+            timer_tick(phys_ch->timer, n * 20000 / 160);
             return 0;
         }
         LOG(INFO, "Frame sync found");
@@ -370,6 +378,7 @@ int tetrapol_phys_ch_process(phys_ch_t *phys_ch)
         if (frame.frame_no != FRAME_NO_UNKNOWN) {
             phys_ch->frame_no = (frame.frame_no + 1) % 200;
         }
+        timer_tick(phys_ch->timer, 20000);
     }
 
     if (r == 0) {
