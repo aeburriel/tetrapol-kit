@@ -21,7 +21,7 @@ extern int log_global_lvl;
 
 // define LOG_LVL to override log level for single file
 #ifndef LOG_LVL
-#define LOG_LOCAL_LVL(lvl) true
+#define LOG_LOCAL_LVL(lvl) false
 #else
 #define LOG_LOCAL_LVL(lvl) (lvl <= LOG_LVL)
 #endif
