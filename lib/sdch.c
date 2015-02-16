@@ -84,18 +84,6 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
         return false;
     }
 
-    if (sdch->hdlc_fr->command.cmd == COMMAND_UNNUMBERED_UI) {
-        IF_LOG(DBG) {
-            LOG_("HDLC info=");
-            print_hex(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8);
-            printf("\t");
-            addr_print(&sdch->hdlc_fr->addr);
-            printf("\n");
-        }
-        sdch->hdlc_fr = tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, sdch->hdlc_fr);
-        return tpdu_ui_has_tsdu(sdch->tpdu_ui);
-    }
-
     if (sdch->hdlc_fr->command.cmd == COMMAND_SUPERVISION_RR) {
         IF_LOG(INFO) {
             LOG_("\n\tcmd: RR\n\taddr: ");
@@ -110,6 +98,18 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
         }
         // TODO: report RR to application layer
         return false;
+    }
+
+    if (sdch->hdlc_fr->command.cmd == COMMAND_UNNUMBERED_UI) {
+        IF_LOG(DBG) {
+            LOG_("HDLC info=");
+            print_hex(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8);
+            printf("\t");
+            addr_print(&sdch->hdlc_fr->addr);
+            printf("\n");
+        }
+        sdch->hdlc_fr = tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, sdch->hdlc_fr);
+        return tpdu_ui_has_tsdu(sdch->tpdu_ui);
     }
 
     if (sdch->hdlc_fr->command.cmd == COMMAND_DACH) {
