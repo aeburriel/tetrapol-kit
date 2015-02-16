@@ -18,12 +18,10 @@ struct _timer_t {
 
 timer_t *timer_create(void)
 {
-    timer_t *timer = malloc(sizeof(timer_t));
+    timer_t *timer = calloc(1, sizeof(timer_t));
     if (!timer) {
         return NULL;
     }
-
-    memset(timer, 0, sizeof(timer_t));
 
     return timer;
 }

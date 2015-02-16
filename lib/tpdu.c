@@ -44,11 +44,10 @@ tpdu_ui_t *tpdu_ui_create(frame_type_t fr_type)
         return NULL;
     }
 
-    tpdu_ui_t *tpdu = malloc(sizeof(tpdu_ui_t));
+    tpdu_ui_t *tpdu = calloc(1, sizeof(tpdu_ui_t));
     if (!tpdu) {
         return NULL;
     }
-    memset(tpdu, 0, sizeof(tpdu_ui_t));
     tpdu->fr_type = fr_type;
 
     return tpdu;
@@ -127,11 +126,10 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
 
     segmented_du_t *seg_du = tpdu->seg_du[seg_ref];
     if (seg_du == NULL) {
-        seg_du = malloc(sizeof(segmented_du_t));
+        seg_du = calloc(1, sizeof(segmented_du_t));
         if (!seg_du) {
             return hdlc_fr;
         }
-        memset(seg_du, 0 , sizeof(segmented_du_t));
         tpdu->seg_du[seg_ref] = seg_du;
         seg_du->id_tsap = id_tsap;
         seg_du->prio = prio;

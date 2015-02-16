@@ -107,11 +107,10 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type)
         return NULL;
     }
 
-    phys_ch_t *phys_ch = malloc(sizeof(phys_ch_t));
+    phys_ch_t *phys_ch = calloc(1, sizeof(phys_ch_t));
     if (phys_ch == NULL) {
         return NULL;
     }
-    memset(phys_ch, 0, sizeof(phys_ch_t));
 
     phys_ch->band = band;
     phys_ch->radio_ch_type = radio_ch_type;
