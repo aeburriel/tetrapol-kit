@@ -44,25 +44,28 @@ static void command_parse(command_t *cmd, uint8_t data)
 
     switch (cmd->cmd) {
         case COMMAND_INFORMATION:
-            cmd->information.send_seq_no    = get_bits(3, &data, 1);
+            cmd->information.recv_seq_no    = get_bits(3, &data, 0);
+            cmd->information.p_e            = get_bits(1, &data, 3);
+            cmd->information.send_seq_no    = get_bits(3, &data, 4);
+            break;
 
         case COMMAND_SUPERVISION_RR:
         case COMMAND_SUPERVISION_RNR:
         case COMMAND_SUPERVISION_REJ:
-            cmd->information.p_e            = get_bits(1, &data, 4);
-            cmd->information.recv_seq_no    = get_bits(3, &data, 5);
+            cmd->supervision.recv_seq_no    = get_bits(3, &data, 0);
+            cmd->supervision.p_e            = get_bits(1, &data, 3);
             break;
 
         case COMMAND_DACH:
-            cmd->dach_access.retry          = get_bits(1, &data, 4);
-            cmd->dach_access.seq_no         = get_bits(3, &data, 5);
+            cmd->dach_access.seq_no         = get_bits(3, &data, 0);
+            cmd->dach_access.retry          = get_bits(1, &data, 3);
             break;
 
         case COMMAND_UNNUMBERED_UI:
         case COMMAND_UNNUMBERED_DISC:
         case COMMAND_UNNUMBERED_UA:
         case COMMAND_UNNUMBERED_SNRM:
-            cmd->dach_access.retry          = get_bits(1, &data, 4);
+            cmd->unnumbered.p_e             = get_bits(1, &data, 3);
             break;
 
         case COMMAND_UNNUMBERED_UI_CD:
@@ -70,17 +73,17 @@ static void command_parse(command_t *cmd, uint8_t data)
             break;
 
         case COMMAND_UNNUMBERED_UI_P0:
-            cmd->unnumbered.ra              = get_bits(1, &data, 4);
+            cmd->unnumbered.ra              = get_bits(1, &data, 3);
             break;
 
         case COMMAND_UNNUMBERED_U_RR:
-            cmd->unnumbered.p_e             = get_bits(1, &data, 4);
-            cmd->unnumbered.response_format = get_bits(2, &data, 6);
+            cmd->unnumbered.response_format = get_bits(2, &data, 0);
+            cmd->unnumbered.p_e             = get_bits(1, &data, 3);
             break;
 
         case COMMAND_UNNUMBERED_FRMR:
         case COMMAND_UNNUMBERED_DM:
-            cmd->unnumbered.p_e             = get_bits(1, &data, 4);
+            cmd->unnumbered.p_e             = get_bits(1, &data, 3);
             break;
 
         case COMMAND_UNNUMBERED__BLANK1:
