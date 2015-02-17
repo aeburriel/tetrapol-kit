@@ -82,8 +82,7 @@ bool bch_push_data_block(bch_t *bch, data_block_t* data_blk)
         return false;
     }
 
-    tpdu_ui_push_hdlc_frame2(bch->tpdu, &hdlc_fr);
-    if (!tpdu_ui_has_tsdu(bch->tpdu)) {
+    if (!tpdu_ui_push_hdlc_frame2(bch->tpdu, &hdlc_fr)) {
         return false;
     }
 

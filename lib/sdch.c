@@ -12,7 +12,6 @@
 
 struct _sdch_t {
     data_frame_t *data_fr;
-    hdlc_frame_t *hdlc_fr;
     tpdu_ui_t *tpdu_ui;
 };
 
@@ -33,14 +32,7 @@ sdch_t *sdch_create(void)
         goto err_tpdu_ui;
     }
 
-    sdch->hdlc_fr = malloc(sizeof(hdlc_frame_t));
-    if (!sdch->hdlc_fr) {
-        goto err_hdlc;
-    }
     return sdch;
-
-err_hdlc:
-    tpdu_ui_destroy(sdch->tpdu_ui);
 
 err_tpdu_ui:
     data_frame_destroy(sdch->data_fr);
@@ -56,7 +48,6 @@ void sdch_destroy(sdch_t *sdch)
     if (sdch) {
         data_frame_destroy(sdch->data_fr);
         tpdu_ui_destroy(sdch->tpdu_ui);
-        free(sdch->hdlc_fr);
     }
     free(sdch);
 }
@@ -71,64 +62,57 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
     int nblks = data_frame_blocks(sdch->data_fr);
     const int size = data_frame_get_bytes(sdch->data_fr, data);
 
-    if (!sdch->hdlc_fr) {
-        sdch->hdlc_fr = malloc(sizeof(hdlc_frame_t));
-        if (!sdch->hdlc_fr) {
-            LOG(ERR, "ERR OOM");
-            return false;
-        }
-    }
+    hdlc_frame_t hdlc_fr;
 
-    if (!hdlc_frame_parse(sdch->hdlc_fr, data, size)) {
+    if (!hdlc_frame_parse(&hdlc_fr, data, size)) {
         // PAS 0001-3-3 7.4.1.9 stuffing frames are dropped, FCS does not match
         return false;
     }
 
-    if (sdch->hdlc_fr->command.cmd == COMMAND_SUPERVISION_RR) {
+    if (hdlc_fr.command.cmd == COMMAND_SUPERVISION_RR) {
         IF_LOG(INFO) {
             LOG_("\n\tcmd: RR\n\taddr: ");
-            addr_print(&sdch->hdlc_fr->addr);
+            addr_print(&hdlc_fr.addr);
             printf("\n");
         }
-        if (!cmpzero(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8)) {
+        if (!cmpzero(hdlc_fr.data, hdlc_fr.nbits / 8)) {
             IF_LOG(WTF) {
                 LOG_("cmd: RR, nonzero stuffing");
-                print_hex(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8);
+                print_hex(hdlc_fr.data, hdlc_fr.nbits / 8);
             }
         }
         // TODO: report RR to application layer
         return false;
     }
 
-    if (sdch->hdlc_fr->command.cmd == COMMAND_UNNUMBERED_UI) {
+    if (hdlc_fr.command.cmd == COMMAND_UNNUMBERED_UI) {
         IF_LOG(DBG) {
             LOG_("HDLC info=");
-            print_hex(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8);
+            print_hex(hdlc_fr.data, hdlc_fr.nbits / 8);
             printf("\t");
-            addr_print(&sdch->hdlc_fr->addr);
+            addr_print(&hdlc_fr.addr);
             printf("\n");
         }
-        sdch->hdlc_fr = tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, sdch->hdlc_fr);
-        return tpdu_ui_has_tsdu(sdch->tpdu_ui);
+        return tpdu_ui_push_hdlc_frame(sdch->tpdu_ui, &hdlc_fr);
     }
 
-    if (sdch->hdlc_fr->command.cmd == COMMAND_DACH) {
+    if (hdlc_fr.command.cmd == COMMAND_DACH) {
         IF_LOG(INFO) {
             LOG_("\n\tcmd ACK_DACH\n\taddr: ");
-            addr_print(&sdch->hdlc_fr->addr);
+            addr_print(&hdlc_fr.addr);
             printf("\n");
         }
-        if (!cmpzero(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8)) {
+        if (!cmpzero(hdlc_fr.data, hdlc_fr.nbits / 8)) {
             IF_LOG(WTF) {
                 LOG_("cmd: ACK_DACH, nonzero stuffing");
-                print_hex(sdch->hdlc_fr->data, sdch->hdlc_fr->nbits / 8);
+                print_hex(hdlc_fr.data, hdlc_fr.nbits / 8);
             }
         }
         // TODO: report ACK_DACH to application layer
         return false;
     }
 
-    LOG(INFO, "old CMD 0x%02x", sdch->hdlc_fr->command.cmd);
+    LOG(INFO, "old CMD 0x%02x", hdlc_fr.command.cmd);
 
     // TODO ...
 

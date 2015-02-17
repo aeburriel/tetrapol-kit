@@ -22,19 +22,12 @@ struct _tpdu_ui_t {
     tsdu_t *tsdu;           ///< contains last decoded TSDU
 };
 
-hdlc_frame_t *tpdu_ui_segments_destroy(segmented_du_t *du)
+void tpdu_ui_segments_destroy(segmented_du_t *du)
 {
-    hdlc_frame_t *fr = NULL;
-
     for (int i = 0; i < SYS_PAR_N452; ++i) {
-        if (du->hdlc_frs[i]) {
-            free(fr);
-            fr = du->hdlc_frs[i];
-        }
+        free(du->hdlc_frs[i]);
     }
     free(du);
-
-    return fr;
 }
 
 tpdu_ui_t *tpdu_ui_create(frame_type_t fr_type)
@@ -60,18 +53,18 @@ void tpdu_ui_destroy(tpdu_ui_t *tpdu)
         if (!tpdu->seg_du[i]) {
             continue;
         }
-        hdlc_frame_t *fr = tpdu_ui_segments_destroy(tpdu->seg_du[i]);
-        free(fr);
+        tpdu_ui_segments_destroy(tpdu->seg_du[i]);
     }
     free(tpdu);
 }
 
 
-static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr, bool allow_seg)
+static bool tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr,
+                                     bool allow_seg)
 {
     if (hdlc_fr->nbits < 8) {
         LOG(WTF, "too short HDLC (%d)", hdlc_fr->nbits);
-        return hdlc_fr;
+        return false;
     }
 
     bool ext                    = get_bits(1, hdlc_fr->data, 0);
@@ -92,23 +85,23 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
             const int nbits = hdlc_fr->nbits - 8;
             tpdu->tsdu = tsdu_d_decode(hdlc_fr->data + 1, nbits, prio, id_tsap);
         }
-        return hdlc_fr;
+        return tpdu->tsdu != NULL;
     }
 
     if (ext != 1) {
         LOG(WTF, "unsupported ext and seg combination");
-        return hdlc_fr;
+        return false;
     }
 
     if (!allow_seg) {
-        return hdlc_fr;
+        return false;
     }
 
     ext                         = get_bits(1, hdlc_fr->data + 1, 0);
     uint8_t seg_ref             = get_bits(7, hdlc_fr->data + 1, 1);
     if (!ext) {
         LOG(WTF, "unsupported short ext");
-        return hdlc_fr;
+        return false;
     }
 
     ext                         = get_bits(1, hdlc_fr->data + 2, 0);
@@ -116,7 +109,7 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
     const uint8_t packet_num    = get_bits(6, hdlc_fr->data + 2, 2);
     if (ext) {
         LOG(WTF, "unsupported long ext");
-        return hdlc_fr;
+        return false;
     }
 
     if (res) {
@@ -128,7 +121,7 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
     if (seg_du == NULL) {
         seg_du = calloc(1, sizeof(segmented_du_t));
         if (!seg_du) {
-            return hdlc_fr;
+            return false;
         }
         tpdu->seg_du[seg_ref] = seg_du;
         seg_du->id_tsap = id_tsap;
@@ -137,9 +130,15 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
 
     if (seg_du->hdlc_frs[packet_num]) {
         // segment already recieved
-        return hdlc_fr;
+        return false;
     }
-    seg_du->hdlc_frs[packet_num] = hdlc_fr;
+
+    seg_du->hdlc_frs[packet_num] = malloc(sizeof(hdlc_frame_t));
+    if (!seg_du->hdlc_frs[packet_num]) {
+        LOG(ERR, "ERR OOM");
+        return false;
+    }
+    memcpy(seg_du->hdlc_frs[packet_num], hdlc_fr, sizeof(hdlc_frame_t));
 
     if (seg == 0) {
         seg_du->nsegments = packet_num + 1;
@@ -151,13 +150,13 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
 
     // last segment is still missing
     if (!seg_du->nsegments) {
-        return NULL;
+        return false;
     }
 
     // check if we have all segments
     for (int i = 0; i < seg_du->nsegments; ++i) {
         if (!seg_du->hdlc_frs[i]) {
-            return NULL;
+            return false;
         }
     }
 
@@ -188,20 +187,20 @@ static hdlc_frame_t *tpdu_ui_push_hdlc_frame_(tpdu_ui_t *tpdu, hdlc_frame_t *hdl
         // TODO
     }
 
-    hdlc_fr = tpdu_ui_segments_destroy(seg_du);
+    tpdu_ui_segments_destroy(seg_du);
     tpdu->seg_du[seg_ref] = NULL;
 
     tpdu->tsdu = tsdu_d_decode(data, nbits, prio, id_tsap);
 
-    return hdlc_fr;
+    return tpdu->tsdu != NULL;
 }
 
-hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
+bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
 {
     return tpdu_ui_push_hdlc_frame_(tpdu, hdlc_fr, true);
 }
 
-hdlc_frame_t *tpdu_ui_push_hdlc_frame2(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr)
+bool tpdu_ui_push_hdlc_frame2(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr)
 {
     return tpdu_ui_push_hdlc_frame_(tpdu, hdlc_fr, false);
 }
@@ -211,11 +210,6 @@ tsdu_t *tpdu_ui_get_tsdu(tpdu_ui_t *tpdu)
     tsdu_t *tsdu = tpdu->tsdu;
     tpdu->tsdu = NULL;
     return tsdu;
-}
-
-bool tpdu_ui_has_tsdu(tpdu_ui_t *tpdu)
-{
-    return tpdu->tsdu != NULL;
 }
 
 void tpdu_du_tick(const timeval_t *tv, void *tpdu_du)
@@ -239,8 +233,7 @@ void tpdu_du_tick(const timeval_t *tv, void *tpdu_du)
         }
 
         // TODO: report error to application layer
-        hdlc_frame_t *fr = tpdu_ui_segments_destroy(tpdu->seg_du[i]);
-        free(fr);
+        tpdu_ui_segments_destroy(tpdu->seg_du[i]);
         tpdu->seg_du[i] = NULL;
     }
 }

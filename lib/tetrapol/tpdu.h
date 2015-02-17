@@ -18,20 +18,18 @@ void tpdu_ui_destroy(tpdu_ui_t *tpdu);
  * Process HDLC frame, optionaly compose frame from segments.
  * @param tpdu
  * @param hdlc_fr
- * @return pointer to HDLC frame for reuse or NULL
+ * @return true if TSDU is available false othervise
  */
-hdlc_frame_t *tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr);
+bool tpdu_ui_push_hdlc_frame(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr);
 
 /**
  * @brief tpdu_ui_push_hdlc_frame2
  * Process HDLC frame, does not allow segmented frames.
  * @param tpdu
  * @param hdlc_fr
- * @return pointer to original HDLC frame for reuse
+ * @return true if TSDU is available false othervise
  */
-hdlc_frame_t *tpdu_ui_push_hdlc_frame2(tpdu_ui_t *tpdu, hdlc_frame_t *hdlc_fr);
-
-bool tpdu_ui_has_tsdu(tpdu_ui_t *tpdu);
+bool tpdu_ui_push_hdlc_frame2(tpdu_ui_t *tpdu, const hdlc_frame_t *hdlc_fr);
 
 /**
  * @brief tpdu_ui_get_tsdu Get TSDU if anny decoded is available.
