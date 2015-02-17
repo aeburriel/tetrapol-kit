@@ -57,4 +57,3 @@ inline void addr_parse(addr_t *addr, const uint8_t *buf, int skip)
 }
 
 void addr_print(const addr_t *addr);
-

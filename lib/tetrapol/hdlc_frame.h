@@ -7,7 +7,6 @@
 #include <stdint.h>
 
 /// PAS 0001-3-3 7.5.4.2
-
 typedef struct {
     uint8_t cmd;
     uint8_t mask;
@@ -76,4 +75,3 @@ typedef struct {
 extern const addr_t addr_all;
 
 bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int len);
-

@@ -447,7 +447,6 @@ static void frame_deinterleave(frame_t *f, const uint8_t *int_table)
     }
 }
 
-
 /**
   PAS 0001-2 6.1.4.2
   PAS 0001-2 6.2.4.2
@@ -609,7 +608,7 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
         } else {
             LOG_("ERR frame_no=%03i ", data_blk.frame_no);
         }
-        print_buf(data_blk.data + 3, 64);
+        print_hex(data_blk.data + 3, 64);
     }
 
     // For decoding BCH are used always all frames, not only 0-3, 100-103

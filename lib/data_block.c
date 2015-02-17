@@ -114,4 +114,3 @@ bool data_block_check_crc(data_block_t *data_blk)
     }
     return false;
 }
-

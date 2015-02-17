@@ -225,7 +225,7 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk)
 }
 
 /**
-  Pack bites from one bit per byte into 8 bites per byte (TETRAPOL ite order).
+  Pack bits from one bit per byte into 8 bits per byte (TETRAPOL bite order).
 
   Data are ORed, so do not forrget to initialise output buffer with zeres.
 

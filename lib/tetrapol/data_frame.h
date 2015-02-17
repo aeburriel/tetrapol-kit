@@ -4,9 +4,6 @@
 
 typedef struct _data_frame_t data_frame_t;
 
-/**
-  Create new data frame instance.
-  */
 data_frame_t *data_frame_create(void);
 
 /**
@@ -36,8 +33,5 @@ bool data_frame_push_data_block(data_frame_t *data_fr, data_block_t *data_blk);
   */
 int data_frame_get_bytes(data_frame_t *data_fr, uint8_t *data);
 
-/**
-  Destroy data frame instance
-  */
 void data_frame_destroy(data_frame_t *data_fr);
 

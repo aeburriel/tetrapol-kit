@@ -18,23 +18,16 @@ phys_ch_t *tetrapol_phys_ch_create(int band, int radio_ch_type);
 void tetrapol_phys_ch_destroy(phys_ch_t *phys_ch);
 int tetrapol_phys_ch_process(phys_ch_t *phys_ch);
 
-/**
-  Get SCR, scrambling constant parameter.
-  */
+/** Get SCR, scrambling constant parameter. */
 int tetrapol_phys_ch_get_scr(phys_ch_t *phys_ch);
-/**
-  Set SCR, scrambling constant parameter.
-  */
+
+/** Set SCR, scrambling constant parameter. */
 void tetrapol_phys_ch_set_scr(phys_ch_t *phys_ch, int scr);
 
-/**
-  Get confidence for SRC detection (~ no. of valid frames).
-  */
+/** Get confidence for SRC detection (~ no. of valid frames). */
 int tetrapol_phys_ch_get_scr_confidence(phys_ch_t *phys_ch);
 
-/**
-  Set confidence for SRC detection (~ no. of valid frames).
-  */
+/** Set confidence for SRC detection (~ no. of valid frames). */
 void tetrapol_phys_ch_set_scr_confidence(phys_ch_t *phys_ch, int scr_confidence);
 
 /**

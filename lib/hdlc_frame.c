@@ -109,4 +109,3 @@ bool hdlc_frame_parse(hdlc_frame_t *hdlc_frame, const uint8_t *data, int nbits)
 
     return true;
 }
-

@@ -123,7 +123,6 @@ enum {
     IEI_ADD_SETUP_PARAM     = 0x84,
     IEI_PROFILE_ID          = 0x85,
 };
-typedef uint8_t iei_t;
 
 // do not use directly, this struct must be first member of each TSDU structure
 typedef struct {
@@ -578,6 +577,3 @@ void tsdu_destroy(tsdu_base_t *tsdu);
 tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap);
 
 void tsdu_print(tsdu_t *tsdu);
-
-// old method, remove
-void tsdu_process(const uint8_t* t, int data_length, int mod);
