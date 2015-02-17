@@ -8,6 +8,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+enum {
+    TPDU_CODE_CR = 0,
+    TPDU_CODE_CC = 0x8,
+    TPDU_CODE_FCR = 0x10,
+    TPDU_CODE_DR = 0x18,
+    TPDU_CODE_FDR = 0x19,
+    TPDU_CODE_DC = 0x20,
+    TPDU_CODE_DT = 0x21,
+    TPDU_CODE_DTE = 0x22,
+};
+
+#define TPDU_CODE_PREFIX_MASK (0x18)
+
 typedef struct {
     timeval_t tv;
     uint8_t id_tsap;
@@ -16,11 +29,191 @@ typedef struct {
     hdlc_frame_t *hdlc_frs[SYS_PAR_N452];
 } segmented_du_t;
 
+typedef struct {
+    uint8_t tsap_id;
+    uint8_t tsap_ref_dl;
+    uint8_t tsap_ref_ul;
+} connection_t;
+
+struct _tpdu_t {
+    connection_t *conns[16];  // listed by TSAP reference id (SwMI side)
+    connection_t *conns_fast[16];  // listed by TSAP id
+};
+
 struct _tpdu_ui_t {
     frame_type_t fr_type;
     segmented_du_t *seg_du[128];
     tsdu_t *tsdu;           ///< contains last decoded TSDU
 };
+
+tpdu_t *tpdu_create(void)
+{
+    tpdu_t *tpdu = calloc(1, sizeof(tpdu_t));
+    if (!tpdu) {
+        return NULL;
+    }
+
+    return tpdu;
+}
+
+static bool tpdu_push_supervision_frame(tpdu_t *tpdu, const hdlc_frame_t *hdlc_fr)
+{
+    IF_LOG(INFO) {
+        switch(hdlc_fr->command.cmd) {
+            case COMMAND_SUPERVISION_RR:
+                LOG_("\n\tcmd: RR\n\taddr: ");
+                break;
+
+            case COMMAND_SUPERVISION_RNR:
+                LOG_("\n\tcmd: RNR\n\taddr: ");
+                break;
+
+            case COMMAND_SUPERVISION_REJ:
+                LOG_("\n\tcmd: REJ\n\taddr: ");
+                break;
+        }
+        addr_print(&hdlc_fr->addr);
+        printf("\n\trecv_seq_no: %d P: %d\n",
+               hdlc_fr->command.supervision.recv_seq_no,
+               hdlc_fr->command.supervision.p_e);
+    }
+
+    if (!cmpzero(hdlc_fr->data, hdlc_fr->nbits / 8)) {
+        IF_LOG(WTF) {
+            LOG_("cmd: 0x%02x, nonzero stuffing", hdlc_fr->command.cmd);
+            print_hex(hdlc_fr->data, hdlc_fr->nbits / 8);
+        }
+    }
+
+    switch(hdlc_fr->command.cmd) {
+        case COMMAND_SUPERVISION_RR:
+            // TODO: do something with TPDU
+            LOG(ERR, "TODO RR");
+            break;
+
+        case COMMAND_SUPERVISION_RNR:
+            // TODO: do something with TPDU
+            LOG(ERR, "TODO RNR");
+            break;
+
+        case COMMAND_SUPERVISION_REJ:
+            // TODO: do something with TPDU
+            LOG(ERR, "TODO REJ");
+            break;
+    }
+
+    return false;
+}
+
+static bool tpdu_push_information_frame(tpdu_t *tpdu, const hdlc_frame_t *hdlc_fr)
+{
+    const bool ext              = get_bits(1, hdlc_fr->data, 0);
+    const bool seg              = get_bits(1, hdlc_fr->data, 1);
+    const bool d                = get_bits(1, hdlc_fr->data, 2);
+    const uint8_t code          = get_bits(5, hdlc_fr->data, 3);
+    const uint8_t par_field     = get_bits(4, hdlc_fr->data + 1, 0);
+    const uint8_t dest_ref      = get_bits(4, hdlc_fr->data + 1, 4);
+
+    if (ext) {
+        LOG(WTF, "ext != 0 for TPDU");
+    }
+
+    const uint8_t len = (d && !seg) ? hdlc_fr->data[2] : 0;
+
+    IF_LOG(INFO) {
+        LOG_("information cmd\n");
+        printf("\taddr: ");
+        addr_print(&hdlc_fr->addr);
+        printf("\n\trecv_seq_no: %d send_seq_no: %d P: %d\n",
+               hdlc_fr->command.information.recv_seq_no,
+               hdlc_fr->command.information.send_seq_no,
+               hdlc_fr->command.information.p_e);
+    }
+
+    const uint8_t code_prefix   = code & TPDU_CODE_PREFIX_MASK;
+
+    if (code_prefix != TPDU_CODE_PREFIX_MASK) {
+        const uint8_t qos           = (~TPDU_CODE_PREFIX_MASK) & code;
+
+        switch(code_prefix) {
+            case 0: // CR
+                LOG(ERR, "TODO CR seg: %d d: %d TSAP_ref: %d TSAP_id %d QoS: %d len: %d",
+                    seg, d, par_field, dest_ref, qos, len);
+                // check if connection exists, deallocate and WTF
+                // create new connection stuct
+                // set state to REQ
+
+                break;
+
+            case 1: // CC
+                LOG(ERR, "TODO CC seg: %d d: %d TSAP_ref_send: %d TSAP_ref_recv: %d QoS: %d len: %d",
+                    seg, d, par_field, dest_ref, qos, len);
+                // check if connection exists
+                break;
+
+            case 2: //FCR
+                LOG(ERR, "TODO FCR seg: %d d: %d TSAP_ref: %d TSAP_id: %d QoS: %d len: %d",
+                    seg, d, par_field, dest_ref, qos, len);
+                break;
+        }
+    } else {
+        switch (code) {
+            case TPDU_CODE_DR:
+                LOG(ERR, "TODO DR d: %d TSAP_ref_send: %d TSAP_ref_recv: %d len: %d",
+                    d, par_field, dest_ref, len);
+                break;
+
+            case TPDU_CODE_FDR:
+                LOG(ERR, "TODO FDR d: %d TSAP_ref_send: %d TSAP_ref_recv: %d len: %d",
+                    d, par_field, dest_ref, len);
+                break;
+
+            case TPDU_CODE_DC:
+                LOG(ERR, "TODO DC TSAP_ref_send: %d TSAP_ref_recv: %d",
+                    par_field, dest_ref);
+                break;
+
+            case TPDU_CODE_DT:
+                LOG(ERR, "TODO DT seg: %d d: %d TSAP_ref_send: %d TSAP_ref_recv: %d, len: %d",
+                    seg, d, par_field, dest_ref, len);
+                break;
+
+            case TPDU_CODE_DTE:
+                LOG(ERR, "TODO DTE TSAP_ref_send: %d TSAP_ref_recv: %d, len: %d",
+                    par_field, dest_ref, len);
+                break;
+
+            default:
+                LOG(WTF, "unknown code %d", code);
+        }
+    }
+
+    return hdlc_fr;
+}
+
+bool tpdu_push_hdlc_frame(tpdu_t *tpdu, const hdlc_frame_t *hdlc_fr)
+{
+    switch (hdlc_fr->command.cmd) {
+        case COMMAND_SUPERVISION_RR:
+        case COMMAND_SUPERVISION_RNR:
+        case COMMAND_SUPERVISION_REJ:
+            return tpdu_push_supervision_frame(tpdu, hdlc_fr);
+
+        case COMMAND_INFORMATION:
+            return tpdu_push_information_frame(tpdu, hdlc_fr);
+
+        default:
+            break;
+    }
+
+    LOG(WTF, "invalid cmd for TPDU (%d)", hdlc_fr->command.cmd);
+    return false;
+}
+
+void tpdu_destroy(tpdu_t *tpdu)
+{
+    free(tpdu);
+}
 
 void tpdu_ui_segments_destroy(segmented_du_t *du)
 {

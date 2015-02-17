@@ -12,6 +12,7 @@
 
 struct _sdch_t {
     data_frame_t *data_fr;
+    tpdu_t *tpdu;
     tpdu_ui_t *tpdu_ui;
 };
 
@@ -32,7 +33,15 @@ sdch_t *sdch_create(void)
         goto err_tpdu_ui;
     }
 
+    sdch->tpdu = tpdu_create();
+    if (!sdch->tpdu) {
+        goto err_tpdu;
+    }
+
     return sdch;
+
+err_tpdu:
+    tpdu_ui_destroy(sdch->tpdu_ui);
 
 err_tpdu_ui:
     data_frame_destroy(sdch->data_fr);
@@ -48,6 +57,7 @@ void sdch_destroy(sdch_t *sdch)
     if (sdch) {
         data_frame_destroy(sdch->data_fr);
         tpdu_ui_destroy(sdch->tpdu_ui);
+        tpdu_destroy(sdch->tpdu);
     }
     free(sdch);
 }
@@ -69,20 +79,11 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
         return false;
     }
 
-    if (hdlc_fr.command.cmd == COMMAND_SUPERVISION_RR) {
-        IF_LOG(INFO) {
-            LOG_("\n\tcmd: RR\n\taddr: ");
-            addr_print(&hdlc_fr.addr);
-            printf("\n");
-        }
-        if (!cmpzero(hdlc_fr.data, hdlc_fr.nbits / 8)) {
-            IF_LOG(WTF) {
-                LOG_("cmd: RR, nonzero stuffing");
-                print_hex(hdlc_fr.data, hdlc_fr.nbits / 8);
-            }
-        }
-        // TODO: report RR to application layer
-        return false;
+    if (hdlc_fr.command.cmd == COMMAND_INFORMATION ||
+            hdlc_fr.command.cmd == COMMAND_SUPERVISION_RR ||
+            hdlc_fr.command.cmd == COMMAND_SUPERVISION_RNR ||
+            hdlc_fr.command.cmd == COMMAND_SUPERVISION_REJ) {
+        return tpdu_push_hdlc_frame(sdch->tpdu, &hdlc_fr);
     }
 
     if (hdlc_fr.command.cmd == COMMAND_UNNUMBERED_UI) {
