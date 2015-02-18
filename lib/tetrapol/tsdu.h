@@ -492,6 +492,15 @@ typedef struct {
     uint8_t cause;
 } tsdu_d_data_end_t;
 
+/// PAS 0001-3-2 4.4.28
+typedef struct {
+    tsdu_base_t base;
+    uint8_t call_priority;
+    uint16_t message_reference;
+    key_reference_t key_reference;
+    int destination_port;
+} tsdu_d_datagram_notify_t;
+
 /// PAS 0001-3-2 4.4.33
 typedef struct {
     tsdu_base_t base;

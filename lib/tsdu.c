@@ -697,6 +697,41 @@ static void d_data_end_print(const tsdu_d_data_end_t *tsdu)
     printf("\t\tCAUSE=0x%02x\n", tsdu->cause);
 }
 
+static tsdu_d_datagram_notify_t *d_datagram_notify_decode(const uint8_t *data, int nbits)
+{
+    tsdu_d_datagram_notify_t *tsdu = malloc(sizeof(tsdu_d_datagram_notify_t));
+    if (!tsdu) {
+        return NULL;
+    }
+
+    tsdu_base_set_nopts(&tsdu->base, 0);
+    CHECK_LEN(nbits, 5*8, tsdu);
+
+    tsdu->call_priority         = get_bits(4, data + 1, 4);
+    tsdu->message_reference     = data[2] | (data[3] << 8);
+    tsdu->key_reference._data   = data[4];
+
+    if (nbits >= 7 * 8) {
+        tsdu->destination_port  = data[5] | (data[6] << 8);
+    } else {
+        tsdu->destination_port = -1;
+    }
+
+    return tsdu;
+}
+
+static void d_datagram_notify_print(const tsdu_d_datagram_notify_t *tsdu)
+{
+    printf("\tCODOP=0x%0x (D_DATAGRAM_NOTIFY)\n", tsdu->base.codop);
+    printf("\t\tCALL_PRIORITY=%d\n", tsdu->call_priority);
+    printf("\t\tMESSAGE_REFERENCE=%d\n", tsdu->message_reference);
+    printf("\t\tKEY_REFERENCE: key_index=%d key_type=%d\n",
+           tsdu->key_reference.key_index, tsdu->key_reference.key_type);
+    if (tsdu->destination_port != -1) {
+        printf("\t\tDESTINATION_PORT=%d\n", tsdu->destination_port);
+    }
+}
+
 tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 {
     CHECK_LEN(nbits, 8, NULL);
@@ -707,6 +742,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
     switch (codop) {
         case D_DATA_END:
             tsdu = (tsdu_t *)d_data_end_decode(data, nbits);
+            break;
+
+        case D_DATAGRAM_NOTIFY:
+            tsdu = (tsdu_t *)d_datagram_notify_decode(data, nbits);
             break;
 
         case D_ECH_OVERLOAD_ID:
@@ -757,6 +796,10 @@ static void tsdu_d_print(const tsdu_t *tsdu)
     switch (tsdu->codop) {
         case D_DATA_END:
             d_data_end_print((const tsdu_d_data_end_t *)tsdu);
+            break;
+
+        case D_DATAGRAM_NOTIFY:
+            d_datagram_notify_print((const tsdu_d_datagram_notify_t *)tsdu);
             break;
 
         case D_ECH_OVERLOAD_ID:
