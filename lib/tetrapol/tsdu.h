@@ -107,6 +107,7 @@ enum {
     D_NEIGHBOURING_CELL         = 0x94,
     D_ECCH_DESCRIPTION          = 0x95,
     D_ADDITIONAL_PARTICIPANTS   = 0x96,
+    D_RESERVED_0x97             = 0x97,
     D_INFORMATION_DELIVERY      = 0xc5,
 };
 typedef uint8_t codop_t;

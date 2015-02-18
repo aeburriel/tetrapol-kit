@@ -710,6 +710,7 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
             break;
 
         case D_SEECRET_0x47:
+        case D_RESERVED_0x97:
             tsdu = (tsdu_t *)d_seecret_parse(data, nbits);
             break;
 
@@ -755,6 +756,7 @@ static void tsdu_d_print(const tsdu_t *tsdu)
             break;
 
         case D_SEECRET_0x47:
+        case D_RESERVED_0x97:
             d_seecret_print((tsdu_seecret_codop_t *)tsdu);
             break;
 
