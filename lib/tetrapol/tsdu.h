@@ -53,6 +53,7 @@ enum {
     U_DATA_MSG_UP               = 0x44,
     D_DATA_MSG_DOWN             = 0x45,
     D_EXPLICIT_SHORT_DATA       = 0x46,
+    D_SEECRET_0x47              = 0x47,
     D_DATA_END                  = 0x48,
     D_DATAGRAM_NOTIFY           = 0x49,
     D_DATAGRAM                  = 0x4a,
@@ -137,6 +138,13 @@ typedef struct {
       */
     void *optionals[];
 } tsdu_base_t;
+
+/// structure for commands not in specification (probably seecret)
+typedef struct {
+    tsdu_base_t base;
+    uint8_t *data;
+    int nbits;
+} tsdu_seecret_codop_t;
 
 /// PAS 0001-3-2 5.3.2
 enum {

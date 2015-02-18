@@ -620,7 +620,6 @@ static tsdu_d_ech_overload_id_t *d_ech_overload_id_decode(const uint8_t *data, i
     if (!tsdu) {
         return NULL;
     }
-    printf("XXXXXX\n");
     tsdu_base_set_nopts(&tsdu->base, 0);
 
     CHECK_LEN(nbits, 6*8, tsdu);
@@ -643,6 +642,39 @@ static void d_ech_overload_id_print(const tsdu_d_ech_overload_id_t *tsdu)
     printf("\t\tCELL_ID: BS_ID=%d RWS_ID=%d\n",
            tsdu->cell_id.bs_id, tsdu->cell_id.rws_id);
     printf("\t\tORGANISATION=%d\n", tsdu->organisation);
+}
+
+static tsdu_seecret_codop_t *d_seecret_parse(const uint8_t *data, int nbits)
+{
+    tsdu_seecret_codop_t *tsdu = malloc(sizeof(tsdu_seecret_codop_t));
+    if (!tsdu) {
+        return NULL;
+    }
+
+    tsdu->nbits = nbits;
+    if (!nbits) {
+        tsdu_base_set_nopts(&tsdu->base, 0);
+        return tsdu;
+    }
+
+    tsdu_base_set_nopts(&tsdu->base, 1);
+
+    tsdu->data = malloc((nbits + 7) / 8);
+    if (!tsdu->data) {
+        tsdu_destroy(&tsdu->base);
+        return NULL;
+    }
+
+    memcpy(tsdu->data, data, (nbits + 7) / 8);
+
+    return tsdu;
+}
+
+static void d_seecret_print(const tsdu_seecret_codop_t *tsdu)
+{
+    printf("\tCODOP=0x%0x (seecret)\n", tsdu->base.codop);
+    printf("\t\tnbits=%d data=", tsdu->nbits);
+    print_hex(tsdu->data, (tsdu->nbits + 7) / 8);
 }
 
 tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
@@ -675,6 +707,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 
         case D_SYSTEM_INFO:
             tsdu = (tsdu_t *)d_system_info_decode(data, nbits);
+            break;
+
+        case D_SEECRET_0x47:
+            tsdu = (tsdu_t *)d_seecret_parse(data, nbits);
             break;
 
         default:
@@ -717,6 +753,11 @@ static void tsdu_d_print(const tsdu_t *tsdu)
         case D_SYSTEM_INFO:
             d_system_info_print((tsdu_d_system_info_t *)tsdu);
             break;
+
+        case D_SEECRET_0x47:
+            d_seecret_print((tsdu_seecret_codop_t *)tsdu);
+            break;
+
         default:
             LOG(WTF, "print not implemented: downlink codop=0x%02x",
                 tsdu->codop);
