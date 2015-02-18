@@ -677,6 +677,26 @@ static void d_seecret_print(const tsdu_seecret_codop_t *tsdu)
     print_hex(tsdu->data, (tsdu->nbits + 7) / 8);
 }
 
+static tsdu_d_data_end_t *d_data_end_decode(const uint8_t *data, int nbits)
+{
+    tsdu_d_data_end_t *tsdu = malloc(sizeof(tsdu_d_data_end_t));
+    if (!tsdu) {
+        return NULL;
+    }
+
+    tsdu_base_set_nopts(&tsdu->base, 0);
+    CHECK_LEN(nbits, 2*8, tsdu);
+    tsdu->cause = data[1];
+
+    return tsdu;
+}
+
+static void d_data_end_print(const tsdu_d_data_end_t *tsdu)
+{
+    printf("\tCODOP=0x%0x (D_DATA_END)\n", tsdu->base.codop);
+    printf("\t\tCAUSE=0x%02x\n", tsdu->cause);
+}
+
 tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 {
     CHECK_LEN(nbits, 8, NULL);
@@ -685,6 +705,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 
     tsdu_t *tsdu = NULL;
     switch (codop) {
+        case D_DATA_END:
+            tsdu = (tsdu_t *)d_data_end_decode(data, nbits);
+            break;
+
         case D_ECH_OVERLOAD_ID:
             tsdu = (tsdu_t *)d_ech_overload_id_decode(data, nbits);
             break;
@@ -731,6 +755,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 static void tsdu_d_print(const tsdu_t *tsdu)
 {
     switch (tsdu->codop) {
+        case D_DATA_END:
+            d_data_end_print((const tsdu_d_data_end_t *)tsdu);
+            break;
+
         case D_ECH_OVERLOAD_ID:
             d_ech_overload_id_print((const tsdu_d_ech_overload_id_t *)tsdu);
             break;
