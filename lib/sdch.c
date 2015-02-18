@@ -114,6 +114,25 @@ bool sdch_dl_push_data_frame(sdch_t *sdch, data_block_t *data_blk)
         return false;
     }
 
+    if (hdlc_fr.command.cmd == COMMAND_UNNUMBERED_SNRM) {
+        IF_LOG(INFO) {
+            LOG_("\n\tcmd SNMR\n\taddr: ");
+            addr_print(&hdlc_fr.addr);
+            printf("\n");
+        }
+
+        if (!cmpzero(hdlc_fr.data, hdlc_fr.nbits / 8)) {
+            IF_LOG(WTF) {
+                LOG_("cmd: SNMR, nonzero stuffing");
+                print_hex(hdlc_fr.data, hdlc_fr.nbits / 8);
+            }
+        }
+
+        LOG(ERR, "TODO: SNMR");
+        // TODO: report SNMR to upper layer
+        return false;
+    }
+
     LOG(INFO, "TODO CMD 0x%02x", hdlc_fr.command.cmd);
 
     return false;
