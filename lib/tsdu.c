@@ -767,6 +767,36 @@ static void d_datagram_print(const tsdu_d_datagram_t *tsdu)
     print_hex(tsdu->data, tsdu->len);
 }
 
+static tsdu_d_explicit_short_data_t *d_explicit_short_data_decode(
+        const uint8_t *data, int nbits)
+{
+    const int len = nbits / 8 - 1;
+    if (len < 0) {
+        LOG(WTF, "too short");
+        return NULL;
+    }
+
+    tsdu_d_explicit_short_data_t *tsdu = malloc(
+                sizeof(tsdu_d_explicit_short_data_t) + len);
+    if (!tsdu) {
+        LOG(ERR, "ERR OOM");
+        return NULL;
+    }
+    tsdu_base_set_nopts(&tsdu->base, 0);
+
+    tsdu->len = len;
+    memcpy(tsdu->data, data + 1, len);
+
+    return tsdu;
+}
+
+static void d_explicit_short_data_print(const tsdu_d_explicit_short_data_t *tsdu)
+{
+    printf("\tCODOP=0x%0x (D_EXPLICIT_SHORT_DATA)\n", tsdu->base.codop);
+    printf("\t\tDATA: len=%d data=", tsdu->len);
+    print_hex(tsdu->data, tsdu->len);
+}
+
 tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 {
     CHECK_LEN(nbits, 8, NULL);
@@ -789,6 +819,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 
         case D_ECH_OVERLOAD_ID:
             tsdu = (tsdu_t *)d_ech_overload_id_decode(data, nbits);
+            break;
+
+        case D_EXPLICIT_SHORT_DATA:
+            tsdu = (tsdu_t *)d_explicit_short_data_decode(data, nbits);
             break;
 
         case D_GROUP_ACTIVATION:
@@ -847,6 +881,10 @@ static void tsdu_d_print(const tsdu_t *tsdu)
 
         case D_ECH_OVERLOAD_ID:
             d_ech_overload_id_print((const tsdu_d_ech_overload_id_t *)tsdu);
+            break;
+
+        case D_EXPLICIT_SHORT_DATA:
+            d_explicit_short_data_print((const tsdu_d_explicit_short_data_t *)tsdu);
             break;
 
         case D_GROUP_ACTIVATION:

@@ -520,6 +520,13 @@ typedef struct {
     uint8_t organisation;
 } tsdu_d_ech_overload_id_t;
 
+/// PAS 0001-3-2 4.4.39
+typedef struct {
+    tsdu_base_t base;
+    int len;
+    uint8_t data[];
+} tsdu_d_explicit_short_data_t;
+
 /// PAS 0001-3-2 4.4.43
 typedef struct {
     tsdu_base_t base;
