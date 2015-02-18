@@ -413,6 +413,15 @@ typedef struct {
     uint8_t mbn;
 } och_parameters_t;
 
+/// PAS 0001-3-2 5.3.47
+enum {
+    ORGANISATION_NOT_SIGNIFICANT = 0xff,
+    ORGANISATION_RESERVED_1 = 0xfe,
+    ORGANISATION_RESERVED_2 = 0xfd,
+    ORGANISATION_RESERVED_3 = 0xfc,
+    ORGANISATION_RESERVED_4 = 0xfb,
+};
+
 /// PAS 0001-3-2 5.3.49
 enum {
     REFERENCE_LIST_DC_COVERED = 0,
@@ -467,6 +476,15 @@ typedef union {
         unsigned int type : 2;
     };
 } type_nb_t;
+
+/// PAS 0001-3-2 4.4.33
+typedef struct {
+    tsdu_base_t base;
+    activation_mode_t activation_mode;
+    uint16_t group_id;
+    cell_id_t cell_id;
+    uint8_t organisation;
+} tsdu_d_ech_overload_id_t;
 
 /// PAS 0001-3-2 4.4.43
 typedef struct {

@@ -614,6 +614,37 @@ static void d_system_info_print(tsdu_d_system_info_t *tsdu)
     }
 }
 
+static tsdu_d_ech_overload_id_t *d_ech_overload_id_decode(const uint8_t *data, int nbits)
+{
+    tsdu_d_ech_overload_id_t *tsdu = malloc(sizeof(tsdu_d_ech_overload_id_t));
+    if (!tsdu) {
+        return NULL;
+    }
+    printf("XXXXXX\n");
+    tsdu_base_set_nopts(&tsdu->base, 0);
+
+    CHECK_LEN(nbits, 6*8, tsdu);
+
+    tsdu->activation_mode.hook = get_bits(2, data + 1, 0);
+    tsdu->activation_mode.type = get_bits(2, data + 1, 2);
+    tsdu->group_id = get_bits(12, data + 1, 4);
+    cell_id_decode1(&tsdu->cell_id, data + 3);
+    tsdu->organisation = get_bits(8, data + 5, 0);
+
+    return tsdu;
+}
+
+static void d_ech_overload_id_print(const tsdu_d_ech_overload_id_t *tsdu)
+{
+    printf("\tCODOP=0x%0x (D_ECH_OVERLOAD_ID)\n", tsdu->base.codop);
+    printf("\t\tACTIVATION_MODE: hook=%d type=%d\n",
+           tsdu->activation_mode.hook, tsdu->activation_mode.type);
+    printf("\t\tGROUP_ID=%d", tsdu->group_id);
+    printf("\t\tCELL_ID: BS_ID=%d RWS_ID=%d\n",
+           tsdu->cell_id.bs_id, tsdu->cell_id.rws_id);
+    printf("\t\tORGANISATION=%d\n", tsdu->organisation);
+}
+
 tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 {
     CHECK_LEN(nbits, 8, NULL);
@@ -622,6 +653,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 
     tsdu_t *tsdu = NULL;
     switch (codop) {
+        case D_ECH_OVERLOAD_ID:
+            tsdu = (tsdu_t *)d_ech_overload_id_decode(data, nbits);
+            break;
+
         case D_GROUP_ACTIVATION:
             tsdu = (tsdu_t *)d_group_activation_decode(data, nbits);
             break;
@@ -659,6 +694,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 static void tsdu_d_print(const tsdu_t *tsdu)
 {
     switch (tsdu->codop) {
+        case D_ECH_OVERLOAD_ID:
+            d_ech_overload_id_print((const tsdu_d_ech_overload_id_t *)tsdu);
+            break;
+
         case D_GROUP_ACTIVATION:
             d_group_activation_print((tsdu_d_group_activation_t *)tsdu);
             break;
