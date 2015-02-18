@@ -1,6 +1,8 @@
- * add logging system
+ * I/O interface to external toosl
+   * use protobuffers
+ * create struct tpol_t - container for phys_ch and common infrastructure
+ * improve logging
  * remove channel logs
- * replace bits_to_int with records
  * support multiple signal sources (multiple SDRs devices)
  * Xtal runtime calibration
  * receive uplink channel(s)
