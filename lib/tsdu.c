@@ -304,6 +304,13 @@ static void tsdu_base_set_nopts(tsdu_base_t *tsdu, int noptionals)
     memset(tsdu->optionals, 0, noptionals * sizeof(void *));
 }
 
+static void tsdu_base_print(const tsdu_base_t *tsdu)
+{
+    printf("\tCODOP=0x%02x (%s)\n\tPRIO=%d\n\tID_TSAP=%d\n",
+           tsdu->codop, codop_str[tsdu->codop], tsdu->prio, tsdu->id_tsap);
+    // TODO: print addr
+}
+
 static void activation_mode_decode(activation_mode_t *am, uint8_t data)
 {
     am->hook = get_bits(2, &data, 0);
@@ -385,7 +392,7 @@ d_group_activation_decode(const uint8_t *data, int nbits)
 
 static void d_group_activation_print(tsdu_d_group_activation_t *tsdu)
 {
-    printf("\tCODOP=0x%02x (D_GROUP_ACTIVATION)\n", D_GROUP_ACTIVATION);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tACTIVATION_MODE: HOOK=%d TYPE=%d\n",
            tsdu->activation_mode.hook, tsdu->activation_mode.type);
     printf("\t\tGROUP_ID=%d\n", tsdu->group_id);
@@ -514,7 +521,7 @@ static tsdu_d_group_list_t *d_group_list_decode(const uint8_t *data, int nbits)
 
 static void d_group_list_print(tsdu_d_group_list_t *tsdu)
 {
-    printf("\tCODOP=0x%02x (D_GROUP_LIST)\n", D_GROUP_LIST);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tREFERENCE_LIST REVISION=%d CSG=%d CSO=%d DC=%d\n",
            tsdu->reference_list.revision, tsdu->reference_list.csg,
            tsdu->reference_list.cso, tsdu->reference_list.dc);
@@ -582,7 +589,7 @@ static tsdu_d_group_composition_t *d_group_composition_decode(const uint8_t *dat
 
 static void d_group_composition_print(tsdu_d_group_composition_t *tsdu)
 {
-    printf("\tCODOP=0x%02x (D_GROUP_COMPOSITION)\n", D_GROUP_COMPOSITION);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tGROUP_ID=%d\n", tsdu->group_id);
     for (int i = 0; i < tsdu->og_nb; ++i) {
         printf("\t\tGROUP_ID=%d\n", tsdu->group_ids[i]);
@@ -716,7 +723,7 @@ static tsdu_d_neighbouring_cell_t *d_neighbouring_cell_decode(const uint8_t *dat
 
 static void d_neighbouring_cell_print(tsdu_d_neighbouring_cell_t *tsdu)
 {
-    printf("\tCODOP=0x%x (D_NEIGHBOURING_CELL)\n", D_NEIGHBOURING_CELL);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tCCR_CONFIG=%d\n", tsdu->ccr_config.number);
     if (!tsdu->ccr_config.number) {
         return;
@@ -809,7 +816,7 @@ static tsdu_d_system_info_t *d_system_info_decode(const uint8_t *data, int nbits
 
 static void d_system_info_print(tsdu_d_system_info_t *tsdu)
 {
-    printf("\tCODOP=0x%0x (D_SYSTEM_INFO)\n", tsdu->base.codop);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tCELL_STATE\n");
     printf("\t\t\tMODE=%03x\n", tsdu->cell_state.mode);
     if (tsdu->cell_state.mode == CELL_STATE_MODE_NORMAL) {
@@ -932,7 +939,7 @@ static tsdu_seecret_codop_t *d_seecret_parse(const uint8_t *data, int nbits)
 
 static void d_seecret_print(const tsdu_seecret_codop_t *tsdu)
 {
-    printf("\tCODOP=0x%0x (seecret)\n", tsdu->base.codop);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tnbits=%d data=", tsdu->nbits);
     print_hex(tsdu->data, (tsdu->nbits + 7) / 8);
 }
@@ -953,7 +960,7 @@ static tsdu_d_data_end_t *d_data_end_decode(const uint8_t *data, int nbits)
 
 static void d_data_end_print(const tsdu_d_data_end_t *tsdu)
 {
-    printf("\tCODOP=0x%0x (D_DATA_END)\n", tsdu->base.codop);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tCAUSE=0x%02x\n", tsdu->cause);
 }
 
@@ -982,7 +989,7 @@ static tsdu_d_datagram_notify_t *d_datagram_notify_decode(const uint8_t *data, i
 
 static void d_datagram_notify_print(const tsdu_d_datagram_notify_t *tsdu)
 {
-    printf("\tCODOP=0x%0x (D_DATAGRAM_NOTIFY)\n", tsdu->base.codop);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tCALL_PRIORITY=%d\n", tsdu->call_priority);
     printf("\t\tMESSAGE_REFERENCE=%d\n", tsdu->message_reference);
     printf("\t\tKEY_REFERENCE: key_index=%d key_type=%d\n",
@@ -1018,7 +1025,7 @@ static tsdu_d_datagram_t *d_datagram_decode(const uint8_t *data, int nbits)
 
 static void d_datagram_print(const tsdu_d_datagram_t *tsdu)
 {
-    printf("\tCODOP=0x%0x (D_DATAGRAM)\n", tsdu->base.codop);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tCALL_PRIORITY=%d\n", tsdu->call_priority);
     printf("\t\tMESSAGE_REFERENCE=%d\n", tsdu->message_reference);
     printf("\t\tKEY_REFERENCE: key_type=%d key_index=%d\n",
@@ -1052,7 +1059,7 @@ static tsdu_d_explicit_short_data_t *d_explicit_short_data_decode(
 
 static void d_explicit_short_data_print(const tsdu_d_explicit_short_data_t *tsdu)
 {
-    printf("\tCODOP=0x%0x (D_EXPLICIT_SHORT_DATA)\n", tsdu->base.codop);
+    tsdu_base_print(&tsdu->base);
     printf("\t\tDATA: len=%d data=", tsdu->len);
     print_hex(tsdu->data, tsdu->len);
 }
