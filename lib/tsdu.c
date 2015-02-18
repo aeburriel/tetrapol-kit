@@ -732,6 +732,41 @@ static void d_datagram_notify_print(const tsdu_d_datagram_notify_t *tsdu)
     }
 }
 
+static tsdu_d_datagram_t *d_datagram_decode(const uint8_t *data, int nbits)
+{
+    const int len = nbits / 8 - 5;
+    if (len < 0) {
+        LOG(WTF, "too short");
+        return NULL;
+    }
+
+    tsdu_d_datagram_t *tsdu = malloc(sizeof(tsdu_d_datagram_t) + len);
+    if (!tsdu) {
+        return NULL;
+    }
+
+    tsdu_base_set_nopts(&tsdu->base, 0);
+
+    tsdu->call_priority = get_bits(4, data + 1, 4);
+    tsdu->message_reference = data[2] | (data[3] << 8);
+    tsdu->key_reference._data = data[4];
+    tsdu->len = len;
+    memcpy(tsdu->data, data + 5, len);
+
+    return tsdu;
+}
+
+static void d_datagram_print(const tsdu_d_datagram_t *tsdu)
+{
+    printf("\tCODOP=0x%0x (D_DATAGRAM)\n", tsdu->base.codop);
+    printf("\t\tCALL_PRIORITY=%d\n", tsdu->call_priority);
+    printf("\t\tMESSAGE_REFERENCE=%d\n", tsdu->message_reference);
+    printf("\t\tKEY_REFERENCE: key_type=%d key_index=%d\n",
+           tsdu->key_reference.key_type, tsdu->key_reference.key_index);
+    printf("\t\tDATA: len=%d data=", tsdu->len);
+    print_hex(tsdu->data, tsdu->len);
+}
+
 tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
 {
     CHECK_LEN(nbits, 8, NULL);
@@ -742,6 +777,10 @@ tsdu_t *tsdu_d_decode(const uint8_t *data, int nbits, int prio, int id_tsap)
     switch (codop) {
         case D_DATA_END:
             tsdu = (tsdu_t *)d_data_end_decode(data, nbits);
+            break;
+
+        case D_DATAGRAM:
+            tsdu = (tsdu_t *)d_datagram_decode(data, nbits);
             break;
 
         case D_DATAGRAM_NOTIFY:
@@ -796,6 +835,10 @@ static void tsdu_d_print(const tsdu_t *tsdu)
     switch (tsdu->codop) {
         case D_DATA_END:
             d_data_end_print((const tsdu_d_data_end_t *)tsdu);
+            break;
+
+        case D_DATAGRAM:
+            d_datagram_print((const tsdu_d_datagram_t *)tsdu);
             break;
 
         case D_DATAGRAM_NOTIFY:
