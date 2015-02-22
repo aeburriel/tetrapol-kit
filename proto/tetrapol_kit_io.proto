@@ -1,0 +1,33 @@
+
+enum MsgType {
+    LOG = 0,    ///< text dump, used for debuging
+                ///< values 1-15 are reserved
+    RCH = 16,   ///< events on RCH
+}
+
+/* General container for messages, all messages are packed into this one. */
+message Msg {
+    required MsgType = 1;
+    optional bytes msg = 2;
+}
+
+/* Station or group address. */
+message Addr {
+    required uint32 z = 1;
+    required uint32 y = 2;
+    required uint32 x = 3;
+}
+
+/* RCH */
+
+enum RchEvent {
+    ACK = 0;
+    NACK_COLLISION = 1;
+    // NACK_NOISE = 2, // not reported
+}
+
+message Rch {
+    optional RchEvent event = 1 [default = ACK];
+    optional Addr addr = 2;
+}
+
