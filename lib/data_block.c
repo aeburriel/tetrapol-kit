@@ -6,6 +6,22 @@
 #include <stdio.h>
 #include <string.h>
 
+// http://ghsi.de/CRC/index.php?Polynom=1010
+static void mk_crc3(uint8_t *res, const uint8_t *input, int input_len)
+{
+    uint8_t inv;
+    memset(res, 0, 3);
+
+    for (int i = 0; i < input_len; ++i)
+    {
+        inv = input[i] ^ res[0];
+
+        res[0] = res[1];
+        res[1] = res[2] ^ inv;
+        res[2] = inv;
+    }
+}
+
 // http://ghsi.de/CRC/index.php?Polynom=10010
 static void mk_crc5(uint8_t *res, const uint8_t *input, int input_len)
 {
@@ -60,12 +76,6 @@ void data_block_decode_frame(data_block_t *data_blk, const uint8_t *data,
         fr_type = FRAME_TYPE_DATA;
     }
 
-    if (fr_type == FRAME_TYPE_VOICE) {
-        // TODO (set fr_type = FRAME_TYPE_DATA) when stollen frame
-        LOG(ERR, "decoding frame type %d not implemented", fr_type);
-        data_blk->nerrs = INT_MAX;
-    }
-
     data_blk->fr_type = fr_type;
 
     if (fr_type == FRAME_TYPE_DATA) {
@@ -79,6 +89,13 @@ void data_block_decode_frame(data_block_t *data_blk, const uint8_t *data,
             LOG(WTF, "nonzero padding in frame %d: %d %d", frame_no,
                     data_blk->data[74], data_blk->data[75]);
         }
+    } else if (fr_type == FRAME_TYPE_VOICE) {
+        // decode protected part of frame (first 52 bits)
+        data_blk->nerrs = decode_data_frame(
+            data_blk->data, data_blk->err, data, 26);
+
+        // append unprotected part
+        memcpy(data_blk->data + 26, data + 2*26, 100);
     } else if (fr_type == FRAME_TYPE_HR_DATA) {
         // TODO
         LOG(ERR, "decoding frame type %d not implemented", fr_type);
@@ -108,9 +125,12 @@ bool data_block_check_crc(data_block_t *data_blk)
     }
 
     if (data_blk->fr_type == FRAME_TYPE_VOICE) {
-        // TODO
-        LOG(ERR, "CRC checking for VOICE frames not implemented");
-        return false;
+        uint8_t crc[3];
+        const uint8_t ok[3] = {1, 0, 0}; //accounts for initialization & inverted CRC bits
+
+        //2 initialization bits + discriminator + 22 voice protected bits + 3 CRC bits
+        mk_crc3(crc, data_blk->data, 28);
+        return !memcmp(crc, ok, 3);
     }
     return false;
 }
