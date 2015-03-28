@@ -71,11 +71,6 @@ void data_block_decode_frame(data_block_t *data_blk, const uint8_t *data,
     data_blk->frame_no = frame_no;
     data_blk->nerrs = 0;
 
-    if (fr_type == FRAME_TYPE_AUTO) {
-        // TODO: try decode each type of frame
-        fr_type = FRAME_TYPE_DATA;
-    }
-
     data_blk->fr_type = fr_type;
 
     if (fr_type == FRAME_TYPE_DATA) {

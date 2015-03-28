@@ -513,19 +513,24 @@ static void detect_scr(phys_ch_t *phys_ch, const frame_t *f)
     // compute SCR statistics
     for(int scr = 0; scr < ARRAY_LEN(phys_ch->scr_stat); ++scr) {
         frame_t f_;
+        frame_type_t type;
         memcpy(&f_, f, sizeof(f_));
 
         frame_descramble(&f_, scr);
-        if (phys_ch->band == TETRAPOL_BAND_VHF) {
+        if (phys_ch->band == TETRAPOL_BAND_UHF) {
+            frame_diff_dec(&f_);
+        }
+        // TODO: check for High-Rate frames?
+        type = (f_.data[38] ^ f_.data[114]) ? FRAME_TYPE_DATA : FRAME_TYPE_VOICE;
+        if (phys_ch->band == TETRAPOL_BAND_UHF) {
+            frame_deinterleave(&f_, type == FRAME_TYPE_DATA ? interleave_data_UHF : interleave_voice_UHF);
+        } else {
             // TODO: deinterleave for VHF
             // frame_deinterleave(&f_, interleave_data_VHF);
-        } else {
-            frame_diff_dec(&f_);
-            frame_deinterleave(&f_, interleave_data_UHF);
         }
 
         data_block_t data_blk;
-        data_block_decode_frame(&data_blk, f_.data, f_.frame_no, FRAME_TYPE_AUTO);
+        data_block_decode_frame(&data_blk, f_.data, f_.frame_no, type);
         if (data_blk.nerrs) {
             phys_ch->scr_stat[scr] -= 2;
             if (phys_ch->scr_stat[scr] < 0) {
@@ -583,28 +588,48 @@ static int process_control_radio_ch(phys_ch_t *phys_ch, frame_t *f)
 {
     const int scr = (phys_ch->scr == PHYS_CH_SCR_DETECT) ?
         phys_ch->scr_guess : phys_ch->scr;
+    frame_type_t type;
 
     frame_descramble(f, scr);
-    if (phys_ch->band == TETRAPOL_BAND_VHF) {
+    if (phys_ch->band == TETRAPOL_BAND_UHF) {
+        frame_diff_dec(f);
+    }
+    // TODO: check for High-Rate frames?
+    type = (f->data[38] ^ f->data[114]) ? FRAME_TYPE_DATA : FRAME_TYPE_VOICE;
+    if (phys_ch->band == TETRAPOL_BAND_UHF) {
+        frame_deinterleave(f, type == FRAME_TYPE_DATA ? interleave_data_UHF : interleave_voice_UHF);
+    } else {
         // TODO
         // frame_deinterleave(&f_, interleave_data_VHF);
         LOG(ERR, "process_control_radio_ch VHF processing not implemented");
         return -1;
-    } else {
-        frame_diff_dec(f);
-        frame_deinterleave(f, interleave_data_UHF);
     }
 
     data_block_t data_blk;
-    data_block_decode_frame(&data_blk, f->data, f->frame_no, FRAME_TYPE_DATA);
+    data_block_decode_frame(&data_blk, f->data, f->frame_no, type);
     IF_LOG(DBG) {
         if (!data_blk.nerrs) {
-            int asbx = data_blk.data[67];
-            int asby = data_blk.data[68];
-            int fn0 = data_blk.data[1];
-            int fn1 = data_blk.data[2];
-            LOG_("OK frame_no=%03i fn=%i%i asb=%i%i data=",
-                   data_blk.frame_no, fn1, fn0, asbx, asby);
+            int asbx, asby;
+            int fn0, fn1;
+            switch (type) {
+                case FRAME_TYPE_DATA:
+                    asbx = data_blk.data[67];
+                    asby = data_blk.data[68];
+                    fn0 = data_blk.data[1];
+                    fn1 = data_blk.data[2];
+                    LOG_("OK data frame_no=%03i fn=%i%i asb=%i%i data=",
+                        data_blk.frame_no, fn1, fn0, asbx, asby);
+                    break;
+                case FRAME_TYPE_VOICE:
+                    asbx = data_blk.data[23];
+                    asby = data_blk.data[24];
+                    LOG_("OK voice frame_no=%03i asb=%i%i data=",
+                        data_blk.frame_no, asbx, asby);
+                    break;
+                default:
+                    asbx = asby = -1;
+                    fn0 = fn1 = -1;
+            }
         } else {
             LOG_("ERR frame_no=%03i ", data_blk.frame_no);
         }
