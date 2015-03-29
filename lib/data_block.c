@@ -121,10 +121,10 @@ bool data_block_check_crc(data_block_t *data_blk)
 
     if (data_blk->fr_type == FRAME_TYPE_VOICE) {
         uint8_t crc[3];
-        const uint8_t ok[3] = {1, 0, 0}; // accounts for initialization & inverted CRC bits
+        const uint8_t ok[3] = {0, 1, 0}; // residue accounting for inverted CRC bits
 
-        // 2 initialization bits + discriminator + 22 voice protected bits + 3 CRC bits
-        mk_crc3(crc, data_blk->data, 28);
+        // discriminator + 22 voice protected bits + 3 CRC bits
+        mk_crc3(crc, data_blk->data, 26);
         return !memcmp(crc, ok, 3);
     }
     return false;
