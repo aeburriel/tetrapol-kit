@@ -2,7 +2,7 @@ TETRAPOL receiver
 
 For lisensing see COPYING file.
 
-set of tool which shloud allow its user
+set of tool which should allow its user
   - find TETRAPOL control channels and identify base stations
   - recieve TETRAPOL downlink transmissions
   - TODO: deltect and decode uplink transmission
